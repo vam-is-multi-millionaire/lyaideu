@@ -1,0 +1,173 @@
+<?php
+session_set_cookie_params([
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+session_start();
+if (isset($_SESSION['user'])) { header('Location: index.php'); exit; }
+
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
+$old = $_SESSION['old'] ?? ['name'=>'','email'=>'','phone'=>'','dob'=>''];
+unset($_SESSION['old']);
+$activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LyaiDeu · Login / Sign Up</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛵</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-body">
+<div class="auth-wrap">
+
+<aside class="auth-brand">
+    <span class="float-emoji" style="top:7%;left:8%;font-size:3.2rem;">🍕</span>
+    <span class="float-emoji" style="top:14%;right:12%;font-size:2.6rem;">🥟</span>
+    <span class="float-emoji" style="bottom:28%;left:6%;font-size:2.4rem;">🍜</span>
+    <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;">🍔</span>
+    <div class="brand-mark">🛵 <span>LyaiDeu</span></div>
+    <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
+    <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in ~30 minutes.</p>
+    <ul class="brand-stats">
+        <li><strong>25+</strong><span>partner hotels</span></li>
+        <li><strong>~30 min</strong><span>delivery</span></li>
+        </ul>
+</aside>
+
+<main class="auth-panel">
+    <div class="auth-card">
+        <div class="tabs" role="tablist">
+            <button type="button" class="tab <?= $activeTab === 'login' ? 'active' : '' ?>" data-show="login">Login</button>
+            <button type="button" class="tab <?= $activeTab === 'signup' ? 'active' : '' ?>" data-show="signup">Sign Up</button>
+        </div>
+
+        <?php if ($flash): ?>
+            <div class="flash flash-<?= $flash['type'] ?>"><?= $flash['msg'] ?></div>
+        <?php endif; ?>
+
+        <!-- LOGIN FORM -->
+        <form class="auth-form <?= $activeTab === 'login' ? 'active' : '' ?>" id="form-login" action="auth.php" method="POST" novalidate>
+            <input type="hidden" name="action" value="login">
+
+            <div class="field">
+                <label for="li-user">Username</label>
+                <div class="control">
+                    <span class="control-ico">👤</span>
+                    <input type="text" id="li-user" name="username" placeholder="Your full name OR 10-digit phone" data-validate="username" required>
+                </div><small class="field-msg field-hint">Login with your name, phone number, or email</small>
+                
+            </div>
+
+            <div class="field">
+                <label for="li-pass">Password</label>
+                <div class="control">
+                    <span class="control-ico">🔒</span>
+                    <input type="password" id="li-pass" name="password" placeholder="Your password" data-validate="pass" required>
+                    <button type="button" class="peek" aria-label="Show password">👁</button>
+                </div>
+                <small class="field-msg"></small>
+            </div>
+
+            <button class="btn btn-primary btn-block" type="submit">Log In →</button>
+            <p class="switch-line">New to LyaiDeu? <a href="#" data-show="signup">Create an account</a></p>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form class="auth-form <?= $activeTab === 'signup' ? 'active' : '' ?>" id="form-signup" action="auth.php" method="POST" novalidate>
+            <input type="hidden" name="action" value="signup">
+
+            <div class="field">
+                <label for="su-name">Full Name</label>
+                <div class="control">
+                    <span class="control-ico">👤</span>
+                    <input type="text" id="su-name" name="name" placeholder="e.g. Aarav Shrestha" value="<?= htmlspecialchars($old['name']) ?>" data-validate="name" required>
+                </div>
+                <small class="field-msg"></small>
+            </div>
+
+            <div class="field">
+                <label for="su-email">Email</label>
+                <div class="control">
+                    <span class="control-ico">✉️</span>
+                    <input type="email" id="su-email" name="email" placeholder="you@gmail.com" value="<?= htmlspecialchars($old['email']) ?>" data-validate="email" required>
+                </div>
+                <small class="field-msg field-hint">Must end with @gmail.com</small>
+            </div>
+
+            <div class="field">
+                <label for="su-phone">Contact Number</label>
+                <div class="control">
+                    <span class="prefix">🇳🇵 +977</span>
+                    <input type="tel" id="su-phone" name="phone" placeholder="98XXXXXXXX" maxlength="10" inputmode="numeric" value="<?= htmlspecialchars($old['phone']) ?>" data-validate="phone" required>
+                </div>
+                <small class="field-msg field-hint">Exactly 10 digits, starts with 97 or 98</small>
+            </div>
+
+            <div class="field">
+                <label for="su-dob">Date of Birth</label>
+                <div class="control">
+                    <span class="control-ico">🎂</span>
+                    <input type="date" id="su-dob" name="dob" value="<?= htmlspecialchars($old['dob']) ?>" data-validate="dob" required>
+                </div>
+                <small class="field-msg field-hint">You must be between 10 and 80 years old</small>
+            </div>
+
+            <div class="field">
+                <label for="su-pass">New Password</label>
+                <div class="control">
+                    <span class="control-ico">🔒</span>
+                    <input type="password" id="su-pass" name="password" placeholder="Min 8 chars, 1 capital, 1 symbol, 1 number" data-validate="strongpass" required>
+                    <button type="button" class="peek" aria-label="Show password">👁</button>
+                </div>
+                <div class="pass-requirements" id="passReqs">
+                    <span class="req" data-req="len">✓ 8+ characters</span>
+                    <span class="req" data-req="cap">✓ 1 capital letter</span>
+                    <span class="req" data-req="num">✓ 1 number</span>
+                    <span class="req" data-req="sym">✓ 1 symbol</span>
+                    <span class="req" data-req="info">✓ Not your name/phone</span>
+                </div>
+                <small class="field-msg"></small>
+            </div>
+
+            <div class="field">
+                <label for="su-confirm">Confirm Password</label>
+                <div class="control">
+                    <span class="control-ico">🔐</span>
+                    <input type="password" id="su-confirm" name="confirm" placeholder="Re-enter the same password" data-validate="confirm" required>
+                    <button type="button" class="peek" aria-label="Show password">👁</button>
+                </div>
+                <small class="field-msg"></small>
+            </div>
+
+            <button class="btn btn-primary btn-block" type="submit">Create My Account →</button>
+            <p class="switch-line">Already have an account? <a href="#" data-show="login">Login</a></p>
+        </form>
+    </div>
+    <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · Made with 💚 in Nepal</p>
+</main>
+</div>
+<script src="js/script.js"></script>
+<script>
+// Emergency tab switcher (always fresh, never cached)
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-show]');
+  if (!t) return;
+  e.preventDefault();
+  var which = t.getAttribute('data-show');
+  document.querySelectorAll('.tab').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-show') === which);
+  });
+  document.querySelectorAll('.auth-form').forEach(function (f) {
+    f.classList.toggle('active', f.id === 'form-' + which);
+  });
+});
+</script>
+</body>
+</html>
