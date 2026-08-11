@@ -18,7 +18,8 @@ $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LyaiDeu · Login / Sign Up</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e76608'/><text x='50' y='73' font-family='Arial,sans-serif' font-size='58' font-weight='bold' text-anchor='middle' fill='white'>L</text></svg>">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -33,7 +34,7 @@ $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
     <span class="float-emoji" style="top:14%;right:12%;font-size:2.6rem;"><i class="fa-solid fa-drumstick-bite"></i></span>
     <span class="float-emoji" style="bottom:28%;left:6%;font-size:2.4rem;"><i class="fa-solid fa-bowl-rice"></i></span>
     <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;"><i class="fa-solid fa-burger"></i></span>
-    <div class="brand-mark"><i class="fa-solid fa-motorcycle"></i> <span>LyaiDeu</span></div>
+    <div class="brand-mark"><img class="brand-logo" src="logo.png" alt="LyaiDeu"></div>
     <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
     <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in ~30 minutes.</p>
     <ul class="brand-stats">

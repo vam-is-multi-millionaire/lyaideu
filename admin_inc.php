@@ -67,10 +67,12 @@ function admin_handle_auth(): ?string {
 function admin_show_login(?string $error = null): void {
     admin_csrf_token();
     $safeError = $error ? htmlspecialchars($error, ENT_QUOTES, 'UTF-8') : '';
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
-        <div class="admin-login-box"><h2 class="display"><i class="fa-solid fa-lock"></i> LyaiDeu Admin</h2>';
+        <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="logo.png" alt="LyaiDeu"></div><h2 class="display"><i class="fa-solid fa-lock"></i> Admin Login</h2>';
     if ($safeError !== '') {
         echo "<p style='color:#c93a3a; font-weight:bold; margin-top:.8rem;'>$safeError</p>";
     }
@@ -109,9 +111,11 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     $navItems = admin_nav_items();
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . ' | LyaiDeu Admin</title>';
-    echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    echo '<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><h1 class="display"><i class="fa-solid fa-motorcycle"></i> LyaiDeu Admin</h1></a></div>';
+    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="logo.png" alt="LyaiDeu" style="margin-right:.6rem"><h1 class="display" style="display:inline-block">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
