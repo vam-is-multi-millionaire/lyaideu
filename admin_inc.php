@@ -68,14 +68,14 @@ function admin_show_login(?string $error = null): void {
     admin_csrf_token();
     $safeError = $error ? htmlspecialchars($error, ENT_QUOTES, 'UTF-8') : '';
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="stylesheet" href="css/style.css"></head>
-    <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--green-50); padding:1rem;">
+    <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><h2 class="display">🔒 LyaiDeu Admin</h2>';
     if ($safeError !== '') {
         echo "<p style='color:#c93a3a; font-weight:bold; margin-top:.8rem;'>$safeError</p>";
     }
     echo '<form method="POST" autocomplete="off">
         <input type="hidden" name="csrf_token" value="' . htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') . '">
-        <input type="password" name="password" placeholder="Enter Password" required autocomplete="current-password" style="width:100%; padding:12px; margin:15px 0; border:2px solid var(--green-200); border-radius:8px; font-size:1rem;">
+        <input type="password" name="password" placeholder="Enter Password" required autocomplete="current-password" style="width:100%; padding:12px; margin:15px 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem;">
         <button type="submit" name="login" class="btn btn-primary btn-block">Login to Dashboard</button>
     </form></div></body></html>';
     exit;

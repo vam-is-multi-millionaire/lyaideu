@@ -257,13 +257,13 @@ if ($pdo instanceof PDO && $data) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LyaiDeu MySQL Migration</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f5f7f3;margin:0;padding:2rem;color:#1e2a22}
-main{max-width:820px;margin:0 auto;background:#fff;border:1px solid #dfe7db;border-radius:8px;padding:1.5rem}
+body{font-family:Arial,sans-serif;background:#faf3eb;margin:0;padding:2rem;color:#3b2413}
+main{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e8dccb;border-radius:8px;padding:1.5rem}
 h1{margin-top:0}
-.row{display:flex;gap:1rem;justify-content:space-between;border-top:1px solid #eef2eb;padding:.9rem 0}
+.row{display:flex;gap:1rem;justify-content:space-between;border-top:1px solid #f2e8d8;padding:.9rem 0}
 .ok{color:#19733a;font-weight:700}
 .fail{color:#b42318;font-weight:700}
-.note{color:#5d6b61}
+.note{color:#7d634b}
 </style>
 </head>
 <body>
