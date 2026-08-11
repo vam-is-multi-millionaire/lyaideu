@@ -41,7 +41,7 @@ $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($par
 
 <header class="topbar">
     <nav class="nav">
-        <a class="brand" href="#home"><img class="brand-logo" src="logo.png" alt="LyaiDeu"></a>
+        <a class="brand" href="#home"><img class="brand-logo" src="logo.png" alt="LyaiDeu"> Lyai<span>Deu</span></a>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
