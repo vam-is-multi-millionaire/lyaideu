@@ -53,14 +53,41 @@ if (!isset($_SESSION['is_admin'])) {
     exit;
 }
 
-$data = json_decode(file_get_contents('data.json'), true);
-if (!is_array($data)) $data = [];
-$data += ['dishes' => [], 'hotels' => [], 'contacts' => [], 'users' => [], 'orders' => [], 'reviews' => []];
-$orderCounts = ['Pending'=>0,'Confirmed'=>0,'Preparing'=>0,'Out for delivery'=>0,'Delivered'=>0,'Cancelled'=>0];
+require_once __DIR__ . '/db.php';
+
+$orderCounts = ['Pending' => 0, 'Confirmed' => 0, 'Preparing' => 0, 'Out for delivery' => 0, 'Delivered' => 0, 'Cancelled' => 0];
 $totalSales = 0;
-foreach ($data['orders'] as $order) {
-    if (isset($orderCounts[$order['status'] ?? ''])) $orderCounts[$order['status']]++;
-    if (($order['status'] ?? '') !== 'Cancelled') $totalSales += (float)($order['total'] ?? 0);
+$totalOrders = 0;
+$userCount = 0;
+$dishCount = 0;
+
+try {
+    $totalOrders = (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
+    $totalSales = (float)$pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status <> 'Cancelled'")->fetchColumn();
+    $userCount = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    $dishCount = (int)$pdo->query('SELECT COUNT(*) FROM dishes')->fetchColumn();
+
+    foreach ($pdo->query('SELECT status, COUNT(*) AS cnt FROM orders GROUP BY status') as $row) {
+        if (isset($orderCounts[$row['status']])) {
+            $orderCounts[$row['status']] = (int)$row['cnt'];
+        }
+    }
+
+    $dishes = $pdo->query(
+        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes ORDER BY id'
+    )->fetchAll();
+    $hotels = $pdo->query(
+        'SELECT id, name, type, phone, emoji FROM hotels ORDER BY id'
+    )->fetchAll();
+    $contacts = $pdo->query(
+        'SELECT id, role, person, phone, note, ico FROM contacts ORDER BY id'
+    )->fetchAll();
+    $users = $pdo->query(
+        'SELECT id, name, email, phone, dob, created_at FROM users ORDER BY created_at DESC'
+    )->fetchAll();
+} catch (Throwable $e) {
+    http_response_code(500);
+    exit('Could not load admin data.');
 }
 ?>
 <!DOCTYPE html>
@@ -85,11 +112,11 @@ foreach ($data['orders'] as $order) {
 
 <div class="admin-container">
     <div class="admin-stats">
-        <div><strong><?= count($data['orders']) ?></strong><span>Total Orders</span></div>
+        <div><strong><?= $totalOrders ?></strong><span>Total Orders</span></div>
         <div><strong>Rs. <?= number_format($totalSales) ?></strong><span>Order Value</span></div>
         <div><strong><?= $orderCounts['Pending'] ?></strong><span>Pending</span></div>
-        <div><strong><?= count($data['users']) ?></strong><span>Registered Users</span></div>
-        <div><strong><?= count($data['dishes']) ?></strong><span>Menu Items</span></div>
+        <div><strong><?= $userCount ?></strong><span>Registered Users</span></div>
+        <div><strong><?= $dishCount ?></strong><span>Menu Items</span></div>
     </div>
     <div class="admin-section admin-quick-actions">
         <h2>⚡ Quick Actions</h2>
@@ -108,7 +135,7 @@ foreach ($data['orders'] as $order) {
         <section class="admin-section">
             <h2>🍽️ Menu Items (Dishes)</h2>
             <div class="admin-grid">
-                <?php foreach ($data['dishes'] as $i => $d): ?>
+                <?php foreach ($dishes as $i => $d): ?>
                 <div class="admin-card">
                     <h3><?= htmlspecialchars($d['name']) ?></h3>
                     <input type="hidden" name="dishes[<?= $i ?>][id]" value="<?= (int)$d['id'] ?>">
@@ -172,9 +199,10 @@ foreach ($data['orders'] as $order) {
         <section class="admin-section">
             <h2>🏨 Partner Hotels</h2>
             <div class="admin-grid">
-                <?php foreach ($data['hotels'] as $i => $h): ?>
+                <?php foreach ($hotels as $i => $h): ?>
                 <div class="admin-card">
                     <h3><?= htmlspecialchars($h['name']) ?></h3>
+                    <input type="hidden" name="hotels[<?= $i ?>][id]" value="<?= (int)$h['id'] ?>">
                     <label>Hotel Name</label><input type="text" name="hotels[<?= $i ?>][name]" value="<?= htmlspecialchars($h['name']) ?>" required>
                     <label>Type / Location</label><input type="text" name="hotels[<?= $i ?>][type]" value="<?= htmlspecialchars($h['type']) ?>">
                     <div style="display:flex; gap:10px;">
@@ -201,9 +229,10 @@ foreach ($data['orders'] as $order) {
         <section class="admin-section">
             <h2>☎️ Service Contacts</h2>
             <div class="admin-grid">
-                <?php foreach ($data['contacts'] as $i => $c): ?>
+                <?php foreach ($contacts as $i => $c): ?>
                 <div class="admin-card">
                     <h3><?= htmlspecialchars($c['role']) ?></h3>
+                    <input type="hidden" name="contacts[<?= $i ?>][id]" value="<?= (int)$c['id'] ?>">
                     <label>Role</label><input type="text" name="contacts[<?= $i ?>][role]" value="<?= htmlspecialchars($c['role']) ?>" required>
                     <label>Person / Dept</label><input type="text" name="contacts[<?= $i ?>][person]" value="<?= htmlspecialchars($c['person']) ?>">
                     <div style="display:flex; gap:10px;">
@@ -232,18 +261,18 @@ foreach ($data['orders'] as $order) {
     </form>
 
     <section class="admin-section">
-        <h2>👥 Registered Users (<?= count($data['users']) ?>)</h2>
+        <h2>👥 Registered Users (<?= count($users) ?>)</h2>
         <div class="admin-grid">
-            <?php foreach ($data['users'] as $u): ?>
+            <?php foreach ($users as $u): ?>
             <div class="admin-card">
                 <h3><?= htmlspecialchars($u['name']) ?></h3>
                 <label>Email</label><input type="text" value="<?= htmlspecialchars($u['email']) ?>" readonly>
                 <label>Phone</label><input type="text" value="+977 <?= htmlspecialchars($u['phone']) ?>" readonly>
                 <label>Date of Birth</label><input type="text" value="<?= htmlspecialchars($u['dob']) ?>" readonly>
-                <label>Joined</label><input type="text" value="<?= htmlspecialchars($u['created']) ?>" readonly>
+                <label>Joined</label><input type="text" value="<?= htmlspecialchars($u['created_at']) ?>" readonly>
             </div>
             <?php endforeach; ?>
-            <?php if (empty($data['users'])): ?>
+            <?php if (empty($users)): ?>
                 <p style="grid-column:1/-1; text-align:center; color:var(--muted); padding:2rem;">No users registered yet.</p>
             <?php endif; ?>
         </div>

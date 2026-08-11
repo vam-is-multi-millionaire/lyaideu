@@ -1,5 +1,45 @@
 <?php
-session_start();if(!isset($_SESSION['user'])){header('Location: login.php');exit;}
-$data=json_decode(file_get_contents('data.json'),true)?:['orders'=>[]];$uid=(int)$_SESSION['user']['id'];$orders=array_values(array_filter($data['orders']??[],fn($o)=>(int)($o['user_id']??0)===$uid));usort($orders,fn($a,$b)=>strcmp($b['created'],$a['created']));
-$statusClass=['Pending'=>'pending','Confirmed'=>'confirmed','Preparing'=>'preparing','Out for delivery'=>'delivery','Delivered'=>'delivered','Cancelled'=>'cancelled'];
-?><!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>My Orders | LyaiDeu</title><link rel="stylesheet" href="css/style.css"></head><body><header class="topbar"><nav class="nav"><a class="brand" href="index.php">🛵 Lyai<span>Deu</span></a><a class="btn btn-outline" href="index.php#menu">🍽️ Menu</a></nav></header><main class="orders-page container"><span data-live-indicator class="live-indicator" title="Checks for updates automatically">● Live updates</span><div class="section-head"><p class="kicker">📦 Your activity</p><h1 class="display">My Orders</h1><p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">● Live updates</span></p></div><?php if(!$orders): ?><div class="empty-state" style="display:block"><span class="big">🛵</span><p>You haven't placed an order yet.</p><a class="btn btn-primary" href="index.php#menu">Start Ordering</a></div><?php endif; ?><div class="orders-list"><?php foreach($orders as $o):$cls=$statusClass[$o['status']]??'pending'; ?><article class="order-card"><div class="order-card-head"><div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars($o['created']) ?></p></div><span class="order-status-pill status-<?= $cls ?>"><?= htmlspecialchars($o['status']) ?></span></div><div class="order-items"><?php foreach($o['items'] as $it): ?><div class="summary-row"><span><?= htmlspecialchars($it['name']) ?> × <?= (int)$it['qty'] ?></span><strong>Rs. <?= (int)$it['line_total'] ?></strong></div><?php endforeach; ?></div><div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$o['total'] ?></strong></div><p class="small-note">📍 <?= htmlspecialchars($o['address']) ?> · 💳 <?= htmlspecialchars($o['payment']) ?></p></article><?php endforeach; ?></div></main><script>setInterval(()=>{if(document.visibilityState==='visible'){fetch('orders.php?live=1',{cache:'no-store'}).then(r=>r.text()).then(html=>{const doc=new DOMParser().parseFromString(html,'text/html');const next=doc.querySelector('.orders-list');const current=document.querySelector('.orders-list');if(next&&current&&next.innerHTML!==current.innerHTML){current.replaceWith(next);}}).catch(()=>{});}},5000);</script></body></html>
+session_start();
+if (!isset($_SESSION['user'])) {
+    header('Location: login.php');
+    exit;
+}
+
+require_once __DIR__ . '/db.php';
+
+$uid = (int)$_SESSION['user']['id'];
+$orders = [];
+
+$orderStmt = $pdo->prepare(
+    'SELECT id, customer_name, phone, address, note, payment, promo,
+            subtotal, delivery_fee, discount, total, status, created_at, updated_at
+     FROM orders
+     WHERE user_id = :user_id
+     ORDER BY created_at DESC'
+);
+$orderStmt->execute([':user_id' => $uid]);
+$rows = $orderStmt->fetchAll();
+
+$itemStmt = $pdo->prepare(
+    'SELECT name, hotel, price, qty, line_total
+     FROM order_items
+     WHERE order_id = :order_id
+     ORDER BY id'
+);
+
+foreach ($rows as $row) {
+    $itemStmt->execute([':order_id' => (int)$row['id']]);
+    $row['items'] = $itemStmt->fetchAll();
+    $row['created'] = $row['created_at'];
+    $orders[] = $row;
+}
+
+$statusClass = [
+    'Pending' => 'pending',
+    'Confirmed' => 'confirmed',
+    'Preparing' => 'preparing',
+    'Out for delivery' => 'delivery',
+    'Delivered' => 'delivered',
+    'Cancelled' => 'cancelled',
+];
+?><!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>My Orders | LyaiDeu</title><link rel="stylesheet" href="css/style.css"></head><body><header class="topbar"><nav class="nav"><a class="brand" href="index.php">🛵 Lyai<span>Deu</span></a><a class="btn btn-outline" href="index.php#menu">🍽️ Menu</a></nav></header><main class="orders-page container"><span data-live-indicator class="live-indicator" title="Checks for updates automatically">● Live updates</span><div class="section-head"><p class="kicker">📦 Your activity</p><h1 class="display">My Orders</h1><p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">● Live updates</span></p></div><?php if (!$orders): ?><div class="empty-state" style="display:block"><span class="big">🛵</span><p>You haven't placed an order yet.</p><a class="btn btn-primary" href="index.php#menu">Start Ordering</a></div><?php endif; ?><div class="orders-list"><?php foreach ($orders as $o): $cls = $statusClass[$o['status']] ?? 'pending'; ?><article class="order-card"><div class="order-card-head"><div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars($o['created']) ?></p></div><span class="order-status-pill status-<?= $cls ?>"><?= htmlspecialchars($o['status']) ?></span></div><div class="order-items"><?php foreach ($o['items'] as $it): ?><div class="summary-row"><span><?= htmlspecialchars($it['name']) ?> × <?= (int)$it['qty'] ?></span><strong>Rs. <?= (int)$it['line_total'] ?></strong></div><?php endforeach; ?></div><div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$o['total'] ?></strong></div><p class="small-note">📍 <?= htmlspecialchars($o['address']) ?> · 💳 <?= htmlspecialchars($o['payment']) ?></p></article><?php endforeach; ?></div></main><script>setInterval(()=>{if(document.visibilityState==='visible'){fetch('orders.php?live=1',{cache:'no-store'}).then(r=>r.text()).then(html=>{const doc=new DOMParser().parseFromString(html,'text/html');const next=doc.querySelector('.orders-list');const current=document.querySelector('.orders-list');if(next&&current&&next.innerHTML!==current.innerHTML){current.replaceWith(next);}}).catch(()=>{});}},5000);</script></body></html>

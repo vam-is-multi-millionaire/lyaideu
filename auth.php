@@ -6,14 +6,8 @@ session_set_cookie_params([
 ]);
 session_start();
 
-define('DATA_FILE', __DIR__ . '/data.json');
+require_once __DIR__ . '/db.php';
 
-function load_data(): array {
-    return json_decode(file_get_contents(DATA_FILE), true) ?: ['dishes'=>[],'hotels'=>[],'contacts'=>[],'users'=>[]];
-}
-function save_data(array $data): void {
-    file_put_contents(DATA_FILE, json_encode($data, JSON_PRETTY_PRINT), LOCK_EX);
-}
 function flash(string $type, string $msg): void {
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
 }
@@ -95,35 +89,43 @@ if ($action === 'signup') {
         redirect('login.php?tab=signup');
     }
 
-    // Check if email or phone already registered
-    $data = load_data();
-    foreach ($data['users'] ?? [] as $u) {
-        if ($u['email'] === $email) {
+    try {
+        $check = $pdo->prepare('SELECT email, phone FROM users WHERE email = :email OR phone = :phone LIMIT 1');
+        $check->execute([':email' => $email, ':phone' => $phone]);
+        $existing = $check->fetch();
+
+        if ($existing && $existing['email'] === $email) {
             flash('error', 'This email is already registered. Please login instead.');
             redirect('login.php?tab=signup');
         }
-        if ($u['phone'] === $phone) {
+        if ($existing && $existing['phone'] === $phone) {
             flash('error', 'This contact number is already registered. Please login instead.');
             redirect('login.php?tab=signup');
         }
-    }
 
-    // All good — create the user!
-    $data['users'][] = [
-        'id'      => time(),
-        'name'    => $name,
-        'email'   => $email,
-        'phone'   => $phone,
-        'dob'     => $dob,
-        'pass'    => password_hash($pass, PASSWORD_DEFAULT),
-        'created' => date('Y-m-d H:i'),
-    ];
-    save_data($data);
+        $insert = $pdo->prepare(
+            'INSERT INTO users (name, email, phone, dob, pass, created_at)
+             VALUES (:name, :email, :phone, :dob, :pass, :created_at)'
+        );
+        $insert->execute([
+            ':name' => $name,
+            ':email' => $email,
+            ':phone' => $phone,
+            ':dob' => $dob,
+            ':pass' => password_hash($pass, PASSWORD_DEFAULT),
+            ':created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $userId = (int)$pdo->lastInsertId();
+    } catch (Throwable $e) {
+        flash('error', 'Could not create your account right now. Please try again.');
+        redirect('login.php?tab=signup');
+    }
 
     unset($_SESSION['old']);
     session_regenerate_id(true);
-    $_SESSION['user'] = ['id' => end($data['users'])['id'], 'name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob];
-    flash('success', 'Welcome to LyaiDeu, ' . htmlspecialchars($name) . '! 🎉');
+    $_SESSION['user'] = ['id' => $userId, 'name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob];
+    flash('success', 'Welcome to LyaiDeu, ' . htmlspecialchars($name) . '!');
     redirect('index.php');
 }
 
@@ -137,14 +139,23 @@ if ($action === 'login') {
         redirect('login.php');
     }
 
-    $data = load_data();
-    foreach ($data['users'] ?? [] as $u) {
-        // Username can be EITHER the full name OR the phone number
-        $matchName  = (strcasecmp($u['name'], $username) === 0);
-        $matchPhone = ($u['phone'] === $username);
-        $matchEmail = ($u['email'] === strtolower($username));
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT id, name, email, phone, dob, pass
+             FROM users
+             WHERE LOWER(name) = LOWER(:name_login)
+                OR phone = :phone_login
+                OR email = :email_login
+             LIMIT 1'
+        );
+        $stmt->execute([
+            ':name_login' => $username,
+            ':phone_login' => $username,
+            ':email_login' => strtolower($username),
+        ]);
+        $u = $stmt->fetch();
 
-        if (($matchName || $matchPhone || $matchEmail) && password_verify($pass, $u['pass'])) {
+        if ($u && password_verify($pass, $u['pass'])) {
             session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id'    => $u['id'],
@@ -155,6 +166,9 @@ if ($action === 'login') {
             ];
             redirect('index.php');
         }
+    } catch (Throwable $e) {
+        flash('error', 'Could not log you in right now. Please try again.');
+        redirect('login.php');
     }
 
     flash('error', 'Invalid username or password. Please try again or sign up.');

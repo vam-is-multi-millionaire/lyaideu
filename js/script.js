@@ -10,7 +10,7 @@ function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.c
 
 document.addEventListener('DOMContentLoaded',()=>{
   initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();
-  if($('#menu-grid')||$('#checkoutForm'))fetch('data.json').then(r=>r.json()).then(d=>{
+  if($('#menu-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     if($('#menu-grid')){renderDishes(allDishes);renderHotels(d.hotels||[]);renderContacts(d.contacts||[]);initMenuFilters();startLiveCatalogSync();}
     if($('#checkoutForm'))initCheckout();
@@ -77,7 +77,7 @@ function applyFilters(){
 function startLiveCatalogSync(){
   if(window.FE_LIVE_SYNC||!$('#menu-grid'))return; window.FE_LIVE_SYNC=true;
   let lastSignature='';
-  const sync=()=>fetch('data.json?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  const sync=()=>fetch('api.php?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
     const sig=JSON.stringify([d.dishes||[],d.hotels||[],d.contacts||[]]);
     if(!lastSignature){lastSignature=sig;return;}
     if(sig!==lastSignature){
@@ -128,7 +128,7 @@ function footerYear(){const y=$('#year');if(y)y.textContent=new Date().getFullYe
 (function(){
  if(window.FE_LIVE_REFRESH_INITIALIZED)return; window.FE_LIVE_REFRESH_INITIALIZED=true;
  let last='';
- async function refresh(){try{const r=await fetch('data.json?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],hotels:d.hotels||[],contacts:d.contacts||[],orders:d.orders||[]});
+ async function refresh(){try{const r=await fetch('api.php?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],hotels:d.hotels||[],contacts:d.contacts||[]});
   if(last&&sig!==last){if(typeof allDishes!=='undefined'){allDishes=d.dishes||[];if(document.querySelector('#menu-grid'))renderDishes(allDishes);if(document.querySelector('#hotels-grid'))renderHotels(d.hotels||[]);if(document.querySelector('#contact-grid'))renderContacts(d.contacts||[]);}window.dispatchEvent(new CustomEvent('lyaideu:datachanged',{detail:d}));}
   last=sig;const el=document.querySelector('[data-live-indicator]');if(el)el.classList.add('live-on');
  }catch(e){}}
