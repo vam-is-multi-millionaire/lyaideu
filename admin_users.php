@@ -13,7 +13,7 @@ try {
     exit('Could not load users.');
 }
 
-admin_page_start('Users', 'users', '👥 Registered Users');
+admin_page_start('Users', 'users', 'Registered Users');
 ?>
 <section class="admin-section">
     <div class="admin-section-top">

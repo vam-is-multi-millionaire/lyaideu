@@ -148,7 +148,7 @@ try {
                 ':name' => clean_text($newHotel['name'] ?? ''),
                 ':type' => clean_text($newHotel['type'] ?? ''),
                 ':phone' => clean_phone($newHotel['phone'] ?? ''),
-                ':emoji' => clean_text($newHotel['emoji'] ?? '🏨'),
+                ':emoji' => clean_text($newHotel['emoji'] ?? 'fa-hotel'),
             ]);
         }
     }
@@ -184,7 +184,7 @@ try {
                 ':person' => clean_text($c['person'] ?? ''),
                 ':phone' => clean_phone($c['phone'] ?? ''),
                 ':note' => clean_text($c['note'] ?? ''),
-                ':ico' => clean_text($c['ico'] ?? '📞'),
+                ':ico' => clean_text($c['ico'] ?? 'fa-phone'),
             ]);
         }
 
@@ -195,7 +195,7 @@ try {
                 ':person' => clean_text($newContact['person'] ?? ''),
                 ':phone' => clean_phone($newContact['phone'] ?? ''),
                 ':note' => clean_text($newContact['note'] ?? ''),
-                ':ico' => clean_text($newContact['ico'] ?? '📞'),
+                ':ico' => clean_text($newContact['ico'] ?? 'fa-phone'),
             ]);
         }
     }

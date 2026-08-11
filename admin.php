@@ -32,7 +32,7 @@ try {
 
 $navItems = admin_nav_items();
 
-admin_page_start('Dashboard', 'dashboard', '📊 Dashboard');
+admin_page_start('Dashboard', 'dashboard', 'Dashboard');
 ?>
     <div class="admin-stats">
         <div><strong><?= $totalOrders ?></strong><span>Total Orders</span></div>
@@ -43,7 +43,7 @@ admin_page_start('Dashboard', 'dashboard', '📊 Dashboard');
     </div>
 
     <section class="admin-section">
-        <h2>⚡ Manage Sections</h2>
+        <h2><i class="fa-solid fa-bolt"></i> Manage Sections</h2>
         <div class="admin-hub-grid">
             <?php
             $cards = [
@@ -67,9 +67,9 @@ admin_page_start('Dashboard', 'dashboard', '📊 Dashboard');
     </section>
 
     <section class="admin-section admin-quick-actions">
-        <h2>🌐 Website</h2>
+        <h2><i class="fa-solid fa-globe"></i> Website</h2>
         <div class="hero-actions">
-            <a class="btn btn-primary" href="index.php#menu" target="_blank">🍽️ Preview Menu</a>
+            <a class="btn btn-primary" href="index.php#menu" target="_blank"><i class="fa-solid fa-utensils"></i> Preview Menu</a>
             <a class="btn btn-outline" href="index.php" target="_blank">Open Website</a>
         </div>
     </section>

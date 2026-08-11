@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS hotels (
   name VARCHAR(255) NOT NULL,
   type VARCHAR(255) NOT NULL DEFAULT '',
   phone VARCHAR(20) NOT NULL DEFAULT '',
-  emoji VARCHAR(10) NOT NULL DEFAULT '',
+  emoji VARCHAR(50) NOT NULL DEFAULT '',
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   person VARCHAR(255) NOT NULL DEFAULT '',
   phone VARCHAR(20) NOT NULL DEFAULT '',
   note VARCHAR(255) NOT NULL DEFAULT '',
-  ico VARCHAR(10) NOT NULL DEFAULT '',
+  ico VARCHAR(50) NOT NULL DEFAULT '',
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -98,23 +98,23 @@ INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (11,'Ma
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (12,'Buff Thali Set','Thakali Kitchen','dinner',450,'9851098765','Chef&#039;s Pick','Dal, bhat, tarkari, masu &amp; achar — unlimited refills.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/090dc3b7f-9907-4ec9-bf6b-557567f50e2e8532.png');
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (13,'Everest Steak &amp; Fries','Everest Steak House','dinner',950,'9808765432','Premium','Grilled pepper steak with buttered fries and fresh salad.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/590dc3b7f-9907-4ec9-bf6b-557567f50e2e8386.png');
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (14,'Chicken Curry &amp; Rice','Ghar Ghar Rasoee','dinner',390,'9840098765','Homestyle','Slow-cooked chicken curry with steamed basmati rice.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/190dc3b7f-9907-4ec9-bf6b-557567f50e2e8427.png');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (1,'Himalayan Momo House','Momo · New Baneshwor','9841012345','🥟');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (2,'Momo Junction','Momo · Putalisadak','9812345678','🥟');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (3,'Fire &amp; Dough Pizza Co.','Pizza · Jhamsikhel','9803456781','🍕');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (4,'Slice of Kathmandu','Pizza · Thamel','9845678901','🍕');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (5,'Wok Star Kitchen','Chowmein · Boudha','9818765432','🍜');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (6,'New Road Noodle Bar','Chowmein · New Road','9856012345','🍜');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (7,'Newa Lahana','Traditional · Kirtipur','9849876543','🍢');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (8,'Dragon Wok','Snacks · Lazimpat','9861234567','🥠');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (9,'Burger Hub','Snacks · Dillibazar','9834567890','🍔');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (10,'Kathmandu Brew House','Beverages · Durbar Marg','9802345678','🥤');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (11,'Sweet Valley Café','Beverages · Kupondole','9856781234','🥭');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (12,'Thakali Kitchen','Dinner · Pokhara Rd','9851098765','🍛');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (13,'Everest Steak House','Dinner · Naxal','9808765432','🥩');
-INSERT INTO hotels (id,name,type,phone,emoji) VALUES (14,'Ghar Ghar Rasoee','Dinner · Baluwatar','9840098765','🍗');
-INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (1,'Order Hotline','LyaiDeu Central','9800000001','7 AM – 10 PM, every day','📞');
-INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (2,'Delivery Support','Rider Help Desk','9800000002','Track or reschedule your order','🛵');
-INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (3,'Partner With Us','Hotel Onboarding Team','9800000003','List your hotel on LyaiDeu','🤝');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (1,'Himalayan Momo House','Momo · New Baneshwor','9841012345','fa-drumstick-bite');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (2,'Momo Junction','Momo · Putalisadak','9812345678','fa-drumstick-bite');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (3,'Fire &amp; Dough Pizza Co.','Pizza · Jhamsikhel','9803456781','fa-pizza-slice');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (4,'Slice of Kathmandu','Pizza · Thamel','9845678901','fa-pizza-slice');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (5,'Wok Star Kitchen','Chowmein · Boudha','9818765432','fa-bowl-rice');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (6,'New Road Noodle Bar','Chowmein · New Road','9856012345','fa-bowl-rice');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (7,'Newa Lahana','Traditional · Kirtipur','9849876543','fa-utensils');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (8,'Dragon Wok','Snacks · Lazimpat','9861234567','fa-cookie');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (9,'Burger Hub','Snacks · Dillibazar','9834567890','fa-burger');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (10,'Kathmandu Brew House','Beverages · Durbar Marg','9802345678','fa-mug-saucer');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (11,'Sweet Valley Café','Beverages · Kupondole','9856781234','fa-apple-whole');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (12,'Thakali Kitchen','Dinner · Pokhara Rd','9851098765','fa-bowl-food');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (13,'Everest Steak House','Dinner · Naxal','9808765432','fa-bacon');
+INSERT INTO hotels (id,name,type,phone,emoji) VALUES (14,'Ghar Ghar Rasoee','Dinner · Baluwatar','9840098765','fa-drumstick-bite');
+INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (1,'Order Hotline','LyaiDeu Central','9800000001','7 AM – 10 PM, every day','fa-phone');
+INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (2,'Delivery Support','Rider Help Desk','9800000002','Track or reschedule your order','fa-motorcycle');
+INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (3,'Partner With Us','Hotel Onboarding Team','9800000003','List your hotel on LyaiDeu','fa-handshake');
 INSERT INTO users (id,name,email,phone,dob,pass,created_at) VALUES (1786072074,'Aliza','acb@gmail.com','9878787878','2014-10-01','$2y$10$VLyF1B2oAtd3Sy8sxCSLUOs3Tf4L4UEsLc3IPNBHiUsp1pBLuGn6y','2026-08-07 05:07:00');
 INSERT INTO users (id,name,email,phone,dob,pass,created_at) VALUES (1786073687,'Aliza Shrestha','alizanewar17@gmail.com','9822429508','2006-10-18','$2y$10$cS/7HuDr0CflbvJW13LqVeo8AK.PIMOQezb6vSoa0n.vd7Tad9zaq','2026-08-07 05:34:00');
 INSERT INTO users (id,name,email,phone,dob,pass,created_at) VALUES (1786364153,'Chap Khet','chapkhet11@gmail.com','9769955973','2006-09-10','$2y$10$gBjzwRE5WBk1zCk8XjZJRODV8zYTb9.GE5FVSaOv3B7gqQA2kUGem','2026-08-10 14:15:00');
@@ -124,3 +124,7 @@ INSERT INTO orders (id,user_id,customer_name,phone,address,note,payment,promo,su
 INSERT INTO order_items (order_id,dish_id,name,hotel,price,qty,line_total) VALUES (2,1,'Chicken Steam Momo','Himalayan Momo House',220.00,1,220.00);
 INSERT INTO orders (id,user_id,customer_name,phone,address,note,payment,promo,subtotal,delivery_fee,discount,total,status,created_at,updated_at) VALUES (3,1786364153,'Chap Khet','9769955973','erw','er','Cash on Delivery','',390.00,50.00,0.00,440.00,'Confirmed','2026-08-11 15:51:45','2026-08-11 15:52:20');
 INSERT INTO order_items (order_id,dish_id,name,hotel,price,qty,line_total) VALUES (3,14,'Chicken Curry &amp; Rice','Ghar Ghar Rasoee',390.00,1,390.00);
+
+-- Widen icon columns so Font Awesome class names (e.g. 'fa-pizza-slice') fit on existing installs.
+ALTER TABLE hotels MODIFY emoji VARCHAR(50) NOT NULL DEFAULT '';
+ALTER TABLE contacts MODIFY ico VARCHAR(50) NOT NULL DEFAULT '';

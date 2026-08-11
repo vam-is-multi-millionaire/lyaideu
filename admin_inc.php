@@ -19,12 +19,12 @@ function admin_is_logged_in(): bool {
 
 function admin_nav_items(): array {
     return [
-        'dashboard' => ['label' => 'Dashboard', 'href' => 'admin.php', 'icon' => '📊'],
-        'orders' => ['label' => 'Orders', 'href' => 'admin_orders.php', 'icon' => '📦'],
-        'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes.php', 'icon' => '🍽️'],
-        'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '🏨'],
-        'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '☎️'],
-        'users' => ['label' => 'Users', 'href' => 'admin_users.php', 'icon' => '👥'],
+        'dashboard' => ['label' => 'Dashboard', 'href' => 'admin.php', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
+        'orders' => ['label' => 'Orders', 'href' => 'admin_orders.php', 'icon' => '<i class="fa-solid fa-box"></i>'],
+        'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes.php', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
+        'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
+        'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '<i class="fa-solid fa-phone"></i>'],
+        'users' => ['label' => 'Users', 'href' => 'admin_users.php', 'icon' => '<i class="fa-solid fa-users"></i>'],
     ];
 }
 
@@ -67,9 +67,10 @@ function admin_handle_auth(): ?string {
 function admin_show_login(?string $error = null): void {
     admin_csrf_token();
     $safeError = $error ? htmlspecialchars($error, ENT_QUOTES, 'UTF-8') : '';
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="stylesheet" href="css/style.css"></head>
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="css/style.css"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
-        <div class="admin-login-box"><h2 class="display">🔒 LyaiDeu Admin</h2>';
+        <div class="admin-login-box"><h2 class="display"><i class="fa-solid fa-lock"></i> LyaiDeu Admin</h2>';
     if ($safeError !== '') {
         echo "<p style='color:#c93a3a; font-weight:bold; margin-top:.8rem;'>$safeError</p>";
     }
@@ -97,9 +98,9 @@ function admin_logout_button(): string {
 
 function admin_flash_banner(): void {
     if (isset($_GET['saved'])) {
-        echo '<div class="flash-banner flash-success admin-flash">✅ Changes saved successfully.</div>';
+        echo '<div class="flash-banner flash-success admin-flash"><i class="fa-solid fa-circle-check"></i> Changes saved successfully.</div>';
     } elseif (isset($_GET['error'])) {
-        echo '<div class="flash-banner flash-error admin-flash">❌ ' . htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') . '</div>';
+        echo '<div class="flash-banner flash-error admin-flash"><i class="fa-solid fa-circle-xmark"></i> ' . htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') . '</div>';
     }
 }
 
@@ -108,8 +109,9 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     $navItems = admin_nav_items();
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . ' | LyaiDeu Admin</title>';
-    echo '<link rel="stylesheet" href="css/style.css"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><h1 class="display">🛵 LyaiDeu Admin</h1></a></div>';
+    echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="css/style.css"></head><body class="admin-body">';
+    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><h1 class="display"><i class="fa-solid fa-motorcycle"></i> LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
@@ -120,7 +122,8 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
         echo '<span class="admin-nav-icon">' . $item['icon'] . '</span><span>' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . '</span></a>';
     }
     echo '</nav></aside><main class="admin-main"><div class="admin-container">';
-    echo '<div class="admin-page-head"><h2 class="display admin-page-title">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h2></div>';
+    $activeIcon = $navItems[$activeNav]['icon'] ?? '';
+    echo '<div class="admin-page-head"><h2 class="display admin-page-title">' . $activeIcon . ' ' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h2></div>';
     admin_flash_banner();
 }
 

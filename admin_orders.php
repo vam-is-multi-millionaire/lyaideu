@@ -66,7 +66,7 @@ try {
     exit('Could not load orders.');
 }
 
-admin_page_start('Orders', 'orders', '📦 Order Management');
+admin_page_start('Orders', 'orders', 'Order Management');
 ?>
     <div class="admin-stats">
         <div><strong><?= count($orders) ?></strong><span>Total Orders</span></div>
@@ -92,7 +92,7 @@ admin_page_start('Orders', 'orders', '📦 Order Management');
                 <div class="order-card-head">
                     <div>
                         <h2>#<?= (int)$o['id'] ?> · <?= htmlspecialchars($o['customer_name']) ?></h2>
-                        <p><?= htmlspecialchars($o['created']) ?> · 📞 <?= htmlspecialchars($o['phone']) ?></p>
+                        <p><?= htmlspecialchars($o['created']) ?> · <i class="fa-solid fa-phone"></i> <?= htmlspecialchars($o['phone']) ?></p>
                     </div>
                     <form method="POST" class="status-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
@@ -105,7 +105,7 @@ admin_page_start('Orders', 'orders', '📦 Order Management');
                         <button class="btn btn-primary" type="submit">Update</button>
                     </form>
                 </div>
-                <p>📍 <?= htmlspecialchars($o['address']) ?><?php if ($o['note']): ?> · 📝 <?= htmlspecialchars($o['note']) ?><?php endif; ?></p>
+                <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= htmlspecialchars($o['note']) ?><?php endif; ?></p>
                 <div class="admin-order-items">
                     <?php foreach ($o['items'] as $it): ?>
                     <span><?= htmlspecialchars($it['name']) ?> × <?= (int)$it['qty'] ?> — Rs. <?= (int)$it['line_total'] ?></span>

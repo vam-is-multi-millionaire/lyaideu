@@ -13,7 +13,7 @@ try {
     exit('Could not load dishes.');
 }
 
-admin_page_start('Menu Items', 'dishes', '🍽️ Menu Items');
+admin_page_start('Menu Items', 'dishes', 'Menu Items');
 ?>
 <form action="admin_save.php" method="POST" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
@@ -57,12 +57,12 @@ admin_page_start('Menu Items', 'dishes', '🍽️ Menu Items');
                         <input type="text" name="dishes[<?= $i ?>][tag]" value="<?= htmlspecialchars($d['tag']) ?>">
                     </div>
                 </div>
-                <label class="delete-check"><input type="checkbox" name="dishes[<?= $i ?>][delete]" value="1"> 🗑️ Delete this dish</label>
+                <label class="delete-check"><input type="checkbox" name="dishes[<?= $i ?>][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this dish</label>
             </div>
             <?php endforeach; ?>
 
             <div class="admin-card admin-add-card">
-                <h3>➕ Add New Dish</h3>
+                <h3><i class="fa-solid fa-plus"></i> Add New Dish</h3>
                 <label>Dish Name</label><input type="text" name="new_dish[name]" placeholder="e.g. Paneer Tikka">
                 <label>Hotel Name</label><input type="text" name="new_dish[hotel]" placeholder="e.g. Spice Garden">
                 <div class="admin-field-row">
@@ -85,7 +85,7 @@ admin_page_start('Menu Items', 'dishes', '🍽️ Menu Items');
         </div>
     </section>
 
-    <button type="submit" class="btn btn-primary btn-block admin-save-btn">💾 Save Menu Changes</button>
+    <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Menu Changes</button>
 </form>
 <?php
 admin_page_end();

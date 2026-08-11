@@ -160,85 +160,85 @@
             "name": "Himalayan Momo House",
             "type": "Momo · New Baneshwor",
             "phone": "9841012345",
-            "emoji": "🥟"
+            "emoji": "fa-drumstick-bite"
         },
         {
             "name": "Momo Junction",
             "type": "Momo · Putalisadak",
             "phone": "9812345678",
-            "emoji": "🥟"
+            "emoji": "fa-drumstick-bite"
         },
         {
             "name": "Fire &amp; Dough Pizza Co.",
             "type": "Pizza · Jhamsikhel",
             "phone": "9803456781",
-            "emoji": "🍕"
+            "emoji": "fa-pizza-slice"
         },
         {
             "name": "Slice of Kathmandu",
             "type": "Pizza · Thamel",
             "phone": "9845678901",
-            "emoji": "🍕"
+            "emoji": "fa-pizza-slice"
         },
         {
             "name": "Wok Star Kitchen",
             "type": "Chowmein · Boudha",
             "phone": "9818765432",
-            "emoji": "🍜"
+            "emoji": "fa-bowl-rice"
         },
         {
             "name": "New Road Noodle Bar",
             "type": "Chowmein · New Road",
             "phone": "9856012345",
-            "emoji": "🍜"
+            "emoji": "fa-bowl-rice"
         },
         {
             "name": "Newa Lahana",
             "type": "Traditional · Kirtipur",
             "phone": "9849876543",
-            "emoji": "🍢"
+            "emoji": "fa-utensils"
         },
         {
             "name": "Dragon Wok",
             "type": "Snacks · Lazimpat",
             "phone": "9861234567",
-            "emoji": "🥠"
+            "emoji": "fa-cookie"
         },
         {
             "name": "Burger Hub",
             "type": "Snacks · Dillibazar",
             "phone": "9834567890",
-            "emoji": "🍔"
+            "emoji": "fa-burger"
         },
         {
             "name": "Kathmandu Brew House",
             "type": "Beverages · Durbar Marg",
             "phone": "9802345678",
-            "emoji": "🥤"
+            "emoji": "fa-mug-saucer"
         },
         {
             "name": "Sweet Valley Café",
             "type": "Beverages · Kupondole",
             "phone": "9856781234",
-            "emoji": "🥭"
+            "emoji": "fa-apple-whole"
         },
         {
             "name": "Thakali Kitchen",
             "type": "Dinner · Pokhara Rd",
             "phone": "9851098765",
-            "emoji": "🍛"
+            "emoji": "fa-bowl-food"
         },
         {
             "name": "Everest Steak House",
             "type": "Dinner · Naxal",
             "phone": "9808765432",
-            "emoji": "🥩"
+            "emoji": "fa-bacon"
         },
         {
             "name": "Ghar Ghar Rasoee",
             "type": "Dinner · Baluwatar",
             "phone": "9840098765",
-            "emoji": "🍗"
+            "emoji": "fa-drumstick-bite"
         }
     ],
     "contacts": [
@@ -247,21 +247,21 @@
             "person": "LyaiDeu Central",
             "phone": "9800000001",
             "note": "7 AM – 10 PM, every day",
-            "ico": "📞"
+            "ico": "fa-phone"
         },
         {
             "role": "Delivery Support",
             "person": "Rider Help Desk",
             "phone": "9800000002",
             "note": "Track or reschedule your order",
-            "ico": "🛵"
+            "ico": "fa-motorcycle"
         },
         {
             "role": "Partner With Us",
             "person": "Hotel Onboarding Team",
             "phone": "9800000003",
             "note": "List your hotel on LyaiDeu",
-            "ico": "🤝"
+            "ico": "fa-handshake"
         }
     ],
     "users": [
