@@ -322,8 +322,8 @@ section{scroll-margin-top:96px;}
 .admin-save-btn{font-size:1.2rem;padding:1rem;margin-top:10px;}
 .flash-error{background:#fdecec;color:#c93a3a;border:1px solid #f5c6c6;}
 .admin-header-brand{display:flex;align-items:center;min-width:0}
-.admin-brand-link{text-decoration:none;color:#fff}
-.admin-brand-link h1{margin:0;color:#fff;font-size:clamp(1.2rem,2.5vw,1.6rem)}
+.admin-brand-link{text-decoration:none;color:#fff;display:flex;align-items:center;gap:.7rem;min-width:0}
+.admin-brand-link h1{margin:0;color:#fff;font-size:clamp(1.2rem,2.5vw,1.6rem);line-height:1;white-space:nowrap}
 .admin-logout-form{margin:0}
 .admin-logout-btn{background:#c93a3a !important;box-shadow:0 5px 0 #a02a2a !important}
 .admin-shell{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 64px);align-items:start}

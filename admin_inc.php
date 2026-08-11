@@ -115,7 +115,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="logo.png" alt="LyaiDeu" style="margin-right:.6rem"><h1 class="display" style="display:inline-block">LyaiDeu Admin</h1></a></div>';
+    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="logo.png" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
