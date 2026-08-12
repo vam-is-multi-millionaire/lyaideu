@@ -11,6 +11,7 @@ unset($_SESSION['flash']);
 $old = $_SESSION['old'] ?? ['name'=>'','email'=>'','phone'=>'','dob'=>''];
 unset($_SESSION['old']);
 $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
+require_once __DIR__ . '/site_config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,8 +19,7 @@ $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LyaiDeu · Login / Sign Up</title>
-<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@ $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
     <span class="float-emoji" style="top:14%;right:12%;font-size:2.6rem;"><i class="fa-solid fa-drumstick-bite"></i></span>
     <span class="float-emoji" style="bottom:28%;left:6%;font-size:2.4rem;"><i class="fa-solid fa-bowl-rice"></i></span>
     <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;"><i class="fa-solid fa-burger"></i></span>
-    <div class="brand-mark"><img class="brand-logo" src="logo.png" alt="LyaiDeu"></div>
+    <div class="brand-mark"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></div>
     <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
     <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in ~30 minutes.</p>
     <ul class="brand-stats">

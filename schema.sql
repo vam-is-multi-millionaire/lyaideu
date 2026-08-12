@@ -84,6 +84,20 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT fk_items_dish FOREIGN KEY (dish_id) REFERENCES dishes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS settings (
+  skey VARCHAR(100) NOT NULL,
+  sval TEXT DEFAULT NULL,
+  PRIMARY KEY (skey)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO settings (skey, sval) VALUES
+  ('site_logo', 'logo.png'),
+  ('site_favicon', 'favicon.ico'),
+  ('site_apple_icon', 'apple-touch-icon.png'),
+  ('admin_username', 'admin'),
+  ('admin_pass_hash', '$2y$12$gKimlVM8pqaeijJcHazLGOfF2Qbse0Obz29rRt4hUt/FLUFAmvrPa')
+ON DUPLICATE KEY UPDATE skey = VALUES(skey);
+
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (1,'Chicken Steam Momo','Himalayan Momo House','momo',220,'9841012345','Best Seller','Juicy steamed momos served with our signature tomato-sesame achar.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/390dc3b7f-9907-4ec9-bf6b-557567f50e2e7012.png');
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (2,'Chilli Garlic Momo','Momo Junction','momo',260,'9812345678','Spicy 🌶','Crispy fried momos tossed in a fiery chilli-garlic sauce.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/490dc3b7f-9907-4ec9-bf6b-557567f50e2e9895.png');
 INSERT INTO dishes (id,name,hotel,cat,price,phone,tag,`desc`,img) VALUES (3,'Margherita Pizza','Fire &amp; Dough Pizza Co.','pizza',650,'9803456781','','Wood-fired base, fresh basil and molten mozzarella cheese.','https://image.qwenlm.ai/public_source/faa3a93f-c243-44f8-9a77-0f6b8cf838a8/290dc3b7f-9907-4ec9-bf6b-557567f50e2e7915.png');

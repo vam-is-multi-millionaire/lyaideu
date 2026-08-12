@@ -235,6 +235,11 @@ section{scroll-margin-top:96px;}
 .admin-card input:focus, .admin-card select:focus, .admin-card textarea:focus { outline: none; border-color: var(--orange-500); box-shadow: 0 0 0 3px rgba(231,102,8,.15); }
 .admin-card textarea { resize: vertical; min-height: 60px; }
 
+/* Settings page — image previews */
+.settings-preview { width: 130px; height: 130px; display: grid; place-items: center; background: #fff; border: 2px solid var(--orange-200); border-radius: 14px; margin: 0 0 .8rem; overflow: hidden; padding: 8px; }
+.settings-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.settings-preview.preview-sm { width: 72px; height: 72px; border-radius: 16px; }
+
 /* ==========================================================
    AUTH PAGE (Login / Signup) STYLES
    ========================================================== */

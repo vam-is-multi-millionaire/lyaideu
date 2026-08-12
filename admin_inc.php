@@ -4,7 +4,17 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/site_config.php';
+
 const ADMIN_PASS_HASH = '$2y$12$gKimlVM8pqaeijJcHazLGOfF2Qbse0Obz29rRt4hUt/FLUFAmvrPa'; // Default demo password: admin123
+
+function admin_username(): string {
+    return site_setting('admin_username', 'admin');
+}
+
+function admin_pass_hash(): string {
+    return site_setting('admin_pass_hash', ADMIN_PASS_HASH);
+}
 
 function admin_csrf_token(): string {
     if (!isset($_SESSION['csrf_admin'])) {
@@ -25,25 +35,27 @@ function admin_nav_items(): array {
         'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '<i class="fa-solid fa-phone"></i>'],
         'users' => ['label' => 'Users', 'href' => 'admin_users.php', 'icon' => '<i class="fa-solid fa-users"></i>'],
+        'settings' => ['label' => 'Settings', 'href' => 'admin_settings.php', 'icon' => '<i class="fa-solid fa-gear"></i>'],
     ];
 }
 
 function admin_handle_auth(): ?string {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-        $password = $_POST['password'] ?? '';
+        $username = trim((string)($_POST['username'] ?? ''));
+        $password = (string)($_POST['password'] ?? '');
         $tokenValid = hash_equals($_SESSION['csrf_admin'] ?? '', $_POST['csrf_token'] ?? '');
 
         if (!$tokenValid) {
             return 'Invalid security token. Please refresh and try again.';
         }
-        if (password_verify($password, ADMIN_PASS_HASH)) {
+        if (hash_equals(admin_username(), $username) && password_verify($password, admin_pass_hash())) {
             session_regenerate_id(true);
             $_SESSION['is_admin'] = true;
             $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
             header('Location: admin.php');
             exit;
         }
-        return 'Wrong password!';
+        return 'Wrong username or password!';
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
@@ -67,18 +79,21 @@ function admin_handle_auth(): ?string {
 function admin_show_login(?string $error = null): void {
     admin_csrf_token();
     $safeError = $error ? htmlspecialchars($error, ENT_QUOTES, 'UTF-8') : '';
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title><link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+    $logo = htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8');
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title>';
+    echo site_head_icons();
+    echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
-        <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="logo.png" alt="LyaiDeu"></div><h2 class="display"><i class="fa-solid fa-lock"></i> Admin Login</h2>';
+        <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div><h2 class="display"><i class="fa-solid fa-lock"></i> Admin Login</h2>';
     if ($safeError !== '') {
         echo "<p style='color:#c93a3a; font-weight:bold; margin-top:.8rem;'>$safeError</p>";
     }
     echo '<form method="POST" autocomplete="off">
         <input type="hidden" name="csrf_token" value="' . htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') . '">
-        <input type="password" name="password" placeholder="Enter Password" required autocomplete="current-password" style="width:100%; padding:12px; margin:15px 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem;">
+        <input type="text" name="username" placeholder="Username" required autocomplete="username" style="width:100%; padding:12px; margin:5px 0 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem; box-sizing:border-box;">
+        <input type="password" name="password" placeholder="Password" required autocomplete="current-password" style="width:100%; padding:12px; margin:15px 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem; box-sizing:border-box;">
         <button type="submit" name="login" class="btn btn-primary btn-block">Login to Dashboard</button>
     </form></div></body></html>';
     exit;
@@ -109,13 +124,14 @@ function admin_flash_banner(): void {
 function admin_page_start(string $pageTitle, string $activeNav, ?string $heading = null): void {
     $heading = $heading ?? $pageTitle;
     $navItems = admin_nav_items();
+    $logo = htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8');
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . ' | LyaiDeu Admin</title>';
-    echo '<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+    echo site_head_icons();
+    echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="logo.png" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
+    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
