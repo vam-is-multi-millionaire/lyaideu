@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS hotels (
   type VARCHAR(255) NOT NULL DEFAULT '',
   phone VARCHAR(20) NOT NULL DEFAULT '',
   emoji VARCHAR(50) NOT NULL DEFAULT '',
+  logo VARCHAR(500) NOT NULL DEFAULT '',
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -142,3 +143,5 @@ INSERT INTO order_items (order_id,dish_id,name,hotel,price,qty,line_total) VALUE
 -- Widen icon columns so Font Awesome class names (e.g. 'fa-pizza-slice') fit on existing installs.
 ALTER TABLE hotels MODIFY emoji VARCHAR(50) NOT NULL DEFAULT '';
 ALTER TABLE contacts MODIFY ico VARCHAR(50) NOT NULL DEFAULT '';
+-- Hotel logo image URL for the Hotels section cards.
+ALTER TABLE hotels ADD COLUMN logo VARCHAR(500) NOT NULL DEFAULT '';

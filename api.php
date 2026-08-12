@@ -13,7 +13,7 @@ try {
     )->fetchAll();
 
     $hotels = $pdo->query(
-        'SELECT id, name, type, phone, emoji
+        'SELECT id, name, type, phone, emoji, logo
          FROM hotels
          ORDER BY id'
     )->fetchAll();
