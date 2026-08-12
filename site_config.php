@@ -82,6 +82,33 @@ function lyaideu_ensure_settings_table(): bool {
     }
 }
 
+function lyaideu_ensure_messages_table(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS messages (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                user_id INT UNSIGNED NULL,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                phone VARCHAR(20) NOT NULL DEFAULT \'\',
+                subject VARCHAR(255) NOT NULL DEFAULT \'\',
+                body TEXT NOT NULL,
+                status VARCHAR(20) NOT NULL DEFAULT \'unread\',
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_messages_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 function site_logo_url(): string {
     return site_setting('site_logo', 'logo.png');
 }

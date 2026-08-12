@@ -11,6 +11,8 @@ $userCount = 0;
 $dishCount = 0;
 $hotelCount = 0;
 $contactCount = 0;
+$messageCount = 0;
+$unreadMessageCount = 0;
 
 try {
     $totalOrders = (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
@@ -19,6 +21,11 @@ try {
     $dishCount = (int)$pdo->query('SELECT COUNT(*) FROM dishes')->fetchColumn();
     $hotelCount = (int)$pdo->query('SELECT COUNT(*) FROM hotels')->fetchColumn();
     $contactCount = (int)$pdo->query('SELECT COUNT(*) FROM contacts')->fetchColumn();
+
+    if (lyaideu_ensure_messages_table()) {
+        $messageCount = (int)$pdo->query('SELECT COUNT(*) FROM messages')->fetchColumn();
+        $unreadMessageCount = (int)$pdo->query("SELECT COUNT(*) FROM messages WHERE status = 'unread'")->fetchColumn();
+    }
 
     foreach ($pdo->query('SELECT status, COUNT(*) AS cnt FROM orders GROUP BY status') as $row) {
         if (isset($orderCounts[$row['status']])) {
@@ -40,6 +47,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
         <div><strong><?= $orderCounts['Pending'] ?></strong><span>Pending</span></div>
         <div><strong><?= $userCount ?></strong><span>Registered Users</span></div>
         <div><strong><?= $dishCount ?></strong><span>Menu Items</span></div>
+        <div><strong><?= $unreadMessageCount ?></strong><span>Unread Messages</span></div>
     </div>
 
     <section class="admin-section">
@@ -51,6 +59,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
                 'dishes' => ['count' => $dishCount, 'desc' => 'Add, edit, or remove menu items'],
                 'hotels' => ['count' => $hotelCount, 'desc' => 'Manage partner restaurant listings'],
                 'contacts' => ['count' => $contactCount, 'desc' => 'Update service team phone numbers'],
+                'messages' => ['count' => $unreadMessageCount, 'desc' => 'Read messages from the Contact page'],
                 'users' => ['count' => $userCount, 'desc' => 'View registered customer accounts'],
             ];
             foreach ($cards as $key => $card):

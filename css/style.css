@@ -185,6 +185,19 @@ section{scroll-margin-top:96px;}
 .contact-num:hover{color:var(--orange-500);transform:scale(1.05);}
 .contact-card small{display:block;margin-top:.55rem;font-size:.78rem;font-weight:700;color:var(--muted);}
 
+/* --------- CONTACT MESSAGE FORM --------- */
+.contact-form-wrap{max-width:760px;margin:0 auto;}
+.contact-form{background:#fff;border:2px solid var(--orange-200);border-radius:18px;padding:2rem 2.2rem;box-shadow:var(--shadow-md);}
+.contact-form label{display:block;font-weight:800;font-size:.85rem;margin:0 0 .35rem;}
+.contact-form input,.contact-form textarea{width:100%;border:2px solid var(--orange-200);border-radius:10px;padding:.75rem 1rem;font:inherit;font-weight:600;margin-bottom:1.1rem;box-sizing:border-box;transition:.2s;background:#fff;}
+.contact-form input:focus,.contact-form textarea:focus{outline:none;border-color:var(--orange-500);box-shadow:0 0 0 5px rgba(231,102,8,.12);}
+.contact-form textarea{resize:vertical;}
+.contact-form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.contact-form-row input{margin-bottom:1.1rem;}
+.contact-submit{font-size:1.05rem;padding:.9rem 1.6rem;width:100%;box-shadow:0 5px 0 var(--orange-700);}
+.contact-form .contact-submit{width:100%;}
+@media (max-width:600px){.contact-form{padding:1.5rem 1.2rem}.contact-form-row{grid-template-columns:1fr;gap:0}}
+
 /* ---------------- FAQ / PRIVACY ---------------- */
 .faq-list{display:grid;gap:.8rem;max-width:820px;margin:0 auto;}
 .faq-item{background:#fff;border:2px solid var(--orange-100);border-radius:14px;box-shadow:var(--shadow-sm);
@@ -418,6 +431,18 @@ section{scroll-margin-top:96px;}
 .admin-hub-card strong{display:block;font-family:var(--font-display);font-size:1.6rem;color:var(--orange-700);margin-bottom:.25rem}
 .admin-hub-card p{margin:0;font-size:.82rem;color:var(--muted);font-weight:700;line-height:1.45}
 .admin-empty-note{grid-column:1/-1;text-align:center;color:var(--muted);padding:2rem;font-weight:700}
+.admin-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.admin-tab{padding:.5rem 1.1rem;border-radius:999px;border:2px solid var(--orange-200);background:#fff;font-weight:800;font-size:.85rem;color:var(--orange-900);text-decoration:none;transition:.2s}
+.admin-tab:hover{border-color:var(--orange-400)}
+.admin-tab.active{background:var(--orange-600);border-color:var(--orange-600);color:#fff;box-shadow:0 4px 0 var(--orange-700)}
+.message-card.message-unread{border-left:5px solid var(--orange-600);background:#fffaf5}
+.message-badge{display:inline-block;margin-left:.45rem;background:var(--orange-600);color:#fff;font-size:.65rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;padding:.22rem .55rem;border-radius:999px;vertical-align:middle}
+.message-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.message-inline-form{display:flex;gap:.5rem;align-items:center;margin:0}
+.message-inline-form .btn{margin:0}
+.btn-danger{background:#c93a3a;color:#fff;box-shadow:0 3px 0 #a02a2a}
+.btn-danger:hover{background:#b63232;transform:translateY(-1px)}
+.message-body{margin-top:.9rem;padding:1rem 1.1rem;background:var(--orange-50);border:1px solid var(--orange-100);border-radius:10px;color:var(--orange-950);font-weight:600;font-size:.92rem;line-height:1.6;white-space:pre-wrap}
 @media (max-width:900px){
   .admin-shell{grid-template-columns:1fr}
   .admin-sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--orange-100);padding:.85rem}

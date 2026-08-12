@@ -5,6 +5,7 @@ session_set_cookie_params([
 ]);
 session_start();
 if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
+if (!isset($_SESSION['csrf_contact'])) $_SESSION['csrf_contact'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'];
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -87,6 +88,32 @@ require_once __DIR__ . '/site_config.php';
                 <p class="section-sub">We're one call away, every single day.</p>
             </div>
             <div class="grid contact-grid" id="contact-grid"></div>
+        </div>
+    </section>
+
+    <section class="section section-white">
+        <div class="container">
+            <div class="section-head">
+                <p class="kicker"><i class="fa-solid fa-envelope"></i> We'd love to hear from you</p>
+                <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
+                <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
+            </div>
+            <div class="contact-form-wrap">
+                <form action="contact_send.php" method="POST" class="contact-form">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="contact-form-row">
+                        <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" placeholder="Full name" required></div>
+                        <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" placeholder="you@example.com" required></div>
+                    </div>
+                    <div class="contact-form-row">
+                        <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone']) ?>" placeholder="98XXXXXXXX"></div>
+                        <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
+                    </div>
+                    <label>Message</label>
+                    <textarea name="message" rows="5" placeholder="Tell us how we can help…" minlength="10" required></textarea>
+                    <button type="submit" class="btn btn-primary contact-submit"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
+                </form>
+            </div>
         </div>
     </section>
 </main>

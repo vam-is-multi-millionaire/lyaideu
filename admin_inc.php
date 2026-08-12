@@ -34,6 +34,7 @@ function admin_nav_items(): array {
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes.php', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '<i class="fa-solid fa-phone"></i>'],
+        'messages' => ['label' => 'Messages', 'href' => 'admin_messages.php', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
         'users' => ['label' => 'Users', 'href' => 'admin_users.php', 'icon' => '<i class="fa-solid fa-users"></i>'],
         'settings' => ['label' => 'Settings', 'href' => 'admin_settings.php', 'icon' => '<i class="fa-solid fa-gear"></i>'],
     ];
@@ -116,6 +117,8 @@ function admin_logout_button(): string {
 function admin_flash_banner(): void {
     if (isset($_GET['saved'])) {
         echo '<div class="flash-banner flash-success admin-flash"><i class="fa-solid fa-circle-check"></i> Changes saved successfully.</div>';
+    } elseif (isset($_GET['deleted'])) {
+        echo '<div class="flash-banner flash-success admin-flash"><i class="fa-solid fa-circle-check"></i> Message deleted.</div>';
     } elseif (isset($_GET['error'])) {
         echo '<div class="flash-banner flash-error admin-flash"><i class="fa-solid fa-circle-xmark"></i> ' . htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') . '</div>';
     }

@@ -91,6 +91,21 @@ CREATE TABLE IF NOT EXISTS settings (
   PRIMARY KEY (skey)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS messages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NOT NULL DEFAULT '',
+  subject VARCHAR(255) NOT NULL DEFAULT '',
+  body TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'unread',
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_messages_status (status),
+  CONSTRAINT fk_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO settings (skey, sval) VALUES
   ('site_logo', 'logo.png'),
   ('site_favicon', 'favicon.ico'),
