@@ -30,7 +30,7 @@ if ($featuredPdo instanceof PDO) {
     shuffle($featured['hotels']);
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
-    $featured['hotels'] = array_slice($featured['hotels'], 0, 6);
+    $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
 }
 
 $FEATURED_MART_ICONS = [

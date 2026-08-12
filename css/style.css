@@ -288,6 +288,12 @@ section{scroll-margin-top:96px;}
   .price{font-size:.95rem;}
   .btn-order{font-size:.68rem;padding:.38rem .5rem;}
   .dish-tag{top:4px;left:4px;font-size:.52rem;padding:.18rem .42rem;}
+  .hotels-grid{grid-template-columns:repeat(2,1fr);gap:.6rem;}
+  .hotel-card{padding:.95rem .55rem .85rem;gap:.5rem;}
+  .hotel-avatar{width:54px;height:54px;font-size:1.5rem;border-radius:12px;}
+  .hotel-card h3{font-size:.82rem;}
+  .hotel-card p{font-size:.66rem;overflow-wrap:anywhere;}
+  .hotel-call{font-size:.64rem;padding:.38rem .55rem;max-width:100%;}
 }
 
 /* ---------------- SMALL MOBILE POLISH ---------------- */
