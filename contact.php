@@ -4,14 +4,13 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
 if (!isset($_SESSION['csrf_contact'])) $_SESSION['csrf_contact'] = bin2hex(random_bytes(32));
-$user = $_SESSION['user'];
+$user = $_SESSION['user'] ?? null;
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
-$parts = preg_split('/\s+/', trim($user['name']));
-$firstName = $parts[0];
-$initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+$parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
+$firstName = $parts[0] ?? '';
+$initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
 ?>
 <!DOCTYPE html>
@@ -52,6 +51,7 @@ require_once __DIR__ . '/site_config.php';
             <li><a href="contact.php" class="nav-a active">Contact</a></li>
             <li><a href="faq.php" class="nav-a">FAQ</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
+            <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
                     <button class="profile-chip" id="profileChip" type="button">
@@ -72,6 +72,9 @@ require_once __DIR__ . '/site_config.php';
                     </div>
                 </div>
             </li>
+            <?php else: ?>
+            <li><a class="nav-a nav-cta" href="login.php"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <?php endif; ?>
         </ul>
     </nav>
 </header>
@@ -101,11 +104,11 @@ require_once __DIR__ . '/site_config.php';
                     <form action="contact_send.php" method="POST" class="contact-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
                         <div class="contact-form-row">
-                            <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" placeholder="Full name" required></div>
-                            <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" placeholder="you@example.com" required></div>
+                            <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name'] ?? '') ?>" placeholder="Full name" required></div>
+                            <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" placeholder="you@example.com" required></div>
                         </div>
                         <div class="contact-form-row">
-                            <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone']) ?>" placeholder="98XXXXXXXX"></div>
+                            <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="98XXXXXXXX"></div>
                             <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
                         </div>
                         <label>Message</label>

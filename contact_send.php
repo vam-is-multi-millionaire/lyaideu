@@ -4,7 +4,6 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: contact.php'); exit; }
 if (!hash_equals($_SESSION['csrf_contact'] ?? '', $_POST['csrf_token'] ?? '')) {
     http_response_code(403);
@@ -23,7 +22,7 @@ function flash_contact(string $type, string $msg): void {
     exit;
 }
 
-$user = $_SESSION['user'];
+$user = $_SESSION['user'] ?? [];
 $name = clean_text($_POST['name'] ?? '');
 $email = clean_email($_POST['email'] ?? '');
 $phone = clean_phone($_POST['phone'] ?? '');

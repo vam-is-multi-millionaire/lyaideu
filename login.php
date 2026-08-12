@@ -11,6 +11,10 @@ unset($_SESSION['flash']);
 $old = $_SESSION['old'] ?? ['name'=>'','email'=>'','phone'=>'','dob'=>''];
 unset($_SESSION['old']);
 $activeTab = (($_GET['tab'] ?? '') === 'signup') ? 'signup' : 'login';
+$next = trim((string)($_GET['next'] ?? ''));
+if ($next !== '' && (!preg_match('#^[A-Za-z0-9_\-.?&=]+$#', $next) || str_starts_with($next, '//') || strpos($next, ':') !== false || strpos($next, '..') !== false)) {
+    $next = '';
+}
 require_once __DIR__ . '/site_config.php';
 ?>
 <!DOCTYPE html>
@@ -57,6 +61,7 @@ require_once __DIR__ . '/site_config.php';
         <!-- LOGIN FORM -->
         <form class="auth-form <?= $activeTab === 'login' ? 'active' : '' ?>" id="form-login" action="auth.php" method="POST" novalidate>
             <input type="hidden" name="action" value="login">
+            <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
             <div class="field">
                 <label for="li-user">Username</label>
@@ -84,6 +89,7 @@ require_once __DIR__ . '/site_config.php';
         <!-- SIGNUP FORM -->
         <form class="auth-form <?= $activeTab === 'signup' ? 'active' : '' ?>" id="form-signup" action="auth.php" method="POST" novalidate>
             <input type="hidden" name="action" value="signup">
+            <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
             <div class="field">
                 <label for="su-name">Full Name</label>

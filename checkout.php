@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
+if (!isset($_SESSION['user'])) { header('Location: login.php?next=' . urlencode('checkout.php')); exit; }
 if (!isset($_SESSION['csrf_order'])) $_SESSION['csrf_order'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'];
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);

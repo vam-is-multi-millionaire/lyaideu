@@ -4,13 +4,12 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
-$user = $_SESSION['user'];
+$user = $_SESSION['user'] ?? null;
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
-$parts = preg_split('/\s+/', trim($user['name']));
-$firstName = $parts[0];
-$initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+$parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
+$firstName = $parts[0] ?? '';
+$initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
 ?>
 <!DOCTYPE html>
@@ -18,7 +17,7 @@ require_once __DIR__ . '/site_config.php';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LyaiDeu · Namaste, <?= htmlspecialchars($firstName) ?>!</title>
+<title><?= $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Food Delivery in Surkhet Valley' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,6 +50,7 @@ require_once __DIR__ . '/site_config.php';
             <li><a href="contact.php" class="nav-a">Contact</a></li>
             <li><a href="faq.php" class="nav-a">FAQ</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
+            <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
                     <button class="profile-chip" id="profileChip" type="button">
@@ -71,6 +71,9 @@ require_once __DIR__ . '/site_config.php';
                     </div>
                 </div>
             </li>
+            <?php else: ?>
+            <li><a class="nav-a nav-cta" href="login.php"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <?php endif; ?>
         </ul>
     </nav>
 </header>
@@ -86,7 +89,7 @@ require_once __DIR__ . '/site_config.php';
         <span class="float-emoji" style="top:26%;right:26%;font-size:2.1rem;"><i class="fa-solid fa-mug-saucer"></i></span>
         <div class="container hero-inner">
             <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</p>
-            <h1 class="display">Namaste <?= htmlspecialchars($firstName) ?>! <i class="fa-solid fa-hand"></i><br>Khaja time — <em>what's the craving?</em></h1>
+            <h1 class="display"><?= $user ? 'Namaste ' . htmlspecialchars($firstName) . '!' : 'Welcome to LyaiDeu!' ?> <i class="fa-solid fa-hand"></i><br>Khaja time — <em>what's the craving?</em></h1>
             <form class="search-bar" action="menu.php" method="get"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search momo, pizza, hotels…" aria-label="Search the menu"></form>
             <div class="hero-actions"><a class="btn btn-primary" href="menu.php"><i class="fa-solid fa-utensils"></i> Browse Menu</a><button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> Cart <span class="cart-count">0</span></button></div>
         </div>

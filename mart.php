@@ -4,13 +4,12 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
-$user = $_SESSION['user'];
+$user = $_SESSION['user'] ?? null;
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
-$parts = preg_split('/\s+/', trim($user['name']));
-$firstName = $parts[0];
-$initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+$parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
+$firstName = $parts[0] ?? '';
+$initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_mart_table();
 ?>
@@ -52,6 +51,7 @@ lyaideu_ensure_mart_table();
             <li><a href="contact.php" class="nav-a">Contact</a></li>
             <li><a href="faq.php" class="nav-a">FAQ</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
+            <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
                     <button class="profile-chip" id="profileChip" type="button">
@@ -72,6 +72,9 @@ lyaideu_ensure_mart_table();
                     </div>
                 </div>
             </li>
+            <?php else: ?>
+            <li><a class="nav-a nav-cta" href="login.php"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <?php endif; ?>
         </ul>
     </nav>
 </header>
