@@ -58,12 +58,12 @@ section{scroll-margin-top:96px;}
 .brand{font-family:var(--font-display);font-size:1.5rem;color:var(--orange-950);
        text-decoration:none;display:flex;align-items:center;gap:.4rem;letter-spacing:.5px;}
 .brand span{color:var(--orange-600);}
-.brand-logo{display:block;height:42px;width:auto;border-radius:10px;box-shadow:var(--shadow-sm);}
-.brand:hover .brand-logo{transform:translateY(-1px);}
-.brand-logo{transition:transform .2s ease,box-shadow .2s ease;}
+.brand-logo{display:block;height:42px;width:auto;}
+.brand:hover .brand-logo{transform:none;}
+.brand-logo{transition:none;}
 .footer-brand .brand-logo{height:46px;}
-.brand-mark .brand-logo{height:38px;border-radius:10px;box-shadow:0 4px 14px rgba(80,35,5,.35);}
-.admin-header .brand-logo{height:40px;border-radius:8px;}
+.brand-mark .brand-logo{height:38px;}
+.admin-header .brand-logo{height:40px;}
 
 .nav-links{display:flex;align-items:center;gap:.35rem;}
 .nav-links a.nav-a{padding:.55rem .95rem;border-radius:999px;font-weight:800;font-size:.95rem;
