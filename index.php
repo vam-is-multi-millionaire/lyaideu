@@ -11,6 +11,32 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+
+function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+
+$featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
+$featuredPdo = lyaideu_load_pdo();
+if ($featuredPdo instanceof PDO) {
+    try {
+        lyaideu_seed_catalog();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes')->fetchAll();
+        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img FROM mart_items')->fetchAll();
+        $featured['hotels'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo FROM hotels')->fetchAll();
+    } catch (Throwable $e) {
+        $featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
+    }
+    shuffle($featured['dishes']);
+    shuffle($featured['mart']);
+    shuffle($featured['hotels']);
+    $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
+    $featured['mart']   = array_slice($featured['mart'], 0, 12);
+    $featured['hotels'] = array_slice($featured['hotels'], 0, 6);
+}
+
+$FEATURED_MART_ICONS = [
+    'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
+    'staples'    => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie',
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -92,6 +118,93 @@ require_once __DIR__ . '/site_config.php';
             <h1 class="display"><?= $user ? 'Namaste ' . htmlspecialchars($firstName) . '!' : 'Welcome to LyaiDeu!' ?> <i class="fa-solid fa-hand"></i><br>Khaja time — <em>what's the craving?</em></h1>
             <form class="search-bar" action="menu.php" method="get"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search momo, pizza, hotels…" aria-label="Search the menu"></form>
             <div class="hero-actions"><a class="btn btn-primary" href="menu.php"><i class="fa-solid fa-utensils"></i> Browse Menu</a><button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> Cart <span class="cart-count">0</span></button></div>
+        </div>
+    </section>
+
+    <section id="featured" class="section">
+        <div class="container">
+            <div class="section-head">
+                <p class="kicker"><i class="fa-solid fa-shuffle"></i> Fresh every visit</p>
+                <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
+                <p class="section-sub">Tasty dishes, grocery essentials and partner kitchens — shuffled fresh on every refresh.</p>
+            </div>
+
+            <div class="featured-stack">
+                <?php if ($featured['dishes']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-utensils"></i> From the Menu</h3>
+                        <a class="see-all" href="menu.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid dish-grid home-grid" id="featuredDishes">
+                        <?php foreach ($featured['dishes'] as $fDish): ?>
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fDish['id'] ?>" data-type="dish">
+                            <div class="dish-art">
+                                <?php if ($fDish['img'] !== ''): ?>
+                                    <img src="<?= lyaideu_featured_e($fDish['img']) ?>" alt="<?= lyaideu_featured_e($fDish['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fDish['name']) ?></h3></div>
+                            <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fDish['price'] ?></span>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['mart']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-basket-shopping"></i> From the Mart</h3>
+                        <a class="see-all" href="mart.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid dish-grid home-grid" id="featuredMart">
+                        <?php foreach ($featured['mart'] as $fMart): ?>
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fMart['id'] ?>" data-type="mart">
+                            <div class="dish-art mart-art">
+                                <?php if ($fMart['img'] !== ''): ?>
+                                    <img src="<?= lyaideu_featured_e($fMart['img']) ?>" alt="<?= lyaideu_featured_e($fMart['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= $FEATURED_MART_ICONS[$fMart['cat']] ?? 'fa-basket-shopping' ?>"></i>
+                                <?php endif; ?>
+                                <?php if ($fMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fMart['tag']) ?></span><?php endif; ?>
+                            </div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
+                            <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fMart['price'] ?><?= $fMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fMart['unit']) . '</span>' : '' ?></span>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['hotels']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
+                        <a class="see-all" href="hotels.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid hotels-grid home-grid" id="featuredHotels">
+                        <?php foreach ($featured['hotels'] as $fHotel): ?>
+                        <div class="hotel-card reveal visible">
+                            <div class="hotel-avatar">
+                                <?php if ($fHotel['logo'] !== ''): ?>
+                                    <img class="hotel-logo" src="<?= lyaideu_featured_e($fHotel['logo']) ?>" alt="<?= lyaideu_featured_e($fHotel['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= lyaideu_featured_e($fHotel['emoji'] !== '' ? $fHotel['emoji'] : 'fa-hotel') ?>"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hotel-info"><h3><?= lyaideu_featured_e($fHotel['name']) ?></h3><p><?= lyaideu_featured_e($fHotel['type']) ?></p></div>
+                            <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> <?= lyaideu_featured_e($fHotel['phone']) ?></a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
     </section>
 

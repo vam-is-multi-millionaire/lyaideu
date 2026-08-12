@@ -13,8 +13,7 @@ function emojisToIcons(s){s=String(s||'').replace(/\uFE0F/g,'');return s.replace
 function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.className='toast';document.body.appendChild(e)}e.innerHTML=msg;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2800)}
 
 document.addEventListener('DOMContentLoaded',()=>{
-  initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();
-  $$('.product-pg .add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id),b.dataset.type||'dish')));
+  initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();
   if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||document.body.hasAttribute('data-needs-catalog'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
@@ -31,14 +30,14 @@ function renderDishes(dishes){
   const grid=$('#menu-grid');if(!grid)return;const fav=getFav();
   grid.innerHTML=dishes.map(d=>{
     const id=Number(d.id),name=esc(d.name),hotel=esc(d.hotel),desc=esc(d.desc),tag=esc(d.tag),img=esc(d.img),cat=esc(d.cat),phone=esc(d.phone);
+    const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:`<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>`;
     return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
-      <div class="dish-art"><img src="${img}" alt="${name}" loading="lazy">
+      <div class="dish-art">${art}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
       <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
-  $$('.add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id))));
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=dish&id='+Number(c.dataset.id)}));
   applyFilters();
 }
@@ -59,7 +58,6 @@ function renderMart(items){
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div></article>`;
   }).join('');
-  $$('#mart-grid .add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id),b.dataset.type)));
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=mart&id='+Number(c.dataset.id)}));
   applyMartFilters();
 }
@@ -99,6 +97,8 @@ function renderCart(){
 function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open')}}
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open')}
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
+function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;addToCart(Number(b.dataset.id),b.dataset.type||'dish')})}
+function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href='product.php?type='+(card.dataset.type||'dish')+'&id='+card.dataset.id})}
 function toggleFav(id,b){let f=getFav();if(f.includes(id)){f=f.filter(x=>x!==id);b.classList.remove('active');b.innerHTML='<i class="fa-regular fa-heart"></i>';toast('Removed from favorites')}else{f.push(id);b.classList.add('active');b.innerHTML='<i class="fa-solid fa-heart"></i>';toast('<i class="fa-solid fa-heart"></i> Added to favorites')}saveFav(f)}
 function applyFilters(){
   const cards=$$('.dish-card'),sort=$('#sortMenu')?.value||'default';

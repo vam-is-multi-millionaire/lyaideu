@@ -7,7 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 try {
-    lyaideu_ensure_mart_table();
+    lyaideu_seed_catalog();
 
     $dishes = $pdo->query(
         'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img
