@@ -14,9 +14,12 @@ function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.c
 
 document.addEventListener('DOMContentLoaded',()=>{
   initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();
-  if($('#menu-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
+  if($('#menu-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
-    if($('#menu-grid')){renderDishes(allDishes);renderHotels(d.hotels||[]);renderContacts(d.contacts||[]);initMenuFilters();startLiveCatalogSync();}
+    if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
+    if($('#hotels-grid'))renderHotels(d.hotels||[]);
+    if($('#contact-grid'))renderContacts(d.contacts||[]);
+    if($('#menu-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
     if($('#checkoutForm'))initCheckout();
   }).catch(()=>toast('<i class="fa-solid fa-triangle-exclamation"></i> Could not load menu data.'));
 });
@@ -76,7 +79,7 @@ function applyFilters(){
   if($('#emptyState'))$('#emptyState').style.display=filtered.length?'none':'block';
 }
 function startLiveCatalogSync(){
-  if(window.FE_LIVE_SYNC||!$('#menu-grid'))return; window.FE_LIVE_SYNC=true;
+  if(window.FE_LIVE_SYNC||(!$('#menu-grid')&&!$('#hotels-grid')&&!$('#contact-grid')))return; window.FE_LIVE_SYNC=true;
   let lastSignature='';
   const sync=()=>fetch('api.php?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
     const sig=JSON.stringify([d.dishes||[],d.hotels||[],d.contacts||[]]);
@@ -89,7 +92,7 @@ function startLiveCatalogSync(){
   }).catch(()=>{});
   setInterval(sync,5000);
 }
-function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;applyFilters()}));$('#dishSearch')?.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()});$('#sortMenu')?.addEventListener('change',applyFilters)}
+function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;applyFilters()}));const s=$('#dishSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()})}$('#sortMenu')?.addEventListener('change',applyFilters);if(searchQuery)applyFilters()}
 function initCheckout(){
   const form=$('#checkoutForm');if(!form)return;let promo='';
   function update(){

@@ -93,6 +93,22 @@ section{scroll-margin-top:96px;}
 .search-bar:focus-within{border-color:var(--orange-500);box-shadow:0 0 0 5px rgba(231,102,8,.14);}
 .search-bar input{flex:1;border:0;outline:none;background:transparent;font:inherit;font-weight:700;padding:.6rem .3rem;}
 
+/* --------- BROWSE CARDS (home) --------- */
+.browse-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.4rem;}
+.browse-card{display:flex;flex-direction:column;gap:.55rem;background:#fff;border:2px solid var(--orange-100);
+             border-radius:16px;padding:1.7rem 1.5rem;text-decoration:none;color:inherit;
+             box-shadow:var(--shadow-sm);transition:.25s;}
+.browse-card:hover{transform:translateY(-5px);border-color:var(--orange-300);box-shadow:var(--shadow-md);}
+.browse-ico{font-size:2rem;color:var(--orange-600);}
+.browse-card h3{font-family:var(--font-display);font-weight:400;font-size:1.25rem;color:var(--orange-950);}
+.browse-card p{font-size:.9rem;font-weight:600;color:var(--muted);}
+.browse-link{margin-top:auto;font-weight:900;color:var(--orange-700);display:inline-flex;align-items:center;gap:.4rem;text-transform:uppercase;letter-spacing:.06em;font-size:.78rem;}
+.browse-card:hover .browse-link{color:var(--orange-500);}
+
+/* --------- MENU PAGE TOOLBAR --------- */
+.menu-tools{display:flex;gap:.7rem;align-items:center;}
+.menu-search{max-width:none;min-width:280px;}
+
 /* ---------------- SECTIONS ---------------- */
 .section{padding:3.4rem 1.25rem;}
 .section-white{background:#fff;}
@@ -439,7 +455,7 @@ section{scroll-margin-top:96px;}
 .admin-order-items{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.admin-order-items span{background:var(--orange-50);border:1px solid var(--orange-200);border-radius:999px;padding:.4rem .65rem;font-size:.78rem;font-weight:800}
 .admin-save-btn{position:sticky;bottom:1rem;z-index:5}.admin-card input[readonly]{background:#faf4ee}
 .flash-error{background:#ffe1e1!important;color:#8b2525}.flash-success{background:var(--orange-100)!important;color:var(--orange-900)}
-@media(max-width:760px){.checkout-grid{grid-template-columns:1fr}.menu-toolbar{align-items:stretch;flex-direction:column}.sort-select{width:100%}.order-card-head,.admin-order-card .order-card-head{flex-direction:column}.status-form{width:100%}.status-form select{flex:1}.success-actions{flex-direction:column}.hero-actions{flex-wrap:wrap}.admin-actions{flex-wrap:wrap}.admin-header{padding:1rem}.cart-drawer{width:100%}}
+@media(max-width:760px){.checkout-grid{grid-template-columns:1fr}.menu-toolbar{align-items:stretch;flex-direction:column}.menu-tools{flex-direction:column;align-items:stretch;width:100%}.menu-search{min-width:0;width:100%}.sort-select{width:100%}.order-card-head,.admin-order-card .order-card-head{flex-direction:column}.status-form{width:100%}.status-form select{flex:1}.success-actions{flex-direction:column}.hero-actions{flex-wrap:wrap}.admin-actions{flex-wrap:wrap}.admin-header{padding:1rem}.cart-drawer{width:100%}}
 
 /* ==========================================================
    V3 POLISH — consistent real buttons + live data updates

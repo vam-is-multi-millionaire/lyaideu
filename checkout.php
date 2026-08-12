@@ -13,11 +13,11 @@ require_once __DIR__ . '/site_config.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head><body class="checkout-body">
-<header class="topbar"><nav class="nav"><a class="brand" href="index.php"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"> Lyai<span>Deu</span></a><a class="btn btn-outline" href="index.php#menu"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
+<header class="topbar"><nav class="nav"><a class="brand" href="index.php"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"> Lyai<span>Deu</span></a><a class="btn btn-outline" href="menu.php"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
 <main class="checkout-page container">
   <div class="section-head"><p class="kicker"><i class="fa-solid fa-receipt"></i> Secure checkout</p><h1 class="display">Almost there, <?= htmlspecialchars($user['name']) ?>!</h1><p class="section-sub">Review your items, add delivery details, and place the order.</p></div>
   <?php if ($flash): ?><div class="flash-banner flash-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['msg'] ?></div><?php endif; ?>
-  <div id="checkoutEmpty" class="empty-state"><span class="big"><i class="fa-solid fa-cart-shopping"></i></span><p>Your cart is empty.</p><a class="btn btn-primary" href="index.php#menu">Browse Menu</a></div>
+  <div id="checkoutEmpty" class="empty-state"><span class="big"><i class="fa-solid fa-cart-shopping"></i></span><p>Your cart is empty.</p><a class="btn btn-primary" href="menu.php">Browse Menu</a></div>
   <form id="checkoutForm" action="order_save.php" method="POST" class="checkout-grid">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_order']) ?>">
     <input type="hidden" name="cart_json" id="cartJson"><input type="hidden" name="promo" id="promoHidden">

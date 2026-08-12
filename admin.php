@@ -69,7 +69,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
     <section class="admin-section admin-quick-actions">
         <h2><i class="fa-solid fa-globe"></i> Website</h2>
         <div class="hero-actions">
-            <a class="btn btn-primary" href="index.php#menu" target="_blank"><i class="fa-solid fa-utensils"></i> Preview Menu</a>
+            <a class="btn btn-primary" href="menu.php" target="_blank"><i class="fa-solid fa-utensils"></i> Preview Menu</a>
             <a class="btn btn-outline" href="index.php" target="_blank">Open Website</a>
             <a class="btn btn-outline" href="admin_settings.php"><i class="fa-solid fa-gear"></i> Settings</a>
         </div>
