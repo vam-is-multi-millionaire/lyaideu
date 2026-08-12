@@ -11,7 +11,7 @@ require_once __DIR__ . '/site_config.php';
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head><body class="checkout-body">
 <header class="topbar"><nav class="nav"><a class="brand" href="index.php"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"> Lyai<span>Deu</span></a><a class="btn btn-outline" href="menu.php"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
 <main class="checkout-page container">
