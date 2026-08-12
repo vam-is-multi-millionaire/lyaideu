@@ -27,7 +27,8 @@
 
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-html,body{overflow-x:hidden;}
+html{overflow-x:clip;}
+body{overflow-x:clip;}
 img{max-width:100%;}
 body{font-family:var(--font-body);color:var(--ink);background:var(--orange-50);line-height:1.55;}
 ul{list-style:none;}
@@ -55,8 +56,18 @@ section{scroll-margin-top:96px;}
 .topbar{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);
         border-bottom:2px solid var(--orange-100);transition:box-shadow .3s;}
 .topbar.scrolled{box-shadow:var(--shadow-sm);}
+.topbar.scrolled .nav{padding-top:.55rem;padding-bottom:.55rem;}
+.topbar.scrolled .nav-search{box-shadow:0 6px 16px rgba(80,35,5,.12);}
 .nav{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-     gap:1rem;padding:.8rem 1.25rem;}
+     gap:1rem;padding:.8rem 1.25rem;transition:padding .3s;}
+.nav-search{display:flex;align-items:center;gap:.55rem;background:#fff;border:2px solid var(--orange-200);
+            border-radius:999px;padding:.26rem .4rem .26rem .95rem;max-width:300px;flex:1 1 260px;min-width:0;
+            box-shadow:var(--shadow-sm);transition:.25s;}
+.nav-search:focus-within{border-color:var(--orange-500);box-shadow:0 0 0 4px rgba(231,102,8,.14);}
+.nav-search .search-ico{color:var(--orange-500);font-size:.9rem;display:inline-flex;}
+.nav-search input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;
+                  font-weight:700;font-size:.9rem;padding:.4rem .1rem;color:var(--ink);}
+.nav-search input::placeholder{color:var(--muted);opacity:.85;}
 .brand{font-family:var(--font-display);font-size:1.5rem;color:var(--orange-950);
        text-decoration:none;display:flex;align-items:center;gap:.4rem;letter-spacing:.5px;}
 .brand span{color:var(--orange-600);}
@@ -270,6 +281,7 @@ section{scroll-margin-top:96px;}
              border-bottom:2px solid var(--orange-100);box-shadow:var(--shadow-md);}
   .nav-links.open{display:flex;}
   .nav-links a.nav-a{display:block;text-align:center;}
+  .nav-search{max-width:380px;}
   .hero{padding-top:2.6rem;}
   .float-emoji{font-size:2rem !important;opacity:.5;}
   .footer-grid{grid-template-columns:1fr 1fr;}
@@ -294,6 +306,8 @@ section{scroll-margin-top:96px;}
   .hotel-card h3{font-size:.82rem;}
   .hotel-card p{font-size:.66rem;overflow-wrap:anywhere;}
   .hotel-call{font-size:.64rem;padding:.38rem .55rem;max-width:100%;}
+  .nav{flex-wrap:wrap;row-gap:.55rem;}
+  .nav-search{order:3;flex:1 1 100%;max-width:none;padding:.3rem .45rem .3rem 1rem;}
 }
 
 /* ---------------- SMALL MOBILE POLISH ---------------- */
