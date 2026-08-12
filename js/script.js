@@ -14,7 +14,8 @@ function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.c
 
 document.addEventListener('DOMContentLoaded',()=>{
   initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();
-  if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
+  $$('.product-pg .add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id),b.dataset.type||'dish')));
+  if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||document.body.hasAttribute('data-needs-catalog'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
@@ -38,6 +39,7 @@ function renderDishes(dishes){
       <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('.add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id))));
+  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=dish&id='+Number(c.dataset.id)}));
   applyFilters();
 }
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('')}
@@ -58,6 +60,7 @@ function renderMart(items){
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div></article>`;
   }).join('');
   $$('#mart-grid .add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id),b.dataset.type)));
+  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=mart&id='+Number(c.dataset.id)}));
   applyMartFilters();
 }
 function applyMartFilters(){
@@ -80,7 +83,7 @@ function applyMartFilters(){
 }
 function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;applyMartFilters()}));const s=$('#martSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters)}
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
-function addToCart(id,type){const d=findItem(id,type);if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i)i.qty=Math.min(20,i.qty+1);else c.push({id,type,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');openCart();}
+function addToCart(id,type,openDrawer){const d=findItem(id,type);if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i)i.qty=Math.min(20,i.qty+1);else c.push({id,type,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.reduce((a,x)=>a+x.qty,0);countEls.forEach(e=>e.textContent=count);if(!box)return;
