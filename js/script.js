@@ -2,7 +2,7 @@
 window.FE_VERSION='v3';
 (function(){'use strict';
 const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
-let currentCat='all',searchQuery='',allDishes=[]; const CART_KEY='fe_cart',FAV_KEY='fe_favorites';
+let currentCat='all',searchQuery='',allDishes=[],allMart=[]; const CART_KEY='fe_cart',FAV_KEY='fe_favorites';
 const getCart=()=>JSON.parse(localStorage.getItem(CART_KEY)||'[]'); const saveCart=c=>{localStorage.setItem(CART_KEY,JSON.stringify(c));renderCart();};
 const getFav=()=>JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); const saveFav=f=>localStorage.setItem(FAV_KEY,JSON.stringify(f));
 function esc(v){return String(v??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));}
@@ -14,14 +14,16 @@ function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.c
 
 document.addEventListener('DOMContentLoaded',()=>{
   initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();
-  if($('#menu-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
+  if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
+    allMart=d.mart||[];
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
+    if($('#mart-grid')){renderMart(allMart);initMartFilters();}
     if($('#hotels-grid'))renderHotels(d.hotels||[]);
     if($('#contact-grid'))renderContacts(d.contacts||[]);
-    if($('#menu-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
+    if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
     if($('#checkoutForm'))initCheckout();
-  }).catch(()=>toast('<i class="fa-solid fa-triangle-exclamation"></i> Could not load menu data.'));
+  }).catch(()=>toast('<i class="fa-solid fa-triangle-exclamation"></i> Could not load catalog data.'));
 });
 
 function renderDishes(dishes){
@@ -40,17 +42,56 @@ function renderDishes(dishes){
 }
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('')}
 function renderContacts(cs){const g=$('#contact-grid');if(!g)return;g.innerHTML=cs.map(c=>`<div class="contact-card reveal visible"><span class="contact-ico">${faIcon(c.ico)}</span><h3>${esc(c.role)}</h3><p class="contact-person">${esc(c.person)}</p><a class="contact-num" href="tel:+977${esc(c.phone)}">${esc(c.phone)}</a><small>${esc(c.note)}</small></div>`).join('')}
-function addToCart(id){const d=allDishes.find(x=>Number(x.id)===id);if(!d)return;let c=getCart(),r=c.find(x=>Number(x.id)===id);if(r)r.qty=Math.min(20,r.qty+1);else c.push({id,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');openCart();}
-function changeQty(id,delta){let c=getCart(),r=c.find(x=>Number(x.id)===id);if(!r)return;r.qty+=delta;if(r.qty<=0)c=c.filter(x=>Number(x.id)!==id);saveCart(c)}
+const MART_CAT_ICONS={'vegetables':'fa-carrot','fruits':'fa-apple-whole','dairy':'fa-cow','staples':'fa-bowl-rice','oils':'fa-mortar-pestle','snacks':'fa-cookie'};
+function martCatIcon(cat){const ic=MART_CAT_ICONS[cat]||'fa-basket-shopping';return '<i class="fa-solid '+ic+'"></i>';}
+function renderMart(items){
+  const grid=$('#mart-grid');if(!grid)return;
+  grid.innerHTML=items.map(m=>{
+    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),unit=esc(m.unit);
+    const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:martCatIcon(cat);
+    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
+      <div class="dish-art mart-art">${art}
+      ${tag?`<span class="dish-tag">${tag}</span>`:''}
+      </div>
+      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
+      <p class="dish-desc">${desc}</p>
+      <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
+      <button class="btn-order add-cart" data-id="${id}" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div></article>`;
+  }).join('');
+  $$('#mart-grid .add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id),b.dataset.type)));
+  applyMartFilters();
+}
+function applyMartFilters(){
+  const cards=$$('#mart-grid .dish-card'),sort=$('#sortMart')?.value||'default';
+  let filtered=cards.filter(c=>(currentCat==='all'||c.dataset.cat===currentCat)&&(!searchQuery||c.dataset.search.includes(searchQuery)));
+  if(sort==='price-low'||sort==='price-high'){
+    filtered.sort((a,b)=>{
+      const pa=Number(allMart.find(d=>String(d.id)===a.dataset.id)?.price)||0;
+      const pb=Number(allMart.find(d=>String(d.id)===b.dataset.id)?.price)||0;
+      return sort==='price-low' ? pa-pb : pb-pa;
+    });
+  }
+  const grid=$('#mart-grid');
+  if(grid){
+    filtered.forEach(card=>grid.appendChild(card));
+    cards.filter(c=>!filtered.includes(c)).forEach(card=>card.style.display='none');
+    filtered.forEach(card=>card.style.display='');
+  }
+  if($('#martEmpty'))$('#martEmpty').style.display=filtered.length?'none':'block';
+}
+function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;applyMartFilters()}));const s=$('#martSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters)}
+function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
+function addToCart(id,type){const d=findItem(id,type);if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i)i.qty=Math.min(20,i.qty+1);else c.push({id,type,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');openCart();}
+function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.reduce((a,x)=>a+x.qty,0);countEls.forEach(e=>e.textContent=count);if(!box)return;
   if(!c.length){box.innerHTML='';empty?.classList.add('show');$('#checkoutBtn')?.classList.add('disabled')}
-  else{empty?.classList.remove('show');const map=new Map(allDishes.map(d=>[Number(d.id),d]));
-    box.innerHTML=c.map(r=>{const d=map.get(Number(r.id));if(!d)return '';return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
-    $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),Number(b.dataset.q))));
+  else{empty?.classList.remove('show');
+    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type);if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
+    $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q))));
     $('#checkoutBtn')?.classList.remove('disabled');
   }
-  const sub=c.reduce((a,r)=>{const d=allDishes.find(x=>Number(x.id)===Number(r.id));return a+(d?Number(d.price)*r.qty:0)},0);
+  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type);return a+(d?Number(d.price)*r.qty:0)},0);
   if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;if($('#cartTotal'))$('#cartTotal').textContent='Rs. '+(sub+(sub?50:0));
 }
 function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open')}}
@@ -79,15 +120,15 @@ function applyFilters(){
   if($('#emptyState'))$('#emptyState').style.display=filtered.length?'none':'block';
 }
 function startLiveCatalogSync(){
-  if(window.FE_LIVE_SYNC||(!$('#menu-grid')&&!$('#hotels-grid')&&!$('#contact-grid')))return; window.FE_LIVE_SYNC=true;
+  if(window.FE_LIVE_SYNC||(!$('#menu-grid')&&!$('#mart-grid')&&!$('#hotels-grid')&&!$('#contact-grid')))return; window.FE_LIVE_SYNC=true;
   let lastSignature='';
   const sync=()=>fetch('api.php?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
-    const sig=JSON.stringify([d.dishes||[],d.hotels||[],d.contacts||[]]);
+    const sig=JSON.stringify([d.dishes||[],d.mart||[],d.hotels||[],d.contacts||[]]);
     if(!lastSignature){lastSignature=sig;return;}
     if(sig!==lastSignature){
-      lastSignature=sig;allDishes=d.dishes||[];
-      renderDishes(allDishes);renderHotels(d.hotels||[]);renderContacts(d.contacts||[]);
-      toast('<i class="fa-solid fa-arrows-rotate"></i> Menu updated automatically');
+      lastSignature=sig;allDishes=d.dishes||[];allMart=d.mart||[];
+      renderDishes(allDishes);renderMart(allMart);renderHotels(d.hotels||[]);renderContacts(d.contacts||[]);
+      toast('<i class="fa-solid fa-arrows-rotate"></i> Catalog updated automatically');
     }
   }).catch(()=>{});
   setInterval(sync,5000);
@@ -96,10 +137,10 @@ function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>c
 function initCheckout(){
   const form=$('#checkoutForm');if(!form)return;let promo='';
   function update(){
-    const c=getCart(),map=new Map(allDishes.map(d=>[Number(d.id),d]));let sub=0;const box=$('#checkoutItems');
+    const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}
     $('#checkoutEmpty')?.classList.remove('show');
-    box.innerHTML=c.map(r=>{const d=map.get(Number(r.id));if(!d)return '';const line=d.price*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('');
+    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type);if(!d)return '';const line=d.price*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('');
     const delivery=50,discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?50:0;$('#coSubtotal').textContent='Rs. '+sub;$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);$('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
   }
   $('#promoBtn')?.addEventListener('click',()=>{promo=$('#promoInput').value.trim().toUpperCase();$('#promoMsg').innerHTML=(promo==='LYAIDEU'||promo==='FOODXPRESS')?'<i class="fa-solid fa-circle-check"></i> Free delivery applied!':'<i class="fa-solid fa-circle-xmark"></i> Invalid demo code. Try LYAIDEU.';update()});
@@ -132,7 +173,7 @@ function footerYear(){const y=$('#year');if(y)y.textContent=new Date().getFullYe
 (function(){
  if(window.FE_LIVE_REFRESH_INITIALIZED)return; window.FE_LIVE_REFRESH_INITIALIZED=true;
  let last='';
- async function refresh(){try{const r=await fetch('api.php?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],hotels:d.hotels||[],contacts:d.contacts||[]});
+ async function refresh(){try{const r=await fetch('api.php?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],mart:d.mart||[],hotels:d.hotels||[],contacts:d.contacts||[]});
   if(last&&sig!==last){if(typeof allDishes!=='undefined'){allDishes=d.dishes||[];if(document.querySelector('#menu-grid'))renderDishes(allDishes);if(document.querySelector('#hotels-grid'))renderHotels(d.hotels||[]);if(document.querySelector('#contact-grid'))renderContacts(d.contacts||[]);}window.dispatchEvent(new CustomEvent('lyaideu:datachanged',{detail:d}));}
   last=sig;const el=document.querySelector('[data-live-indicator]');if(el)el.classList.add('live-on');
  }catch(e){}}

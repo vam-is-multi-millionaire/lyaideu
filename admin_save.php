@@ -39,6 +39,11 @@ function valid_category($value): string {
     return in_array($value, $allowed, true) ? $value : 'snacks';
 }
 
+function valid_mart_category($value): string {
+    $allowed = ['vegetables', 'fruits', 'dairy', 'staples', 'oils', 'snacks'];
+    return in_array($value, $allowed, true) ? $value : 'vegetables';
+}
+
 function uploaded_file_field(string $group, string|int $index, string $field): ?array {
     $files = $_FILES[$group] ?? null;
     if (!is_array($files) || !isset($files['name'][$index][$field])) {
@@ -109,7 +114,7 @@ function handle_hotel_logo(string $existingLogo, array $post, ?array $file): str
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['dishes', 'hotels', 'contacts'];
+$allowedSections = ['dishes', 'mart', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin.php?error=' . urlencode('Unknown section.'));
@@ -173,6 +178,61 @@ try {
                 ':tag' => clean_text($newDish['tag'] ?? ''),
                 ':descr' => clean_text($newDish['desc'] ?? ''),
                 ':img' => clean_url($newDish['img'] ?? ''),
+            ]);
+        }
+    }
+
+    if ($section === 'mart') {
+        $deleteItem = $pdo->prepare('DELETE FROM mart_items WHERE id = ?');
+        $updateItem = $pdo->prepare(
+            'UPDATE mart_items
+             SET name = :name, cat = :cat, unit = :unit, price = :price, tag = :tag,
+                 `desc` = :descr, img = :img
+             WHERE id = :id'
+        );
+        $insertItem = $pdo->prepare(
+            'INSERT INTO mart_items (name, cat, unit, price, tag, `desc`, img)
+             VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
+        );
+
+        foreach (($_POST['mart'] ?? []) as $m) {
+            $id = (int)($m['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($m['delete'])) {
+                $deleteItem->execute([$id]);
+                continue;
+            }
+
+            $name = clean_text($m['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $updateItem->execute([
+                ':id' => $id,
+                ':name' => $name,
+                ':cat' => valid_mart_category($m['cat'] ?? 'vegetables'),
+                ':unit' => clean_text($m['unit'] ?? ''),
+                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':tag' => clean_text($m['tag'] ?? ''),
+                ':descr' => clean_text($m['desc'] ?? ''),
+                ':img' => clean_url($m['img'] ?? ''),
+            ]);
+        }
+
+        $newItem = $_POST['new_mart'] ?? [];
+        if (clean_text($newItem['name'] ?? '') !== '') {
+            $insertItem->execute([
+                ':name' => clean_text($newItem['name'] ?? ''),
+                ':cat' => valid_mart_category($newItem['cat'] ?? 'vegetables'),
+                ':unit' => clean_text($newItem['unit'] ?? ''),
+                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':tag' => clean_text($newItem['tag'] ?? ''),
+                ':descr' => clean_text($newItem['desc'] ?? ''),
+                ':img' => clean_url($newItem['img'] ?? ''),
             ]);
         }
     }

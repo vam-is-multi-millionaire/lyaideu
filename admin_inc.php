@@ -32,6 +32,7 @@ function admin_nav_items(): array {
         'dashboard' => ['label' => 'Dashboard', 'href' => 'admin.php', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders.php', 'icon' => '<i class="fa-solid fa-box"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes.php', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
+        'mart' => ['label' => 'Mart', 'href' => 'admin_mart.php', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
         'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '<i class="fa-solid fa-phone"></i>'],
         'messages' => ['label' => 'Messages', 'href' => 'admin_messages.php', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
@@ -157,6 +158,7 @@ function admin_page_end(): void {
 function admin_section_redirect(string $section, bool $saved, ?string $error = null): void {
     $routes = [
         'dishes' => 'admin_dishes.php',
+        'mart' => 'admin_mart.php',
         'hotels' => 'admin_hotels.php',
         'contacts' => 'admin_contacts.php',
     ];

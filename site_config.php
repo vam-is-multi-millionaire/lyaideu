@@ -82,6 +82,62 @@ function lyaideu_ensure_settings_table(): bool {
     }
 }
 
+function lyaideu_ensure_mart_table(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $stmt = $pdo->query("SHOW TABLES LIKE 'mart_items'");
+        $exists = $stmt && (bool)$stmt->fetchColumn();
+        if (!$exists) {
+            $pdo->exec(
+                'CREATE TABLE mart_items (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    cat VARCHAR(50) NOT NULL,
+                    unit VARCHAR(50) NOT NULL DEFAULT \'\',
+                    price INT UNSIGNED NOT NULL DEFAULT 0,
+                    tag VARCHAR(100) NOT NULL DEFAULT \'\',
+                    `desc` TEXT NOT NULL,
+                    img VARCHAR(500) NOT NULL DEFAULT \'\',
+                    PRIMARY KEY (id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $seed = $pdo->prepare(
+                'INSERT INTO mart_items (name, cat, unit, price, tag, `desc`, img)
+                 VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
+            );
+            $defaults = [
+                ['Fresh Potatoes', 'vegetables', 'kg', 60, '', 'Locally grown potatoes, perfect for aloo tareko.', ''],
+                ['Onions', 'vegetables', 'kg', 55, '', 'Sweet red onions for everyday cooking.', ''],
+                ['Ripe Tomatoes', 'vegetables', '500 g', 45, '', 'Juicy vine-ripened tomatoes straight from the farm.', ''],
+                ['Red Apples', 'fruits', 'kg', 240, '', 'Crisp and sweet red apples, great for the whole family.', ''],
+                ['Bananas', 'fruits', 'dozen', 120, '', 'Naturally ripe bananas, ready to eat.', ''],
+                ['Fresh Milk', 'dairy', 'litre', 95, '', 'Farm-fresh full cream milk delivered daily.', ''],
+                ['Curd (Dahi)', 'dairy', '500 g', 150, '', 'Thick, creamy set dahi made every morning.', ''],
+                ['Basmati Rice', 'staples', 'kg', 185, '', 'Premium aged basmati, long grain and aromatic.', ''],
+                ['Cooking Oil', 'oils', 'litre', 220, '', 'Pure refined sunflower oil for all your cooking.', ''],
+                ['Parle-G Biscuits', 'snacks', 'pack', 40, '', 'The classic crunchy glucose biscuit everyone loves.', ''],
+            ];
+            foreach ($defaults as $row) {
+                $seed->execute([
+                    ':name' => $row[0],
+                    ':cat' => $row[1],
+                    ':unit' => $row[2],
+                    ':price' => $row[3],
+                    ':tag' => $row[4],
+                    ':descr' => $row[5],
+                    ':img' => $row[6],
+                ]);
+            }
+        }
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 function lyaideu_ensure_messages_table(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {

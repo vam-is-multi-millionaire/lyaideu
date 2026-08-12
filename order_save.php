@@ -18,34 +18,56 @@ if (!is_array($cart) || empty($cart)) {
 $items = [];
 $subtotal = 0;
 $dishStmt = $pdo->prepare('SELECT id, name, hotel, price FROM dishes WHERE id = ? LIMIT 1');
+$martStmt = $pdo->prepare('SELECT id, name, price FROM mart_items WHERE id = ? LIMIT 1');
 
 foreach ($cart as $row) {
     $id = (int)($row['id'] ?? 0);
     $qty = max(1, min(20, (int)($row['qty'] ?? 1)));
+    $type = ($row['type'] ?? '') === 'mart' ? 'mart' : 'dish';
     if ($id <= 0) {
         continue;
     }
 
-    $dishStmt->execute([$id]);
-    $d = $dishStmt->fetch();
-    if (!$d) {
-        continue;
+    if ($type === 'mart') {
+        $martStmt->execute([$id]);
+        $d = $martStmt->fetch();
+        if (!$d) {
+            continue;
+        }
+        $item = [
+            'dish_id' => null,
+            'name' => $d['name'],
+            'hotel' => 'LyaiDeu Mart',
+            'price' => (int)$d['price'],
+        ];
+    } else {
+        $dishStmt->execute([$id]);
+        $d = $dishStmt->fetch();
+        if (!$d) {
+            continue;
+        }
+        $item = [
+            'dish_id' => (int)$d['id'],
+            'name' => $d['name'],
+            'hotel' => $d['hotel'],
+            'price' => (int)$d['price'],
+        ];
     }
 
-    $line = (int)$d['price'] * $qty;
+    $line = $item['price'] * $qty;
     $subtotal += $line;
     $items[] = [
-        'dish_id' => (int)$d['id'],
-        'name' => $d['name'],
-        'hotel' => $d['hotel'],
-        'price' => (int)$d['price'],
+        'dish_id' => $item['dish_id'],
+        'name' => $item['name'],
+        'hotel' => $item['hotel'],
+        'price' => $item['price'],
         'qty' => $qty,
         'line_total' => $line,
     ];
 }
 
 if (!$items) {
-    flash_checkout('No valid dishes were found in your cart.');
+    flash_checkout('No valid items were found in your cart.');
 }
 
 $promo = strtoupper(trim(clean_text($_POST['promo'] ?? '')));

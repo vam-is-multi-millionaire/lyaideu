@@ -12,13 +12,14 @@ $parts = preg_split('/\s+/', trim($user['name']));
 $firstName = $parts[0];
 $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
 require_once __DIR__ . '/site_config.php';
+lyaideu_ensure_mart_table();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Terms of Service | LyaiDeu</title>
+<title>Mart | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,11 +31,11 @@ require_once __DIR__ . '/site_config.php';
 
 <div class="promo-ticker"><div class="ticker-track">
     <span><i class="fa-solid fa-fire"></i> Free delivery on your first order — code LYAIDEU</span>
-    <span><i class="fa-solid fa-drumstick-bite"></i> Momo Festival: 20% off</span>
+    <span><i class="fa-solid fa-basket-shopping"></i> Mart essentials delivered with your khaja!</span>
     <span><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</span>
     <span><i class="fa-solid fa-heart"></i> 25+ hotels across the city</span>
     <span><i class="fa-solid fa-fire"></i> Free delivery on your first order — code LYAIDEU</span>
-    <span><i class="fa-solid fa-drumstick-bite"></i> Momo Festival: 20% off</span>
+    <span><i class="fa-solid fa-basket-shopping"></i> Mart essentials delivered with your khaja!</span>
     <span><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</span>
     <span><i class="fa-solid fa-heart"></i> 25+ hotels across the city</span>
 </div></div>
@@ -47,8 +48,9 @@ require_once __DIR__ . '/site_config.php';
             <li><a href="index.php" class="nav-a">Home</a></li>
             <li><a href="menu.php" class="nav-a">Menu</a></li>
             <li><a href="hotels.php" class="nav-a">Hotels</a></li>
-            <li><a href="mart.php" class="nav-a">Mart</a></li>
+            <li><a href="mart.php" class="nav-a active">Mart</a></li>
             <li><a href="contact.php" class="nav-a">Contact</a></li>
+            <li><a href="faq.php" class="nav-a">FAQ</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
             <li>
                 <div class="profile-wrap">
@@ -79,59 +81,43 @@ require_once __DIR__ . '/site_config.php';
 <?php endif; ?>
 
 <main>
-    <section class="section">
+    <section id="mart" class="section">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-file-contract"></i> Know the rules</p>
-                <h1 class="display">Terms of Service <i class="fa-solid fa-file-contract"></i></h1>
-                <p class="section-sub">Last updated: <?= date('F Y') ?>. Please read these terms carefully before using LyaiDeu.</p>
+                <p class="kicker"><i class="fa-solid fa-basket-shopping"></i> Grocery essentials — right at your door</p>
+                <h1 class="display">LyaiDeu Mart <i class="fa-solid fa-basket-shopping"></i></h1>
+                <p class="section-sub">Fresh veggies, fruits &amp; daily essentials — add them to your cart with your food.</p>
+                <div class="hero-actions" style="margin-top:1.2rem;">
+                    <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
+                </div>
             </div>
-            <div class="policy-body">
-                <h3>1. Acceptance of terms</h3>
-                <p>By creating an account, browsing the website or placing an order on LyaiDeu, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use our service.</p>
-
-                <h3>2. Our service</h3>
-                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen — restaurants prepare and package your food.</p>
-
-                <h3>3. Accounts &amp; eligibility</h3>
-                <p>You must be at least 10 years old to create an account. You agree to provide accurate information (name, phone number, email, date of birth) and to keep your login details secure. You are responsible for all activity under your account.</p>
-
-                <h3>4. Placing orders</h3>
-                <p>When you place an order you are making a real purchase request. Order details such as items, price, delivery fee and total are shown before you confirm. Once a hotel confirms your order, it cannot be changed or cancelled from your account alone — contact the hotel or our support team for help.</p>
-
-                <h3>5. Prices &amp; payment</h3>
-                <p>Prices are listed in Nepali Rupees and may change without notice. We accept Cash on Delivery and digital wallets (eSewa / Khalti) where supported. Promo codes are subject to their stated rules and may be discontinued at any time.</p>
-
-                <h3>6. Delivery</h3>
-                <p>We aim to deliver fast across the Surkhet Valley, usually within 30 minutes, but delivery times are estimates and not guaranteed. A flat delivery fee may apply. Risk and responsibility for the food pass to you upon delivery.</p>
-
-                <h3>7. Refunds &amp; complaints</h3>
-                <p>If your order is late, wrong or unsatisfactory, contact our Delivery Support team as soon as possible. Depending on the situation we will offer a re-delivery, replacement or refund. Refunds are issued back the same way the payment was made.</p>
-
-                <h3>8. Acceptable use</h3>
-                <p>You agree not to misuse the website — for example, providing false information, attempting to access other users' accounts, abusing support staff, or using the service for any unlawful purpose.</p>
-
-                <h3>9. Partner hotels</h3>
-                <p>Partner hotels operate independently. LyaiDeu is not liable for food quality, availability or preparation, but we will always help you resolve issues with an order.</p>
-
-                <h3>10. Limitation of liability</h3>
-                <p>To the maximum extent permitted by law, LyaiDeu is not liable for indirect or consequential damages, including loss of profits or data, arising from your use of the service.</p>
-
-                <h3>11. Changes to these terms</h3>
-                <p>We may update these Terms from time to time. The latest version is always available on this page, and continued use of the service after changes means you accept the new terms.</p>
-
-                <h3>12. Contact</h3>
-                <p>Questions about these Terms? Reach us at <strong>hello@lyaideu.com.np</strong> or call <strong>9800000001</strong>.</p>
-            </div>
+            <div class="menu-toolbar"><div class="chip-row">
+                <button class="chip active" data-mcat="all">All</button>
+                <button class="chip" data-mcat="vegetables">Vegetables</button>
+                <button class="chip" data-mcat="fruits">Fruits</button>
+                <button class="chip" data-mcat="dairy">Dairy</button>
+                <button class="chip" data-mcat="staples">Staples</button>
+                <button class="chip" data-mcat="oils">Oils &amp; Spices</button>
+                <button class="chip" data-mcat="snacks">Snacks</button>
+            </div><div class="menu-tools"><div class="search-bar menu-search"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" id="martSearch" placeholder="Search potatoes, milk, rice…"></div><select id="sortMart" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
+            <div class="grid" id="mart-grid"></div>
+            <div class="empty-state" id="martEmpty"><span class="big"><i class="fa-solid fa-basket-shopping"></i></span><p>No groceries match your search.</p></div>
         </div>
     </section>
 </main>
 
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div id="cartItems" class="cart-items"></div>
+  <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
+  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout.php" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
+</aside>
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index.php">Home</a></li><li><a href="menu.php">Menu</a></li><li><a href="hotels.php">Hotels</a></li><li><a href="mart.php">Mart</a></li><li><a href="contact.php">Contact</a></li><li><a href="faq.php">FAQ &amp; Privacy</a></li><li><a href="terms.php">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
-        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Birendranagar, Surkhet</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
+        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>

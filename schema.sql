@@ -85,6 +85,18 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT fk_items_dish FOREIGN KEY (dish_id) REFERENCES dishes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS mart_items (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  cat VARCHAR(50) NOT NULL,
+  unit VARCHAR(50) NOT NULL DEFAULT '',
+  price INT UNSIGNED NOT NULL DEFAULT 0,
+  tag VARCHAR(100) NOT NULL DEFAULT '',
+  `desc` TEXT NOT NULL,
+  img VARCHAR(500) NOT NULL DEFAULT '',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS settings (
   skey VARCHAR(100) NOT NULL,
   sval TEXT DEFAULT NULL,
@@ -142,6 +154,16 @@ INSERT INTO hotels (id,name,type,phone,emoji) VALUES (11,'Sweet Valley Café','B
 INSERT INTO hotels (id,name,type,phone,emoji) VALUES (12,'Thakali Kitchen','Dinner · Pokhara Rd','9851098765','fa-bowl-food');
 INSERT INTO hotels (id,name,type,phone,emoji) VALUES (13,'Everest Steak House','Dinner · Naxal','9808765432','fa-bacon');
 INSERT INTO hotels (id,name,type,phone,emoji) VALUES (14,'Ghar Ghar Rasoee','Dinner · Baluwatar','9840098765','fa-drumstick-bite');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (1,'Fresh Potatoes','vegetables','kg',60,'','Locally grown potatoes, perfect for aloo tareko.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (2,'Onions','vegetables','kg',55,'','Sweet red onions for everyday cooking.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (3,'Ripe Tomatoes','vegetables','500 g',45,'','Juicy vine-ripened tomatoes straight from the farm.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (4,'Red Apples','fruits','kg',240,'','Crisp and sweet red apples, great for the whole family.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (5,'Bananas','fruits','dozen',120,'','Naturally ripe bananas, ready to eat.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (6,'Fresh Milk','dairy','litre',95,'','Farm-fresh full cream milk delivered daily.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (7,'Curd (Dahi)','dairy','500 g',150,'','Thick, creamy set dahi made every morning.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (8,'Basmati Rice','staples','kg',185,'','Premium aged basmati, long grain and aromatic.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (9,'Cooking Oil','oils','litre',220,'','Pure refined sunflower oil for all your cooking.','');
+INSERT INTO mart_items (id,name,cat,unit,price,tag,`desc`,img) VALUES (10,'Parle-G Biscuits','snacks','pack',40,'','The classic crunchy glucose biscuit everyone loves.','');
 INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (1,'Order Hotline','LyaiDeu Central','9800000001','7 AM – 10 PM, every day','fa-phone');
 INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (2,'Delivery Support','Rider Help Desk','9800000002','Track or reschedule your order','fa-motorcycle');
 INSERT INTO contacts (id,role,person,phone,note,ico) VALUES (3,'Partner With Us','Hotel Onboarding Team','9800000003','List your hotel on LyaiDeu','fa-handshake');

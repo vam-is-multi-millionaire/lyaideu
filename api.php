@@ -1,11 +1,14 @@
 <?php
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 try {
+    lyaideu_ensure_mart_table();
+
     $dishes = $pdo->query(
         'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img
          FROM dishes
@@ -24,10 +27,17 @@ try {
          ORDER BY id'
     )->fetchAll();
 
+    $mart = $pdo->query(
+        'SELECT id, name, cat, unit, price, tag, `desc`, img
+         FROM mart_items
+         ORDER BY id'
+    )->fetchAll();
+
     echo json_encode([
         'dishes' => $dishes,
         'hotels' => $hotels,
         'contacts' => $contacts,
+        'mart' => $mart,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

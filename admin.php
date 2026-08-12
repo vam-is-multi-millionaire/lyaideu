@@ -15,10 +15,13 @@ $messageCount = 0;
 $unreadMessageCount = 0;
 
 try {
+    lyaideu_ensure_mart_table();
+
     $totalOrders = (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
     $totalSales = (float)$pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status <> 'Cancelled'")->fetchColumn();
     $userCount = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     $dishCount = (int)$pdo->query('SELECT COUNT(*) FROM dishes')->fetchColumn();
+    $martCount = (int)$pdo->query('SELECT COUNT(*) FROM mart_items')->fetchColumn();
     $hotelCount = (int)$pdo->query('SELECT COUNT(*) FROM hotels')->fetchColumn();
     $contactCount = (int)$pdo->query('SELECT COUNT(*) FROM contacts')->fetchColumn();
 
@@ -57,6 +60,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
             $cards = [
                 'orders' => ['count' => $totalOrders, 'desc' => 'Track and update customer orders'],
                 'dishes' => ['count' => $dishCount, 'desc' => 'Add, edit, or remove menu items'],
+                'mart' => ['count' => $martCount, 'desc' => 'Manage grocery items on the Mart page'],
                 'hotels' => ['count' => $hotelCount, 'desc' => 'Manage partner restaurant listings'],
                 'contacts' => ['count' => $contactCount, 'desc' => 'Update service team phone numbers'],
                 'messages' => ['count' => $unreadMessageCount, 'desc' => 'Read messages from the Contact page'],
