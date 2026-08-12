@@ -111,12 +111,12 @@ section{scroll-margin-top:96px;}
 /* ---------------- DISH CARDS (with photos) ---------------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:1.4rem;}
 
-.dish-card{background:#fff;border:1px solid var(--orange-100);border-radius:18px;overflow:hidden;
+.dish-card{background:#fff;border:1px solid var(--orange-100);border-radius:10px;overflow:hidden;
            display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
            transition:transform .3s ease,box-shadow .3s ease,border-color .3s;}
 .dish-card:hover{transform:translateY(-7px);box-shadow:var(--shadow-md);border-color:var(--orange-300);}
 
-.dish-art{position:relative;height:175px;overflow:hidden;background:var(--orange-100);}
+.dish-art{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--orange-100);}
 .dish-art img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease;}
 .dish-card:hover .dish-art img{transform:scale(1.08);}
 .dish-art::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(64,24,4,.18));}
@@ -143,16 +143,16 @@ section{scroll-margin-top:96px;}
 
 /* ---------------- HOTELS ---------------- */
 .hotels-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
-.hotel-card{display:flex;align-items:center;gap:.9rem;background:#fff;border:2px solid var(--orange-100);
-            border-radius:16px;padding:1rem 1.1rem;transition:.25s;box-shadow:var(--shadow-sm);}
+.hotel-card{display:flex;flex-direction:column;align-items:center;gap:.65rem;text-align:center;background:#fff;border:2px solid var(--orange-100);
+            border-radius:10px;padding:1.5rem 1.1rem 1.3rem;transition:.25s;box-shadow:var(--shadow-sm);}
 .hotel-card:hover{transform:translateY(-4px);border-color:var(--orange-300);box-shadow:var(--shadow-md);}
-.hotel-avatar{width:52px;height:52px;flex-shrink:0;border-radius:14px;background:var(--orange-100);
-              display:grid;place-items:center;font-size:1.7rem;}
-.hotel-info{flex:1;min-width:0;}
-.hotel-info h3{font-size:1rem;font-weight:900;line-height:1.2;}
+.hotel-avatar{width:72px;height:72px;flex-shrink:0;border-radius:14px;background:var(--orange-100);
+              display:grid;place-items:center;font-size:2.1rem;}
+.hotel-info{min-width:0;}
+.hotel-info h3{font-size:1.02rem;font-weight:900;line-height:1.25;}
 .hotel-info p{font-size:.78rem;font-weight:700;color:var(--muted);}
 .hotel-call{flex-shrink:0;font-size:.76rem;font-weight:900;color:var(--orange-700);text-decoration:none;
-            border:2px solid var(--orange-300);padding:.4rem .7rem;border-radius:999px;transition:.2s;}
+            border:2px solid var(--orange-300);padding:.45rem .85rem;border-radius:8px;transition:.2s;}
 .hotel-call:hover{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
 
 /* ---------------- CONTACT ---------------- */

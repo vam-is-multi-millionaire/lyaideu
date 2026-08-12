@@ -27,15 +27,12 @@ function renderDishes(dishes){
     const id=Number(d.id),name=esc(d.name),hotel=esc(d.hotel),desc=esc(d.desc),tag=esc(d.tag),img=esc(d.img),cat=esc(d.cat),phone=esc(d.phone);
     return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
       <div class="dish-art"><img src="${img}" alt="${name}" loading="lazy">
-      <button class="fav-btn ${fav.includes(id)?'active':''}" data-fav="${id}" type="button" aria-label="Favorite ${name}">${fav.includes(id)?'<i class="fa-solid fa-heart"></i>':'<i class="fa-regular fa-heart"></i>'}</button>
-      ${tag?`<span class="dish-tag">${emojisToIcons(tag)}</span>`:''}</div>
+      </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
-      <p class="dish-hotel"><i class="fa-solid fa-hotel"></i> ${hotel}</p><p class="dish-desc">${desc}</p>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
-      <div class="dish-actions"><button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button><a class="btn-call" href="tel:+977${phone}" data-hotel="${hotel}"><i class="fa-solid fa-phone"></i></a></div></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('.add-cart').forEach(b=>b.addEventListener('click',()=>addToCart(Number(b.dataset.id))));
-  $$('[data-fav]').forEach(b=>b.addEventListener('click',()=>toggleFav(Number(b.dataset.fav),b)));
   applyFilters();
 }
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>`<div class="hotel-card reveal visible"><div class="hotel-avatar">${faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`).join('')}
