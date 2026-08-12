@@ -113,6 +113,61 @@ function handle_hotel_logo(string $existingLogo, array $post, ?array $file): str
     return 'uploads/' . $filename;
 }
 
+function handle_item_image(string $existingImg, array $post, ?array $file, string $prefix): string {
+    $img = $existingImg;
+
+    if (!empty($post['remove_img'])) {
+        if ($img !== '' && str_starts_with($img, 'uploads/')) {
+            @unlink(__DIR__ . '/' . $img);
+        }
+        return '';
+    }
+
+    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $img;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Image upload failed. Please try again.');
+    }
+    if ($file['size'] > 2 * 1024 * 1024) {
+        throw new RuntimeException('Image is too large (max 2 MB).');
+    }
+
+    $allowed = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'image/svg+xml' => 'svg',
+    ];
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($file['tmp_name']);
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Image must be a PNG, JPG, WebP, GIF or SVG image.');
+    }
+
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            throw new RuntimeException('Could not create the uploads folder.');
+        }
+    }
+
+    $ext = $allowed[$mime];
+    $filename = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('Could not save the uploaded image.');
+    }
+
+    if ($img !== '' && str_starts_with($img, 'uploads/')) {
+        @unlink(__DIR__ . '/' . $img);
+    }
+
+    return 'uploads/' . $filename;
+}
+
 $section = trim($_POST['section'] ?? '');
 $allowedSections = ['dishes', 'mart', 'hotels', 'contacts'];
 
@@ -137,7 +192,7 @@ try {
              VALUES (:name, :hotel, :cat, :price, :phone, :tag, :descr, :img)'
         );
 
-        foreach (($_POST['dishes'] ?? []) as $d) {
+        foreach (($_POST['dishes'] ?? []) as $i => $d) {
             $id = (int)($d['id'] ?? 0);
             if ($id <= 0) {
                 continue;
@@ -154,6 +209,8 @@ try {
                 continue;
             }
 
+            $img = handle_item_image((string)($d['img'] ?? ''), $d, uploaded_file_field('dishes', $i, 'img_file'), 'dish_img');
+
             $updateDish->execute([
                 ':id' => $id,
                 ':name' => $name,
@@ -163,12 +220,24 @@ try {
                 ':phone' => clean_phone($d['phone'] ?? ''),
                 ':tag' => clean_text($d['tag'] ?? ''),
                 ':descr' => clean_text($d['desc'] ?? ''),
-                ':img' => clean_url($d['img'] ?? ''),
+                ':img' => $img,
             ]);
         }
 
         $newDish = $_POST['new_dish'] ?? [];
         if (clean_text($newDish['name'] ?? '') !== '') {
+            $newFile = $_FILES['new_dish'] ?? null;
+            $newImgFile = (isset($newFile['name']['img_file']))
+                ? [
+                    'name' => $newFile['name']['img_file'],
+                    'type' => $newFile['type']['img_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['img_file'],
+                    'error' => $newFile['error']['img_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['img_file'] ?? 0,
+                ]
+                : null;
+            $img = handle_item_image('', $newDish, $newImgFile, 'dish_img');
+
             $insertDish->execute([
                 ':name' => clean_text($newDish['name'] ?? ''),
                 ':hotel' => clean_text($newDish['hotel'] ?? ''),
@@ -177,7 +246,7 @@ try {
                 ':phone' => clean_phone($newDish['phone'] ?? ''),
                 ':tag' => clean_text($newDish['tag'] ?? ''),
                 ':descr' => clean_text($newDish['desc'] ?? ''),
-                ':img' => clean_url($newDish['img'] ?? ''),
+                ':img' => $img,
             ]);
         }
     }
@@ -195,7 +264,7 @@ try {
              VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
         );
 
-        foreach (($_POST['mart'] ?? []) as $m) {
+        foreach (($_POST['mart'] ?? []) as $i => $m) {
             $id = (int)($m['id'] ?? 0);
             if ($id <= 0) {
                 continue;
@@ -211,6 +280,8 @@ try {
                 continue;
             }
 
+            $img = handle_item_image((string)($m['img'] ?? ''), $m, uploaded_file_field('mart', $i, 'img_file'), 'mart_img');
+
             $updateItem->execute([
                 ':id' => $id,
                 ':name' => $name,
@@ -219,12 +290,24 @@ try {
                 ':price' => max(0, (int)($m['price'] ?? 0)),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
-                ':img' => clean_url($m['img'] ?? ''),
+                ':img' => $img,
             ]);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
         if (clean_text($newItem['name'] ?? '') !== '') {
+            $newFile = $_FILES['new_mart'] ?? null;
+            $newImgFile = (isset($newFile['name']['img_file']))
+                ? [
+                    'name' => $newFile['name']['img_file'],
+                    'type' => $newFile['type']['img_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['img_file'],
+                    'error' => $newFile['error']['img_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['img_file'] ?? 0,
+                ]
+                : null;
+            $img = handle_item_image('', $newItem, $newImgFile, 'mart_img');
+
             $insertItem->execute([
                 ':name' => clean_text($newItem['name'] ?? ''),
                 ':cat' => valid_mart_category($newItem['cat'] ?? 'vegetables'),
@@ -232,7 +315,7 @@ try {
                 ':price' => max(0, (int)($newItem['price'] ?? 0)),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
-                ':img' => clean_url($newItem['img'] ?? ''),
+                ':img' => $img,
             ]);
         }
     }

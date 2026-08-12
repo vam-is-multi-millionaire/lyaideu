@@ -26,7 +26,7 @@ $martCategories = [
 
 admin_page_start('Mart', 'mart', 'Mart');
 ?>
-<form action="admin_save.php" method="POST" class="admin-form">
+<form action="admin_save.php" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="mart">
 
@@ -62,8 +62,13 @@ admin_page_start('Mart', 'mart', 'Mart');
                         <input type="text" name="mart[<?= $i ?>][tag]" value="<?= htmlspecialchars($m['tag']) ?>">
                     </div>
                 </div>
-                <label>Image URL <span style="text-transform:none;font-weight:700;">(optional — a category icon is shown if empty)</span></label>
-                <input type="url" name="mart[<?= $i ?>][img]" value="<?= htmlspecialchars($m['img']) ?>">
+                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional, a category icon is shown if empty)</span></label>
+                <input type="file" name="mart[<?= $i ?>][img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                <input type="hidden" name="mart[<?= $i ?>][img]" value="<?= htmlspecialchars($m['img']) ?>">
+                <?php if (!empty($m['img'])): ?>
+                    <div class="img-preview"><img src="<?= htmlspecialchars($m['img'], ENT_QUOTES, 'UTF-8') ?>" alt="Current image"></div>
+                <?php endif; ?>
+                <label class="delete-check"><input type="checkbox" name="mart[<?= $i ?>][remove_img]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
                 <label>Description</label>
                 <textarea name="mart[<?= $i ?>][desc]"><?= htmlspecialchars($m['desc']) ?></textarea>
                 <label class="delete-check"><input type="checkbox" name="mart[<?= $i ?>][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this item</label>
@@ -87,7 +92,8 @@ admin_page_start('Mart', 'mart', 'Mart');
                     <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="new_mart[price]" placeholder="60"></div>
                     <div><label>Tag</label><input type="text" name="new_mart[tag]" placeholder="New!"></div>
                 </div>
-                <label>Image URL</label><input type="url" name="new_mart[img]" placeholder="https://... (optional)">
+                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional, a category icon is shown if empty)</span></label>
+                <input type="file" name="new_mart[img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
                 <label>Description</label><textarea name="new_mart[desc]" placeholder="Short description..."></textarea>
             </div>
         </div>

@@ -15,7 +15,7 @@ try {
 
 admin_page_start('Menu Items', 'dishes', 'Menu Items');
 ?>
-<form action="admin_save.php" method="POST" class="admin-form">
+<form action="admin_save.php" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="dishes">
 
@@ -45,8 +45,13 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                         <input type="number" min="0" step="1" name="dishes[<?= $i ?>][price]" value="<?= (int)$d['price'] ?>" required>
                     </div>
                 </div>
-                <label>Image URL</label>
-                <input type="url" name="dishes[<?= $i ?>][img]" value="<?= htmlspecialchars($d['img']) ?>">
+                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
+                <input type="file" name="dishes[<?= $i ?>][img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                <input type="hidden" name="dishes[<?= $i ?>][img]" value="<?= htmlspecialchars($d['img']) ?>">
+                <?php if (!empty($d['img'])): ?>
+                    <div class="img-preview"><img src="<?= htmlspecialchars($d['img'], ENT_QUOTES, 'UTF-8') ?>" alt="Current image"></div>
+                <?php endif; ?>
+                <label class="delete-check"><input type="checkbox" name="dishes[<?= $i ?>][remove_img]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
                 <label>Description</label>
                 <textarea name="dishes[<?= $i ?>][desc]"><?= htmlspecialchars($d['desc']) ?></textarea>
                 <div class="admin-field-row">
@@ -75,7 +80,8 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                     </div>
                     <div><label>Price</label><input type="number" min="0" step="1" name="new_dish[price]" placeholder="250"></div>
                 </div>
-                <label>Image URL</label><input type="url" name="new_dish[img]" placeholder="https://...">
+                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
+                <input type="file" name="new_dish[img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
                 <label>Description</label><textarea name="new_dish[desc]" placeholder="Short tasty description..."></textarea>
                 <div class="admin-field-row">
                     <div><label>Phone</label><input type="text" name="new_dish[phone]" placeholder="98XXXXXXXX"></div>

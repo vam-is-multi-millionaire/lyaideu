@@ -434,6 +434,9 @@ section{scroll-margin-top:96px;}
 .admin-field-row>div{flex:1;min-width:0}
 .hotel-logo-preview{width:72px;height:72px;display:grid;place-items:center;background:#fff;border:2px solid var(--orange-200);border-radius:14px;margin:.2rem 0 .6rem;overflow:hidden;padding:6px}
 .hotel-logo-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.img-preview{width:100px;height:100px;display:grid;place-items:center;background:#fdf3e8;border:2px dashed var(--orange-300);border-radius:14px;margin:.4rem 0 .5rem;overflow:hidden;padding:4px}
+.img-preview img{max-width:100%;max-height:100%;object-fit:cover;border-radius:10px}
+.admin-card input[type="file"]{padding:.45rem;background:#fff;border:1px solid var(--orange-200);border-radius:8px;font-size:.85rem;width:100%;box-sizing:border-box}
 .admin-hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
 .admin-hub-card{display:block;background:var(--orange-50);border:1px solid var(--orange-200);border-radius:16px;padding:1.2rem;text-decoration:none;color:inherit;transition:.2s}
 .admin-hub-card:hover{transform:translateY(-3px);border-color:var(--orange-400);box-shadow:var(--shadow-sm)}
