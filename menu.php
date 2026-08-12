@@ -25,7 +25,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 
@@ -97,7 +97,7 @@ require_once __DIR__ . '/site_config.php';
                 <button class="chip" data-cat="beverages">Beverages</button>
                 <button class="chip" data-cat="dinner">Dinner</button>
             </div><div class="menu-tools"><div class="search-bar menu-search"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" id="dishSearch" placeholder="Search momo, pizza…" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>"></div><select id="sortMenu" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
-            <div class="grid" id="menu-grid"></div>
+            <div class="grid dish-grid" id="menu-grid"></div>
             <div class="empty-state" id="emptyState"><span class="big"><i class="fa-solid fa-utensils"></i></span><p>No dishes match your search.</p></div>
         </div>
     </section>
@@ -120,6 +120,6 @@ require_once __DIR__ . '/site_config.php';
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js"></script>
+<script src="js/script.js?v=3"></script>
 </body>
 </html>
