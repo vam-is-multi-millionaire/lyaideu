@@ -5,7 +5,6 @@ session_set_cookie_params([
 ]);
 session_start();
 if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
-if (!isset($_SESSION['csrf_contact'])) $_SESSION['csrf_contact'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'];
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -19,7 +18,7 @@ require_once __DIR__ . '/site_config.php';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contact | LyaiDeu</title>
+<title>Terms of Service | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,8 +47,7 @@ require_once __DIR__ . '/site_config.php';
             <li><a href="index.php" class="nav-a">Home</a></li>
             <li><a href="menu.php" class="nav-a">Menu</a></li>
             <li><a href="hotels.php" class="nav-a">Hotels</a></li>
-            <li><a href="contact.php" class="nav-a active">Contact</a></li>
-            <li><a href="faq.php" class="nav-a">FAQ</a></li>
+            <li><a href="contact.php" class="nav-a">Contact</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
             <li>
                 <div class="profile-wrap">
@@ -80,38 +78,49 @@ require_once __DIR__ . '/site_config.php';
 <?php endif; ?>
 
 <main>
-    <section id="contact" class="section section-contact">
+    <section class="section">
         <div class="container">
-            <div class="contact-split">
-                <div class="contact-split-left">
-                    <div class="section-head">
-                        <p class="kicker"><i class="fa-solid fa-phone"></i> We're one call away</p>
-                        <h1 class="display">Contact Our Service Team <i class="fa-solid fa-phone"></i></h1>
-                        <p class="section-sub">We're one call away, every single day.</p>
-                    </div>
-                    <div class="grid contact-grid" id="contact-grid"></div>
-                </div>
-                <div class="contact-split-right">
-                    <div class="section-head">
-                        <p class="kicker"><i class="fa-solid fa-envelope"></i> We'd love to hear from you</p>
-                        <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
-                        <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
-                    </div>
-                    <form action="contact_send.php" method="POST" class="contact-form">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="contact-form-row">
-                            <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" placeholder="Full name" required></div>
-                            <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" placeholder="you@example.com" required></div>
-                        </div>
-                        <div class="contact-form-row">
-                            <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone']) ?>" placeholder="98XXXXXXXX"></div>
-                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
-                        </div>
-                        <label>Message</label>
-                        <textarea name="message" rows="5" placeholder="Tell us how we can help…" minlength="10" required></textarea>
-                        <button type="submit" class="btn btn-primary contact-submit"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
-                    </form>
-                </div>
+            <div class="section-head">
+                <p class="kicker"><i class="fa-solid fa-file-contract"></i> Know the rules</p>
+                <h1 class="display">Terms of Service <i class="fa-solid fa-file-contract"></i></h1>
+                <p class="section-sub">Last updated: <?= date('F Y') ?>. Please read these terms carefully before using LyaiDeu.</p>
+            </div>
+            <div class="policy-body">
+                <h3>1. Acceptance of terms</h3>
+                <p>By creating an account, browsing the website or placing an order on LyaiDeu, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use our service.</p>
+
+                <h3>2. Our service</h3>
+                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen — restaurants prepare and package your food.</p>
+
+                <h3>3. Accounts &amp; eligibility</h3>
+                <p>You must be at least 10 years old to create an account. You agree to provide accurate information (name, phone number, email, date of birth) and to keep your login details secure. You are responsible for all activity under your account.</p>
+
+                <h3>4. Placing orders</h3>
+                <p>When you place an order you are making a real purchase request. Order details such as items, price, delivery fee and total are shown before you confirm. Once a hotel confirms your order, it cannot be changed or cancelled from your account alone — contact the hotel or our support team for help.</p>
+
+                <h3>5. Prices &amp; payment</h3>
+                <p>Prices are listed in Nepali Rupees and may change without notice. We accept Cash on Delivery and digital wallets (eSewa / Khalti) where supported. Promo codes are subject to their stated rules and may be discontinued at any time.</p>
+
+                <h3>6. Delivery</h3>
+                <p>We aim to deliver fast across the Surkhet Valley, usually within 30 minutes, but delivery times are estimates and not guaranteed. A flat delivery fee may apply. Risk and responsibility for the food pass to you upon delivery.</p>
+
+                <h3>7. Refunds &amp; complaints</h3>
+                <p>If your order is late, wrong or unsatisfactory, contact our Delivery Support team as soon as possible. Depending on the situation we will offer a re-delivery, replacement or refund. Refunds are issued back the same way the payment was made.</p>
+
+                <h3>8. Acceptable use</h3>
+                <p>You agree not to misuse the website — for example, providing false information, attempting to access other users' accounts, abusing support staff, or using the service for any unlawful purpose.</p>
+
+                <h3>9. Partner hotels</h3>
+                <p>Partner hotels operate independently. LyaiDeu is not liable for food quality, availability or preparation, but we will always help you resolve issues with an order.</p>
+
+                <h3>10. Limitation of liability</h3>
+                <p>To the maximum extent permitted by law, LyaiDeu is not liable for indirect or consequential damages, including loss of profits or data, arising from your use of the service.</p>
+
+                <h3>11. Changes to these terms</h3>
+                <p>We may update these Terms from time to time. The latest version is always available on this page, and continued use of the service after changes means you accept the new terms.</p>
+
+                <h3>12. Contact</h3>
+                <p>Questions about these Terms? Reach us at <strong>hello@lyaideu.com.np</strong> or call <strong>9800000001</strong>.</p>
             </div>
         </div>
     </section>
@@ -121,7 +130,7 @@ require_once __DIR__ . '/site_config.php';
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index.php">Home</a></li><li><a href="menu.php">Menu</a></li><li><a href="hotels.php">Hotels</a></li><li><a href="contact.php">Contact</a></li><li><a href="faq.php">FAQ &amp; Privacy</a></li><li><a href="terms.php">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
-        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
+        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Birendranagar, Surkhet</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>

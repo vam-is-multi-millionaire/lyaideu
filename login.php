@@ -152,7 +152,7 @@ require_once __DIR__ . '/site_config.php';
             <p class="switch-line">Already have an account? <a href="#" data-show="login">Login</a></p>
         </form>
     </div>
-    <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · Made with <i class="fa-solid fa-heart"></i> in Nepal</p>
+    <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
 </main>
 </div>
 <script src="js/script.js"></script>
