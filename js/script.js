@@ -54,7 +54,6 @@ function renderMart(items){
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
-      <p class="dish-desc">${desc}</p>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div></article>`;
   }).join('');
