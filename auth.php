@@ -92,6 +92,9 @@ if ($action === 'signup') {
     // 7. Confirm password must match
     if ($pass !== $confirm) $errors[] = 'New password and confirm password do not match.';
 
+    // 8. Must accept the Terms & Conditions
+    if (empty($_POST['terms'])) $errors[] = 'You must accept the Terms & Conditions to continue.';
+
     if ($errors) {
         flash('error', implode('<br>', $errors));
         redirect('login.php?tab=signup' . $nextQS);
