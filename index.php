@@ -4,6 +4,7 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
+if (!isset($_SESSION['csrf_contact'])) $_SESSION['csrf_contact'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'] ?? null;
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -226,6 +227,42 @@ $FEATURED_MART_ICONS = [
                     <summary>What if my order is late or wrong?</summary>
                     <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best.</p>
                 </details>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section section-contact">
+        <div class="container">
+            <div class="contact-split">
+                <div class="contact-split-left">
+                    <div class="section-head">
+                        <p class="kicker"><i class="fa-solid fa-phone"></i> We're one call away</p>
+                        <h2 class="display">Contact Our Service Team <i class="fa-solid fa-phone"></i></h2>
+                        <p class="section-sub">We're one call away, every single day.</p>
+                    </div>
+                    <div class="grid contact-grid" id="contact-grid"></div>
+                </div>
+                <div class="contact-split-right">
+                    <div class="section-head">
+                        <p class="kicker"><i class="fa-solid fa-envelope"></i> We'd love to hear from you</p>
+                        <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
+                        <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
+                    </div>
+                    <form action="contact_send.php" method="POST" class="contact-form">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="contact-form-row">
+                            <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name'] ?? '') ?>" placeholder="Full name" required></div>
+                            <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" placeholder="you@example.com" required></div>
+                        </div>
+                        <div class="contact-form-row">
+                            <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="98XXXXXXXX"></div>
+                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
+                        </div>
+                        <label>Message</label>
+                        <textarea name="message" rows="5" placeholder="Tell us how we can help…" minlength="10" required></textarea>
+                        <button type="submit" class="btn btn-primary contact-submit"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
