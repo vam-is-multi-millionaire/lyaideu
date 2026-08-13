@@ -4,7 +4,7 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if (isset($_SESSION['user'])) { header('Location: index.php'); exit; }
+if (isset($_SESSION['user'])) { header('Location: index'); exit; }
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -22,6 +22,7 @@ require_once __DIR__ . '/site_config.php';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?= lyaideu_base_tag() ?>
 <title>LyaiDeu · Login / Sign Up</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,7 +60,7 @@ require_once __DIR__ . '/site_config.php';
         <?php endif; ?>
 
         <!-- LOGIN FORM -->
-        <form class="auth-form <?= $activeTab === 'login' ? 'active' : '' ?>" id="form-login" action="auth.php" method="POST" novalidate>
+        <form class="auth-form <?= $activeTab === 'login' ? 'active' : '' ?>" id="form-login" action="auth" method="POST" novalidate>
             <input type="hidden" name="action" value="login">
             <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
@@ -87,7 +88,7 @@ require_once __DIR__ . '/site_config.php';
         </form>
 
         <!-- SIGNUP FORM -->
-        <form class="auth-form <?= $activeTab === 'signup' ? 'active' : '' ?>" id="form-signup" action="auth.php" method="POST" novalidate>
+        <form class="auth-form <?= $activeTab === 'signup' ? 'active' : '' ?>" id="form-signup" action="auth" method="POST" novalidate>
             <input type="hidden" name="action" value="signup">
             <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
@@ -158,7 +159,7 @@ require_once __DIR__ . '/site_config.php';
                 <label class="terms-label" for="su-terms">
                     <input type="checkbox" id="su-terms" name="terms" value="on" data-validate="terms" required>
                     <span class="terms-box"><i class="fa-solid fa-check"></i></span>
-                    <span class="terms-text">I agree to the <a href="terms.php" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="faq.php" target="_blank" rel="noopener">Privacy Policy</a></span>
+                    <span class="terms-text">I agree to the <a href="terms" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="faq" target="_blank" rel="noopener">Privacy Policy</a></span>
                 </label>
                 <small class="field-msg"></small>
             </div>

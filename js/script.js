@@ -14,7 +14,7 @@ function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.c
 
 document.addEventListener('DOMContentLoaded',()=>{
   initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();
-  if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||document.body.hasAttribute('data-needs-catalog'))fetch('api.php').then(r=>r.json()).then(d=>{
+  if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
@@ -30,15 +30,16 @@ function renderDishes(dishes){
   const grid=$('#menu-grid');if(!grid)return;const fav=getFav();
   grid.innerHTML=dishes.map(d=>{
     const id=Number(d.id),name=esc(d.name),hotel=esc(d.hotel),desc=esc(d.desc),tag=esc(d.tag),img=esc(d.img),cat=esc(d.cat),phone=esc(d.phone);
+    const cats=(d.cats&&d.cats.length)?d.cats.map(esc):[cat];
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:`<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>`;
-    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
+    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
       <div class="dish-art">${art}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
       <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
-  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=dish&id='+Number(c.dataset.id)}));
+  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.id,(c.dataset.cats||'').split(','))}));
   applyFilters();
 }
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible" data-search="${esc((h.name+' '+h.type+' '+(h.hotel||'')+' '+(h.location||'')).toLowerCase())}"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('');applyHotelFilters()}
@@ -55,8 +56,9 @@ function renderMart(items){
   const grid=$('#mart-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
     const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),unit=esc(m.unit);
+    const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:martCatIcon(cat);
-    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
+    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
       <div class="dish-art mart-art">${art}
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
@@ -64,12 +66,14 @@ function renderMart(items){
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
-  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=mart&id='+Number(c.dataset.id)}));
+  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.id,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
 }
+function catMatch(card){const s=card.dataset.cats;return s?s.split(',').includes(currentCat):card.dataset.cat===currentCat}
+function productUrl(type,id,cats){type=type||'dish';const p=(cats&&cats.length)?cats.map(x=>encodeURIComponent(String(x))).join('/')+'/':'';return (type==='mart'?'mart':'menu')+'/'+p+Number(id)}
 function applyMartFilters(){
   const cards=$$('#mart-grid .dish-card'),sort=$('#sortMart')?.value||'default';
-  let filtered=cards.filter(c=>(currentCat==='all'||c.dataset.cat===currentCat)&&(!searchQuery||c.dataset.search.includes(searchQuery)));
+  let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
   if(sort==='price-low'||sort==='price-high'){
     filtered.sort((a,b)=>{
       const pa=Number(allMart.find(d=>String(d.id)===a.dataset.id)?.price)||0;
@@ -85,7 +89,15 @@ function applyMartFilters(){
   }
   if($('#martEmpty'))$('#martEmpty').style.display=filtered.length?'none':'block';
 }
-function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;applyMartFilters()}));const s=$('#martSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters);if(searchQuery)applyMartFilters()}
+function syncSubChips(scope){
+  const attr=scope==='mart'?'mcat':'cat';
+  $$('.chip[data-'+attr+'][data-parent]').forEach(ch=>{
+    const parent=ch.dataset.parent;
+    const pc=document.querySelector('.chip[data-'+attr+'="'+parent+'"]');
+    ch.style.display=((pc&&pc.classList.contains('active'))||ch.classList.contains('active'))?'':'none';
+  });
+}
+function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;syncSubChips('mart');applyMartFilters()}));const s=$('#martSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters);const p=new URLSearchParams(location.search).get('mcat');if(p){const t=document.querySelector('.chip[data-mcat="'+p+'"]');if(t)t.click()}else if(searchQuery)applyMartFilters()}
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
 function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i)i.qty=Math.min(20,i.qty+1);else c.push({id,type,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
@@ -104,7 +116,7 @@ function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classLi
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open')}
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
 function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;addToCart(Number(b.dataset.id),b.dataset.type||'dish',undefined,b)})}
-function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href='product.php?type='+(card.dataset.type||'dish')+'&id='+card.dataset.id})}
+function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href=productUrl(card.dataset.type||'dish',card.dataset.id,(card.dataset.cats||'').split(','))})}
 function initHeroSlider(){
   const wrap=$('#heroSlides');if(!wrap)return;
   const slides=$$('.hero-slide',wrap),dotsBox=$('#heroDots');
@@ -121,7 +133,7 @@ function initHeroSlider(){
 function toggleFav(id,b){let f=getFav();if(f.includes(id)){f=f.filter(x=>x!==id);b.classList.remove('active');b.innerHTML='<i class="fa-regular fa-heart"></i>';toast('Removed from favorites')}else{f.push(id);b.classList.add('active');b.innerHTML='<i class="fa-solid fa-heart"></i>';toast('<i class="fa-solid fa-heart"></i> Added to favorites')}saveFav(f)}
 function applyFilters(){
   const cards=$$('.dish-card'),sort=$('#sortMenu')?.value||'default';
-  let filtered=cards.filter(c=>(currentCat==='all'||c.dataset.cat===currentCat)&&(!searchQuery||c.dataset.search.includes(searchQuery)));
+  let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
 
   if(sort==='price-low' || sort==='price-high'){
     filtered.sort((a,b)=>{
@@ -143,7 +155,7 @@ function applyFilters(){
 function startLiveCatalogSync(){
   if(window.FE_LIVE_SYNC||(!$('#menu-grid')&&!$('#mart-grid')&&!$('#hotels-grid')&&!$('#contact-grid')))return; window.FE_LIVE_SYNC=true;
   let lastSignature='';
-  const sync=()=>fetch('api.php?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  const sync=()=>fetch('api?v='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
     const sig=JSON.stringify([d.dishes||[],d.mart||[],d.hotels||[],d.contacts||[]]);
     if(!lastSignature){lastSignature=sig;return;}
     if(sig!==lastSignature){
@@ -154,7 +166,7 @@ function startLiveCatalogSync(){
   }).catch(()=>{});
   setInterval(sync,5000);
 }
-function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;applyFilters()}));const s=$('#dishSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()})}$('#sortMenu')?.addEventListener('change',applyFilters);if(searchQuery)applyFilters()}
+function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;syncSubChips('menu');applyFilters()}));const s=$('#dishSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()})}$('#sortMenu')?.addEventListener('change',applyFilters);const p=new URLSearchParams(location.search).get('cat');if(p){const t=document.querySelector('.chip[data-cat="'+p+'"]');if(t)t.click()}else if(searchQuery)applyFilters()}
 function initCheckout(){
   const form=$('#checkoutForm');if(!form)return;let promo='';
   function update(){
@@ -195,7 +207,7 @@ function footerYear(){const y=$('#year');if(y)y.textContent=new Date().getFullYe
 (function(){
  if(window.FE_LIVE_REFRESH_INITIALIZED)return; window.FE_LIVE_REFRESH_INITIALIZED=true;
  let last='';
- async function refresh(){try{const r=await fetch('api.php?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],mart:d.mart||[],hotels:d.hotels||[],contacts:d.contacts||[]});
+ async function refresh(){try{const r=await fetch('api?live='+Date.now(),{cache:'no-store'});if(!r.ok)return;const d=await r.json();const sig=JSON.stringify({dishes:d.dishes||[],mart:d.mart||[],hotels:d.hotels||[],contacts:d.contacts||[]});
   if(last&&sig!==last){if(typeof allDishes!=='undefined'){allDishes=d.dishes||[];if(document.querySelector('#menu-grid'))renderDishes(allDishes);if(document.querySelector('#hotels-grid'))renderHotels(d.hotels||[]);if(document.querySelector('#contact-grid'))renderContacts(d.contacts||[]);}window.dispatchEvent(new CustomEvent('lyaideu:datachanged',{detail:d}));}
   last=sig;const el=document.querySelector('[data-live-indicator]');if(el)el.classList.add('live-on');
  }catch(e){}}

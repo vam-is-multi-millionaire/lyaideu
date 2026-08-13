@@ -8,9 +8,10 @@ header('Cache-Control: no-store');
 
 try {
     lyaideu_seed_catalog();
+    lyaideu_ensure_categories_table();
 
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img
+        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id
          FROM dishes
          ORDER BY id'
     )->fetchAll();
@@ -28,16 +29,27 @@ try {
     )->fetchAll();
 
     $mart = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img
+        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id
          FROM mart_items
          ORDER BY id'
     )->fetchAll();
+
+    foreach ($dishes as &$d) {
+        $d['cats'] = lyaideu_item_cats((int)($d['category_id'] ?? 0), (string)$d['cat']);
+    }
+    unset($d);
+
+    foreach ($mart as &$m) {
+        $m['cats'] = lyaideu_item_cats((int)($m['category_id'] ?? 0), (string)$m['cat']);
+    }
+    unset($m);
 
     echo json_encode([
         'dishes' => $dishes,
         'hotels' => $hotels,
         'contacts' => $contacts,
         'mart' => $mart,
+        'categories' => lyaideu_categories(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

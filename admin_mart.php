@@ -3,30 +3,24 @@
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_mart_table();
+lyaideu_ensure_categories_table();
+$martCatsFlat = lyaideu_categories_flat('mart');
 
 try {
     $items = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img FROM mart_items ORDER BY id'
+        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items ORDER BY id'
     )->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
     exit('Could not load mart items.');
 }
 
-$martCategories = [
-    'vegetables' => 'Vegetables',
-    'fruits' => 'Fruits',
-    'dairy' => 'Dairy',
-    'staples' => 'Staples',
-    'oils' => 'Oils & Spices',
-    'snacks' => 'Snacks',
-];
-
 admin_page_start('Mart', 'mart', 'Mart');
 ?>
-<form action="admin_save.php" method="POST" enctype="multipart/form-data" class="admin-form">
+<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="mart">
 
@@ -44,9 +38,10 @@ admin_page_start('Mart', 'mart', 'Mart');
                 <input type="text" name="mart[<?= $i ?>][name]" value="<?= htmlspecialchars($m['name']) ?>" required>
                 <div class="admin-field-row">
                     <div><label>Category</label>
-                        <select name="mart[<?= $i ?>][cat]">
-                            <?php foreach ($martCategories as $key => $label): ?>
-                            <option value="<?= $key ?>" <?= $m['cat'] === $key ? 'selected' : '' ?>><?= $label ?></option>
+                        <select name="mart[<?= $i ?>][category_id]">
+                            <option value="0">— No category —</option>
+                            <?php foreach ($martCatsFlat as $mc): ?>
+                            <option value="<?= (int)$mc['id'] ?>" <?= (int)$m['category_id'] === (int)$mc['id'] ? 'selected' : '' ?>><?= str_repeat('— ', $mc['depth']) ?><?= htmlspecialchars($mc['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -80,9 +75,10 @@ admin_page_start('Mart', 'mart', 'Mart');
                 <label>Item Name</label><input type="text" name="new_mart[name]" placeholder="e.g. Garlic">
                 <div class="admin-field-row">
                     <div><label>Category</label>
-                        <select name="new_mart[cat]">
-                            <?php foreach ($martCategories as $key => $label): ?>
-                            <option value="<?= $key ?>"><?= $label ?></option>
+                        <select name="new_mart[category_id]">
+                            <option value="0">— No category —</option>
+                            <?php foreach ($martCatsFlat as $mc): ?>
+                            <option value="<?= (int)$mc['id'] ?>"><?= str_repeat('— ', $mc['depth']) ?><?= htmlspecialchars($mc['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

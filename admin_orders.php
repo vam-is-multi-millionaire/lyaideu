@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    header('Location: admin_orders.php?saved=1');
+    header('Location: admin_orders?saved=1');
     exit;
 }
 

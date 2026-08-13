@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# Existing real files/directories bypass all rewriting (menu.php, mart.php, css, js still work directly)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Pretty product URLs: menu/momo/steamed-momo/5  |  mart/vegetables/root-vegetables/12  |  menu/5  |  mart/12
+RewriteRule ^(menu|mart)/([0-9]+)(?:-[a-z0-9-]*)?/?$                            product.php?type=$1&id=$2 [QSA,L]
+RewriteRule ^(menu|mart)/((?:[a-z0-9-]+/)*[a-z0-9-]+)/([0-9]+)(?:-[a-z0-9-]*)?/?$ product.php?type=$1&catpath=$2&id=$3 [QSA,L]
+
+# Extensionless page URLs (internal rewrite): /menu -> menu.php, /login -> login.php, ...
+RewriteRule ^(admin_categories|admin_contacts|admin_dishes|admin_hotels|admin_mart|admin_messages|admin_orders|admin_save|admin_settings|admin_users|order_save|order_success|contact_send|index|menu|mart|hotels|contact|faq|terms|login|logout|auth|orders|checkout|product|admin|api)$ $1.php [QSA,L]

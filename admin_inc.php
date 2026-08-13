@@ -29,15 +29,16 @@ function admin_is_logged_in(): bool {
 
 function admin_nav_items(): array {
     return [
-        'dashboard' => ['label' => 'Dashboard', 'href' => 'admin.php', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
-        'orders' => ['label' => 'Orders', 'href' => 'admin_orders.php', 'icon' => '<i class="fa-solid fa-box"></i>'],
-        'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes.php', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
-        'mart' => ['label' => 'Mart', 'href' => 'admin_mart.php', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
-        'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels.php', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
-        'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts.php', 'icon' => '<i class="fa-solid fa-phone"></i>'],
-        'messages' => ['label' => 'Messages', 'href' => 'admin_messages.php', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
-        'users' => ['label' => 'Users', 'href' => 'admin_users.php', 'icon' => '<i class="fa-solid fa-users"></i>'],
-        'settings' => ['label' => 'Settings', 'href' => 'admin_settings.php', 'icon' => '<i class="fa-solid fa-gear"></i>'],
+        'dashboard' => ['label' => 'Dashboard', 'href' => 'admin', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
+        'categories' => ['label' => 'Categories', 'href' => 'admin_categories', 'icon' => '<i class="fa-solid fa-tags"></i>'],
+        'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
+        'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
+        'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
+        'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
+        'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts', 'icon' => '<i class="fa-solid fa-phone"></i>'],
+        'messages' => ['label' => 'Messages', 'href' => 'admin_messages', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
+        'users' => ['label' => 'Users', 'href' => 'admin_users', 'icon' => '<i class="fa-solid fa-users"></i>'],
+        'settings' => ['label' => 'Settings', 'href' => 'admin_settings', 'icon' => '<i class="fa-solid fa-gear"></i>'],
     ];
 }
 
@@ -54,7 +55,7 @@ function admin_handle_auth(): ?string {
             session_regenerate_id(true);
             $_SESSION['is_admin'] = true;
             $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
-            header('Location: admin.php');
+            header('Location: admin');
             exit;
         }
         return 'Wrong username or password!';
@@ -71,7 +72,7 @@ function admin_handle_auth(): ?string {
             setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
         }
         session_destroy();
-        header('Location: admin.php');
+        header('Location: admin');
         exit;
     }
 
@@ -82,7 +83,9 @@ function admin_show_login(?string $error = null): void {
     admin_csrf_token();
     $safeError = $error ? htmlspecialchars($error, ENT_QUOTES, 'UTF-8') : '';
     $logo = htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8');
-    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin Login | LyaiDeu</title>';
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    echo lyaideu_base_tag();
+    echo '<title>Admin Login | LyaiDeu</title>';
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -130,13 +133,14 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     $navItems = admin_nav_items();
     $logo = htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8');
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    echo lyaideu_base_tag();
     echo '<title>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . ' | LyaiDeu Admin</title>';
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=6"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
-    echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
+    echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
+    echo '<div class="admin-actions"><a href="index" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
     echo '<div class="admin-nav-backdrop" id="adminNavBackdrop"></div>';
@@ -160,13 +164,14 @@ function admin_page_end(): void {
 
 function admin_section_redirect(string $section, bool $saved, ?string $error = null): void {
     $routes = [
-        'dishes' => 'admin_dishes.php',
-        'mart' => 'admin_mart.php',
-        'hotels' => 'admin_hotels.php',
-        'contacts' => 'admin_contacts.php',
+        'categories' => 'admin_categories',
+        'dishes' => 'admin_dishes',
+        'mart' => 'admin_mart',
+        'hotels' => 'admin_hotels',
+        'contacts' => 'admin_contacts',
     ];
 
-    $target = $routes[$section] ?? 'admin.php';
+    $target = $routes[$section] ?? 'admin';
     if ($saved) {
         header('Location: ' . $target . '?saved=1');
     } else {

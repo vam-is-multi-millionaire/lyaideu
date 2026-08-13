@@ -7,30 +7,31 @@ session_start();
 $user = $_SESSION['user'] ?? null;
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
+lyaideu_ensure_categories_table();
 
 $type = (($_GET['type'] ?? 'dish') === 'mart') ? 'mart' : 'dish';
 $id = (int)($_GET['id'] ?? 0);
-$back = $type === 'mart' ? 'mart.php' : 'menu.php';
+$back = $type === 'mart' ? 'mart' : 'menu';
 
 $item = null;
 $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img FROM mart_items WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img FROM mart_items WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
     } else {
-        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -54,7 +55,19 @@ unset($_SESSION['flash']);
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow', 'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie'];
-$ICON = $type === 'mart' ? ($MART_CAT_ICONS[$item['cat']] ?? 'fa-basket-shopping') : 'fa-utensils';
+$catPath = lyaideu_category_path((int)($item['category_id'] ?? 0));
+if (!$catPath) {
+    $urlCat = trim((string)($_GET['catpath'] ?? ''), '/');
+    if ($urlCat !== '') {
+        $cid = lyaideu_category_id_by_slug((string)end(explode('/', $urlCat)), $type);
+        if ($cid) {
+            $catPath = lyaideu_category_path($cid);
+        }
+    }
+}
+$leafCat = $catPath ? end($catPath) : null;
+$catName = $leafCat ? $leafCat['name'] : ucfirst((string)$item['cat']);
+$ICON = $leafCat && $leafCat['icon'] !== '' ? $leafCat['icon'] : ($type === 'mart' ? ($MART_CAT_ICONS[$item['cat']] ?? 'fa-basket-shopping') : 'fa-utensils');
 $REL_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
     'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie',
@@ -73,6 +86,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?= lyaideu_base_tag() ?>
 <title><?= e($item['name']) ?> | <?= $type === 'mart' ? 'LyaiDeu Mart' : 'Menu' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,16 +99,16 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 
 <header class="topbar">
     <nav class="nav">
-        <a class="brand" href="index.php"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="menu.php" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
+        <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
-            <li><a href="index.php" class="nav-a">Home</a></li>
-            <li><a href="menu.php" class="nav-a <?= $type === 'dish' ? 'active' : '' ?>">Menu</a></li>
-            <li><a href="hotels.php" class="nav-a">Hotels</a></li>
-            <li><a href="mart.php" class="nav-a <?= $type === 'mart' ? 'active' : '' ?>">Mart</a></li>
-            <li><a href="contact.php" class="nav-a">Contact</a></li>
-            <li><a href="orders.php" class="nav-a">Orders</a></li>
+            <li><a href="index" class="nav-a">Home</a></li>
+            <li><a href="menu" class="nav-a <?= $type === 'dish' ? 'active' : '' ?>">Menu</a></li>
+            <li><a href="hotels" class="nav-a">Hotels</a></li>
+            <li><a href="mart" class="nav-a <?= $type === 'mart' ? 'active' : '' ?>">Mart</a></li>
+            <li><a href="contact" class="nav-a">Contact</a></li>
+            <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
@@ -109,15 +123,15 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                         <p class="pm-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($user['phone']) ?></p>
                         <p class="pm-line"><i class="fa-solid fa-cake-candles"></i> <?= htmlspecialchars($user['dob']) ?></p>
                         <?php if (!empty($_SESSION['is_admin'])): ?>
-                            <a class="btn btn-outline btn-block" href="admin.php"><i class="fa-solid fa-gear"></i> Admin Panel</a>
+                            <a class="btn btn-outline btn-block" href="admin"><i class="fa-solid fa-gear"></i> Admin Panel</a>
                         <?php endif; ?>
-                        <a class="btn btn-outline btn-block" href="orders.php" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
-                        <a class="btn btn-primary btn-block" href="logout.php" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
+                        <a class="btn btn-outline btn-block" href="orders" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
+                        <a class="btn btn-primary btn-block" href="logout" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
                     </div>
                 </div>
             </li>
             <?php else: ?>
-            <li><a class="nav-a nav-cta" href="login.php"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <li><a class="nav-a nav-cta" href="login"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
             <?php endif; ?>
         </ul>
     </nav>
@@ -131,6 +145,14 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
     <div class="container">
         <a class="back-link" href="<?= $back ?>"><i class="fa-solid fa-arrow-left"></i> Back to <?= $type === 'mart' ? 'Mart' : 'Menu' ?></a>
 
+        <div class="product-breadcrumb">
+            <a href="<?= $back ?>"><?= $type === 'mart' ? 'Mart' : 'Menu' ?></a>
+            <?php foreach ($catPath as $c): ?>
+                <span class="crumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+                <a href="<?= $back ?>?<?= $type === 'mart' ? 'mcat' : 'cat' ?>=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
+            <?php endforeach; ?>
+        </div>
+
         <div class="product-main">
             <div class="product-media">
                 <?php if ($item['img'] !== ''): ?>
@@ -142,7 +164,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
             </div>
 
             <div class="product-details">
-                <span class="product-cat"><i class="fa-solid <?= $ICON ?>"></i> <?= e(ucfirst($item['cat'])) ?></span>
+                <span class="product-cat"><i class="fa-solid <?= $ICON ?>"></i> <?= e($catName) ?></span>
                 <h1 class="display"><?= e($item['name']) ?></h1>
                 <?php if ($type === 'dish' && $item['hotel'] !== ''): ?>
                     <p class="product-hotel"><i class="fa-solid fa-hotel"></i> <?= e($item['hotel']) ?></p>
@@ -170,11 +192,12 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
         </div>
 
         <section class="related-section">
-            <h3><i class="fa-solid fa-thumbs-up"></i> Related <?= e(ucfirst($item['cat'])) ?></h3>
+            <h3><i class="fa-solid fa-thumbs-up"></i> Related <?= e($catName) ?></h3>
             <?php if ($related): ?>
                 <div class="related-grid">
                     <?php foreach ($related as $rItem): ?>
-                        <a class="related-card" href="product.php?type=<?= $type ?>&amp;id=<?= (int)$rItem['id'] ?>">
+                        <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
+                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= e($relPath) ?>/<?= (int)$rItem['id'] ?>">
                             <div class="related-img">
                                 <?php if ($rItem['img'] !== ''): ?>
                                     <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">
@@ -201,13 +224,13 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
   <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
-  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout.php" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
+  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="index.php">Home</a></li><li><a href="menu.php">Menu</a></li><li><a href="hotels.php">Hotels</a></li><li><a href="mart.php">Mart</a></li><li><a href="contact.php">Contact</a></li><li><a href="faq.php">FAQ &amp; Privacy</a></li><li><a href="terms.php">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Hotels</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>

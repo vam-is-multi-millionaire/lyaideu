@@ -9,9 +9,9 @@ lyaideu_ensure_settings_table();
 
 function settings_redirect(bool $saved, ?string $error = null): void {
     if ($saved) {
-        header('Location: admin_settings.php?saved=1');
+        header('Location: admin_settings?saved=1');
     } else {
-        header('Location: admin_settings.php?error=' . urlencode($error ?? 'Could not save settings.'));
+        header('Location: admin_settings?error=' . urlencode($error ?? 'Could not save settings.'));
     }
     exit;
 }
@@ -175,7 +175,7 @@ $heroSlides = site_hero_slides();
 
 admin_page_start('Settings', 'settings', 'Settings');
 ?>
-    <form action="admin_settings.php" method="POST" enctype="multipart/form-data">
+    <form action="admin_settings" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="save_branding" value="1">
 
@@ -213,7 +213,7 @@ admin_page_start('Settings', 'settings', 'Settings');
         <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Branding</button>
     </form>
 
-    <form action="admin_settings.php" method="POST" enctype="multipart/form-data">
+    <form action="admin_settings" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="save_hero" value="1">
 
@@ -237,7 +237,7 @@ admin_page_start('Settings', 'settings', 'Settings');
         <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Hero Slider</button>
     </form>
 
-    <form action="admin_settings.php" method="POST">
+    <form action="admin_settings" method="POST">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="save_creds" value="1">
 

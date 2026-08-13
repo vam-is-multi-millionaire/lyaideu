@@ -3,10 +3,14 @@
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
+
+lyaideu_ensure_categories_table();
+$dishCatsFlat = lyaideu_categories_flat('menu');
 
 try {
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes ORDER BY id'
+        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes ORDER BY id'
     )->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
@@ -15,7 +19,7 @@ try {
 
 admin_page_start('Menu Items', 'dishes', 'Menu Items');
 ?>
-<form action="admin_save.php" method="POST" enctype="multipart/form-data" class="admin-form">
+<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="dishes">
 
@@ -35,9 +39,10 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                 <input type="text" name="dishes[<?= $i ?>][hotel]" value="<?= htmlspecialchars($d['hotel']) ?>" required>
                 <div class="admin-field-row">
                     <div><label>Category</label>
-                        <select name="dishes[<?= $i ?>][cat]">
-                            <?php foreach (['momo','pizza','chowmein','snacks','beverages','dinner'] as $c): ?>
-                            <option value="<?= $c ?>" <?= $d['cat'] === $c ? 'selected' : '' ?>><?= ucfirst($c) ?></option>
+                        <select name="dishes[<?= $i ?>][category_id]">
+                            <option value="0">— No category —</option>
+                            <?php foreach ($dishCatsFlat as $dc): ?>
+                            <option value="<?= (int)$dc['id'] ?>" <?= (int)$d['category_id'] === (int)$dc['id'] ? 'selected' : '' ?>><?= str_repeat('— ', $dc['depth']) ?><?= htmlspecialchars($dc['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -72,10 +77,11 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                 <label>Hotel Name</label><input type="text" name="new_dish[hotel]" placeholder="e.g. Spice Garden">
                 <div class="admin-field-row">
                     <div><label>Category</label>
-                        <select name="new_dish[cat]">
-                            <option value="momo">Momo</option><option value="pizza">Pizza</option>
-                            <option value="chowmein">Chowmein</option><option value="snacks">Snacks</option>
-                            <option value="beverages">Beverages</option><option value="dinner">Dinner</option>
+                        <select name="new_dish[category_id]">
+                            <option value="0">— No category —</option>
+                            <?php foreach ($dishCatsFlat as $dc): ?>
+                            <option value="<?= (int)$dc['id'] ?>"><?= str_repeat('— ', $dc['depth']) ?><?= htmlspecialchars($dc['name']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div><label>Price</label><input type="number" min="0" step="1" name="new_dish[price]" placeholder="250"></div>

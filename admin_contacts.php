@@ -15,7 +15,7 @@ try {
 
 admin_page_start('Contacts', 'contacts', 'Service Contacts');
 ?>
-<form action="admin_save.php" method="POST" class="admin-form">
+<form action="admin_save" method="POST" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="contacts">
 

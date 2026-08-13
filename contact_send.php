@@ -4,7 +4,7 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: contact.php'); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: contact'); exit; }
 if (!hash_equals($_SESSION['csrf_contact'] ?? '', $_POST['csrf_token'] ?? '')) {
     http_response_code(403);
     exit('Invalid security token. Please go back and try again.');
@@ -18,7 +18,7 @@ function clean_phone($v): string { return preg_replace('/[^0-9+]/', '', (string)
 function clean_email($v): string { return strtolower(trim((string)$v)); }
 function flash_contact(string $type, string $msg): void {
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
-    header('Location: contact.php');
+    header('Location: contact');
     exit;
 }
 

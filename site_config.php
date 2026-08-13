@@ -138,6 +138,318 @@ function lyaideu_ensure_mart_table(): bool {
     }
 }
 
+function lyaideu_slugify(string $value): string {
+    $slug = strtolower(trim((string)$value));
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim($slug, '-');
+    return $slug === '' ? 'category' : $slug;
+}
+
+/**
+ * Ensures the `categories` table exists, adds `category_id` to product tables,
+ * seeds the default menu & mart category tree and assigns existing products.
+ */
+function lyaideu_ensure_categories_table(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    if (!empty($GLOBALS['__lyaideu_categories_ready'])) {
+        return true;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS categories (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(120) NOT NULL,
+                slug VARCHAR(100) NOT NULL,
+                type VARCHAR(20) NOT NULL DEFAULT \'menu\',
+                parent_id INT UNSIGNED NULL,
+                sort_order INT NOT NULL DEFAULT 0,
+                icon VARCHAR(60) NOT NULL DEFAULT \'\',
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_cat_slug_type (slug, type),
+                KEY idx_cat_parent (parent_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        foreach (['dishes', 'mart_items'] as $table) {
+            $col = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'category_id'")->fetchAll();
+            if (!$col) {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_{$table}_category (category_id)");
+            }
+        }
+
+        $GLOBALS['__lyaideu_categories_ready'] = true;
+
+        lyaideu_seed_categories();
+        lyaideu_assign_products_to_categories();
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function lyaideu_upsert_category(string $name, string $slug, string $type, ?int $parentId, int $sort, string $icon): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    $st = $pdo->prepare(
+        'INSERT INTO categories (name, slug, type, parent_id, sort_order, icon)
+         VALUES (:name, :slug, :type, :parent_id, :sort_order, :icon)
+         ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            parent_id = VALUES(parent_id),
+            sort_order = VALUES(sort_order),
+            icon = VALUES(icon)'
+    );
+    $st->execute([
+        ':name' => $name,
+        ':slug' => $slug,
+        ':type' => $type,
+        ':parent_id' => $parentId,
+        ':sort_order' => $sort,
+        ':icon' => $icon,
+    ]);
+}
+
+function lyaideu_category_id_by_slug(string $slug, string $type): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return 0;
+    }
+    $st = $pdo->prepare('SELECT id FROM categories WHERE slug = :s AND type = :t');
+    $st->execute([':s' => $slug, ':t' => $type]);
+    return (int)$st->fetchColumn();
+}
+
+function lyaideu_seed_categories(): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+
+    $tree = [
+        'menu' => [
+            ['Momos', 'momo', 'fa-drumstick-bite', [
+                ['Steamed Momos', 'steamed-momo', 'fa-drumstick-bite'],
+                ['Fried Momos', 'fried-momo', 'fa-fire'],
+                ['Jhol Momos', 'jhol-momo', 'fa-pepper-hot'],
+            ]],
+            ['Pizza', 'pizza', 'fa-pizza-slice', [
+                ['Veggie Pizza', 'veggie-pizza', 'fa-pizza-slice'],
+                ['Chicken & Meat Pizza', 'chicken-pizza', 'fa-bacon'],
+            ]],
+            ['Chowmein', 'chowmein', 'fa-bowl-rice', [
+                ['Veg Chowmein', 'veg-chowmein', 'fa-carrot'],
+                ['Chicken Chowmein', 'chicken-chowmein', 'fa-drumstick-bite'],
+                ['Schezwan Chowmein', 'schezwan-chowmein', 'fa-pepper-hot'],
+            ]],
+            ['Snacks', 'snacks', 'fa-cookie', [
+                ['Burgers', 'burgers', 'fa-burger'],
+                ['Fries & Wedges', 'fries-wedges', 'fa-bowl-rice'],
+                ['Fried Chicken', 'fried-chicken', 'fa-drumstick-bite'],
+                ['Traditional Snacks', 'traditional-snacks', 'fa-utensils'],
+            ]],
+            ['Beverages', 'beverages', 'fa-mug-saucer', [
+                ['Hot Drinks', 'hot-drinks', 'fa-mug-hot'],
+                ['Cool Drinks & Shakes', 'cool-drinks', 'fa-glass-water'],
+            ]],
+            ['Dinner & Thali', 'dinner', 'fa-bowl-food', [
+                ['Thali Sets', 'thali-sets', 'fa-bowl-food'],
+                ['Rice & Curry', 'rice-curry', 'fa-bowl-rice'],
+                ['Grills & Skewers', 'grills-skewers', 'fa-fire'],
+            ]],
+        ],
+        'mart' => [
+            ['Vegetables', 'vegetables', 'fa-carrot', [
+                ['Root Vegetables', 'root-vegetables', 'fa-carrot'],
+                ['Leafy & Pod Veggies', 'leafy-pod', 'fa-leaf'],
+            ]],
+            ['Fruits', 'fruits', 'fa-apple-whole', [
+                ['Local Fruits', 'local-fruits', 'fa-apple-whole'],
+                ['Imported Fruits', 'imported-fruits', 'fa-apple-whole'],
+            ]],
+            ['Dairy', 'dairy', 'fa-cow', [
+                ['Milk & Curd', 'milk-curd', 'fa-cow'],
+                ['Paneer & Butter', 'paneer-butter', 'fa-cheese'],
+            ]],
+            ['Staples', 'staples', 'fa-bowl-rice', [
+                ['Grains & Rice', 'grains-rice', 'fa-bowl-rice'],
+                ['Pantry Essentials', 'pantry', 'fa-basket-shopping'],
+            ]],
+            ['Oils & Spices', 'oils', 'fa-mortar-pestle', [
+                ['Cooking Oils', 'cooking-oils', 'fa-mortar-pestle'],
+                ['Spices & Masala', 'spices', 'fa-mortar-pestle'],
+            ]],
+            ['Snacks', 'snacks', 'fa-cookie', [
+                ['Chips & Biscuits', 'chips-biscuits', 'fa-cookie'],
+                ['Chocolates', 'chocolates', 'fa-chocolate-bar'],
+            ]],
+        ],
+    ];
+
+    foreach ($tree as $type => $items) {
+        $sort = 1;
+        foreach ($items as $item) {
+            [$name, $slug, $icon, $children] = $item;
+            lyaideu_upsert_category($name, $slug, $type, null, $sort, $icon);
+            $parentId = lyaideu_category_id_by_slug($slug, $type);
+            $childSort = 1;
+            foreach ($children as $child) {
+                lyaideu_upsert_category($child[0], $child[1], $type, $parentId ?: null, $childSort, $child[2]);
+                $childSort++;
+            }
+            $sort++;
+        }
+    }
+}
+
+function lyaideu_assign_products_to_categories(): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+
+    $rules = [
+        'dishes' => [
+            'momo' => [['steamed-momo', ['cheese', 'steam', 'chilli']], ['fried-momo', ['fried']], ['jhol-momo', ['jhol']]],
+            'pizza' => [['veggie-pizza', ['veggie', 'margherita', 'double cheese', 'vegetable']], ['chicken-pizza', ['chicken', 'bbq', 'pepperoni']]],
+            'chowmein' => [['veg-chowmein', ['veg', 'hakka']], ['chicken-chowmein', ['chicken']], ['schezwan-chowmein', ['schezwan']]],
+            'snacks' => [['burgers', ['burger']], ['fries-wedges', ['fries', 'wedges', 'potato']], ['fried-chicken', ['lollipop', 'popcorn']], ['traditional-snacks', ['samay', 'spring roll', 'pakoda']]],
+            'beverages' => [['hot-drinks', ['chai', 'coffee', 'mocha']], ['cool-drinks', ['shake', 'soda', 'lassi', 'frappe']]],
+            'dinner' => [['thali-sets', ['thali']], ['grills-skewers', ['sekuwa', 'steak', 'mutton']], ['rice-curry', ['biryani', 'curry', 'fried rice', 'dal bhat']]],
+        ],
+        'mart' => [
+            'vegetables' => [['root-vegetables', ['potato', 'onion', 'carrot', 'cauliflower', 'garlic', 'ginger']], ['leafy-pod', ['tomato', 'bean', 'spinach', 'cabbage', 'cucumber']]],
+            'fruits' => [['local-fruits', ['mango', 'orange', 'banana', 'papaya', 'watermelon']], ['imported-fruits', ['apple', 'grape', 'kiwi', 'strawberry']]],
+            'dairy' => [['milk-curd', ['milk', 'curd', 'dahi', 'cream', 'ghee']], ['paneer-butter', ['paneer', 'butter']]],
+            'staples' => [['grains-rice', ['rice', 'wheat', 'flour', 'daal', 'dal']], ['pantry', ['salt', 'sugar', 'tea']]],
+            'oils' => [['cooking-oils', ['oil']], ['spices', ['spice', 'masala', 'turmeric', 'chilli powder']]],
+            'snacks' => [['chips-biscuits', ['chips', 'biscuit', 'parle']], ['chocolates', ['chocolate']]],
+        ],
+    ];
+
+    $tables = ['dishes' => 'dishes', 'mart' => 'mart_items'];
+    foreach ($tables as $key => $table) {
+        $rows = $pdo->query("SELECT id, name, cat, category_id FROM `$table`")->fetchAll();
+        $upd = $pdo->prepare("UPDATE `$table` SET category_id = :cid WHERE id = :id");
+        foreach ($rows as $row) {
+            if ((int)$row['category_id'] > 0) {
+                continue;
+            }
+            $cat = strtolower(trim((string)$row['cat']));
+            $name = strtolower((string)$row['name']);
+            $target = '';
+            foreach (($rules[$key][$cat] ?? []) as [$slug, $keywords]) {
+                foreach ($keywords as $kw) {
+                    if (str_contains($name, $kw)) {
+                        $target = $slug;
+                        break 2;
+                    }
+                }
+            }
+            if ($target === '') {
+                $target = $cat !== '' ? $cat : 'category';
+            }
+            $cid = lyaideu_category_id_by_slug($target, $key === 'dishes' ? 'menu' : 'mart');
+            if ($cid > 0) {
+                $upd->execute([':cid' => $cid, ':id' => (int)$row['id']]);
+            }
+        }
+    }
+}
+
+function lyaideu_categories(?string $type = null): array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    $sql = 'SELECT id, name, slug, type, parent_id, sort_order, icon FROM categories';
+    $params = [];
+    if ($type !== null && $type !== '') {
+        $sql .= ' WHERE type = :type';
+        $params[':type'] = $type;
+    }
+    $sql .= ' ORDER BY type, sort_order, name';
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    return $st->fetchAll();
+}
+
+function lyaideu_categories_flat(string $type, int $excludeId = 0): array {
+    $all = lyaideu_categories($type);
+    if ($excludeId > 0) {
+        $skip = [];
+        $frontier = [$excludeId];
+        while ($frontier) {
+            $cur = array_shift($frontier);
+            $skip[] = $cur;
+            foreach ($all as $c) {
+                if ((int)$c['parent_id'] === $cur) {
+                    $frontier[] = (int)$c['id'];
+                }
+            }
+        }
+        $all = array_filter($all, fn($c) => !in_array((int)$c['id'], $skip, true));
+    }
+    $byParent = [];
+    foreach ($all as $c) {
+        $byParent[(int)$c['parent_id']][] = $c;
+    }
+    $out = [];
+    $walk = function (int $parentId, int $depth) use (&$walk, &$out, $byParent): void {
+        foreach (($byParent[$parentId] ?? []) as $c) {
+            $c['depth'] = $depth;
+            $out[] = $c;
+            $walk((int)$c['id'], $depth + 1);
+        }
+    };
+    $walk(0, 0);
+    return $out;
+}
+
+function lyaideu_category_path(int $categoryId): array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $categoryId <= 0) {
+        return [];
+    }
+    $byId = [];
+    foreach ($pdo->query('SELECT id, name, slug, type, parent_id, icon FROM categories') as $row) {
+        $byId[(int)$row['id']] = $row;
+    }
+    $path = [];
+    $cur = $byId[$categoryId] ?? null;
+    $guard = 0;
+    while ($cur && $guard++ < 12) {
+        $path[] = $cur;
+        $cur = isset($byId[(int)$cur['parent_id']]) ? $byId[(int)$cur['parent_id']] : null;
+    }
+    return array_reverse($path);
+}
+
+function lyaideu_item_cats(?int $categoryId, string $fallbackCat): array {
+    $slugs = [];
+    foreach (lyaideu_category_path((int)$categoryId) as $c) {
+        $slugs[] = $c['slug'];
+    }
+    if (!$slugs && $fallbackCat !== '') {
+        $slugs = [$fallbackCat];
+    }
+    return $slugs;
+}
+
+function lyaideu_cat_name(?int $categoryId): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || !$categoryId) {
+        return '';
+    }
+    $st = $pdo->prepare('SELECT name FROM categories WHERE id = ?');
+    $st->execute([(int)$categoryId]);
+    return (string)$st->fetchColumn();
+}
+
 /**
  * Ensures a generous catalog exists (dishes, mart items, hotels).
  * Idempotent — inserts any missing rows by name, safe on existing installs.
@@ -150,6 +462,7 @@ function lyaideu_seed_catalog(): void {
 
     try {
         lyaideu_ensure_mart_table();
+        lyaideu_ensure_categories_table();
 
         $dishes = [
             ['Chicken Chowmein', 'Wok Star Kitchen', 'chowmein', 220, '', 'Street Style', 'Wok-tossed noodles with tender chicken strips and crunchy veggies.', ''],
@@ -296,6 +609,23 @@ function lyaideu_ensure_messages_table(): bool {
 function site_logo_url(): string {
     return site_setting('site_logo', 'logo.png');
 }
+
+function lyaideu_base_url(): string {
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+    $docRoot = str_replace('\\', '/', realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: (string)($_SERVER['DOCUMENT_ROOT'] ?? '/'));
+    $dir = str_replace('\\', '/', realpath(__DIR__) ?: __DIR__);
+    $rel = ltrim(str_replace('\\', '/', substr($dir, strlen($docRoot))), '/');
+    $base = '/' . ($rel !== '' ? $rel . '/' : '');
+    return $base;
+}
+
+function lyaideu_base_tag(): string {
+    return '<base href="' . htmlspecialchars(lyaideu_base_url(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
 
 function site_favicon_url(): string {
     return site_setting('site_favicon', 'favicon.ico');

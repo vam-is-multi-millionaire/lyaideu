@@ -7,12 +7,14 @@ CREATE TABLE IF NOT EXISTS dishes (
   name VARCHAR(255) NOT NULL,
   hotel VARCHAR(255) NOT NULL,
   cat VARCHAR(50) NOT NULL,
+  category_id INT UNSIGNED NULL,
   price INT UNSIGNED NOT NULL DEFAULT 0,
   phone VARCHAR(20) NOT NULL DEFAULT '',
   tag VARCHAR(100) NOT NULL DEFAULT '',
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY idx_dishes_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS hotels (
@@ -89,12 +91,27 @@ CREATE TABLE IF NOT EXISTS mart_items (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   cat VARCHAR(50) NOT NULL,
+  category_id INT UNSIGNED NULL,
   unit VARCHAR(50) NOT NULL DEFAULT '',
   price INT UNSIGNED NOT NULL DEFAULT 0,
   tag VARCHAR(100) NOT NULL DEFAULT '',
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY idx_mart_items_category (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL DEFAULT 'menu',
+  parent_id INT UNSIGNED NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  icon VARCHAR(60) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_cat_slug_type (slug, type),
+  KEY idx_cat_parent (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -226,3 +243,63 @@ ALTER TABLE hotels MODIFY emoji VARCHAR(50) NOT NULL DEFAULT '';
 ALTER TABLE contacts MODIFY ico VARCHAR(50) NOT NULL DEFAULT '';
 -- Hotel logo image URL for the Hotels section cards.
 ALTER TABLE hotels ADD COLUMN logo VARCHAR(500) NOT NULL DEFAULT '';
+
+-- Category system: table + category_id columns (idempotent for existing installs).
+CREATE TABLE IF NOT EXISTS categories (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL DEFAULT 'menu',
+  parent_id INT UNSIGNED NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  icon VARCHAR(60) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_cat_slug_type (slug, type),
+  KEY idx_cat_parent (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE dishes ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_dishes_category (category_id);
+ALTER TABLE mart_items ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_mart_items_category (category_id);
+
+INSERT INTO categories (name, slug, type, parent_id, sort_order, icon) VALUES
+('Momos','momo','menu',NULL,1,'fa-drumstick-bite'),
+('Steamed Momos','steamed-momo','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='momo' AND type='menu') t),1,'fa-drumstick-bite'),
+('Fried Momos','fried-momo','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='momo' AND type='menu') t),2,'fa-fire'),
+('Jhol Momos','jhol-momo','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='momo' AND type='menu') t),3,'fa-pepper-hot'),
+('Pizza','pizza','menu',NULL,2,'fa-pizza-slice'),
+('Veggie Pizza','veggie-pizza','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='pizza' AND type='menu') t),1,'fa-pizza-slice'),
+('Chicken & Meat Pizza','chicken-pizza','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='pizza' AND type='menu') t),2,'fa-bacon'),
+('Chowmein','chowmein','menu',NULL,3,'fa-bowl-rice'),
+('Veg Chowmein','veg-chowmein','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='chowmein' AND type='menu') t),1,'fa-carrot'),
+('Chicken Chowmein','chicken-chowmein','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='chowmein' AND type='menu') t),2,'fa-drumstick-bite'),
+('Schezwan Chowmein','schezwan-chowmein','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='chowmein' AND type='menu') t),3,'fa-pepper-hot'),
+('Snacks','snacks','menu',NULL,4,'fa-cookie'),
+('Burgers','burgers','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='menu') t),1,'fa-burger'),
+('Fries & Wedges','fries-wedges','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='menu') t),2,'fa-bowl-rice'),
+('Fried Chicken','fried-chicken','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='menu') t),3,'fa-drumstick-bite'),
+('Traditional Snacks','traditional-snacks','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='menu') t),4,'fa-utensils'),
+('Beverages','beverages','menu',NULL,5,'fa-mug-saucer'),
+('Hot Drinks','hot-drinks','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='beverages' AND type='menu') t),1,'fa-mug-hot'),
+('Cool Drinks & Shakes','cool-drinks','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='beverages' AND type='menu') t),2,'fa-glass-water'),
+('Dinner & Thali','dinner','menu',NULL,6,'fa-bowl-food'),
+('Thali Sets','thali-sets','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='dinner' AND type='menu') t),1,'fa-bowl-food'),
+('Rice & Curry','rice-curry','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='dinner' AND type='menu') t),2,'fa-bowl-rice'),
+('Grills & Skewers','grills-skewers','menu',(SELECT id FROM (SELECT id FROM categories WHERE slug='dinner' AND type='menu') t),3,'fa-fire'),
+('Vegetables','vegetables','mart',NULL,1,'fa-carrot'),
+('Root Vegetables','root-vegetables','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='vegetables' AND type='mart') t),1,'fa-carrot'),
+('Leafy & Pod Veggies','leafy-pod','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='vegetables' AND type='mart') t),2,'fa-leaf'),
+('Fruits','fruits','mart',NULL,2,'fa-apple-whole'),
+('Local Fruits','local-fruits','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='fruits' AND type='mart') t),1,'fa-apple-whole'),
+('Imported Fruits','imported-fruits','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='fruits' AND type='mart') t),2,'fa-apple-whole'),
+('Dairy','dairy','mart',NULL,3,'fa-cow'),
+('Milk & Curd','milk-curd','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='dairy' AND type='mart') t),1,'fa-cow'),
+('Paneer & Butter','paneer-butter','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='dairy' AND type='mart') t),2,'fa-cheese'),
+('Staples','staples','mart',NULL,4,'fa-bowl-rice'),
+('Grains & Rice','grains-rice','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='staples' AND type='mart') t),1,'fa-bowl-rice'),
+('Pantry Essentials','pantry','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='staples' AND type='mart') t),2,'fa-basket-shopping'),
+('Oils & Spices','oils','mart',NULL,5,'fa-mortar-pestle'),
+('Cooking Oils','cooking-oils','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='oils' AND type='mart') t),1,'fa-mortar-pestle'),
+('Spices & Masala','spices','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='oils' AND type='mart') t),2,'fa-mortar-pestle'),
+('Snacks','snacks','mart',NULL,6,'fa-cookie'),
+('Chips & Biscuits','chips-biscuits','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='mart') t),1,'fa-cookie'),
+('Chocolates','chocolates','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='mart') t),2,'fa-chocolate-bar')
+ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon);

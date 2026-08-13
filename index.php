@@ -20,8 +20,8 @@ $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_seed_catalog();
-        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img FROM dishes')->fetchAll();
-        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img FROM mart_items')->fetchAll();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes')->fetchAll();
+        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items')->fetchAll();
         $featured['hotels'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo FROM hotels')->fetchAll();
     } catch (Throwable $e) {
         $featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
@@ -44,6 +44,7 @@ $FEATURED_MART_ICONS = [
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?= lyaideu_base_tag() ?>
 <title><?= $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Food Delivery in Surkhet Valley' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,15 +58,15 @@ $FEATURED_MART_ICONS = [
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="#home"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="menu.php" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
+        <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
-            <li><a href="menu.php" class="nav-a">Menu</a></li>
-            <li><a href="hotels.php" class="nav-a">Hotels</a></li>
-            <li><a href="mart.php" class="nav-a">Mart</a></li>
-            <li><a href="contact.php" class="nav-a">Contact</a></li>
-            <li><a href="orders.php" class="nav-a">Orders</a></li>
+            <li><a href="menu" class="nav-a">Menu</a></li>
+            <li><a href="hotels" class="nav-a">Hotels</a></li>
+            <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="contact" class="nav-a">Contact</a></li>
+            <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
@@ -80,15 +81,15 @@ $FEATURED_MART_ICONS = [
                         <p class="pm-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($user['phone']) ?></p>
                         <p class="pm-line"><i class="fa-solid fa-cake-candles"></i> <?= htmlspecialchars($user['dob']) ?></p>
                         <?php if (!empty($_SESSION['is_admin'])): ?>
-                            <a class="btn btn-outline btn-block" href="admin.php"><i class="fa-solid fa-gear"></i> Admin Panel</a>
+                            <a class="btn btn-outline btn-block" href="admin"><i class="fa-solid fa-gear"></i> Admin Panel</a>
                         <?php endif; ?>
-                        <a class="btn btn-outline btn-block" href="orders.php" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
-                        <a class="btn btn-primary btn-block" href="logout.php" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
+                        <a class="btn btn-outline btn-block" href="orders" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
+                        <a class="btn btn-primary btn-block" href="logout" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
                     </div>
                 </div>
             </li>
             <?php else: ?>
-            <li><a class="nav-a nav-cta" href="login.php"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <li><a class="nav-a nav-cta" href="login"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
             <?php endif; ?>
         </ul>
     </nav>
@@ -122,11 +123,11 @@ $FEATURED_MART_ICONS = [
                 <div class="feat-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-utensils"></i> From the Menu</h3>
-                        <a class="see-all" href="menu.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                        <a class="see-all" href="menu">View all <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                     <div class="grid dish-grid home-grid" id="featuredDishes">
                         <?php foreach ($featured['dishes'] as $fDish): ?>
-                        <article class="dish-card reveal visible" data-id="<?= (int)$fDish['id'] ?>" data-type="dish">
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fDish['category_id'] ?? 0), (string)$fDish['cat']))) ?>">
                             <div class="dish-art">
                                 <?php if ($fDish['img'] !== ''): ?>
                                     <img src="<?= lyaideu_featured_e($fDish['img']) ?>" alt="<?= lyaideu_featured_e($fDish['name']) ?>" loading="lazy">
@@ -147,11 +148,11 @@ $FEATURED_MART_ICONS = [
                 <div class="feat-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-basket-shopping"></i> From the Mart</h3>
-                        <a class="see-all" href="mart.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                        <a class="see-all" href="mart">View all <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                     <div class="grid dish-grid home-grid" id="featuredMart">
                         <?php foreach ($featured['mart'] as $fMart): ?>
-                        <article class="dish-card reveal visible" data-id="<?= (int)$fMart['id'] ?>" data-type="mart">
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fMart['category_id'] ?? 0), (string)$fMart['cat']))) ?>">
                             <div class="dish-art mart-art">
                                 <?php if ($fMart['img'] !== ''): ?>
                                     <img src="<?= lyaideu_featured_e($fMart['img']) ?>" alt="<?= lyaideu_featured_e($fMart['name']) ?>" loading="lazy">
@@ -173,7 +174,7 @@ $FEATURED_MART_ICONS = [
                 <div class="feat-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
-                        <a class="see-all" href="hotels.php">View all <i class="fa-solid fa-arrow-right"></i></a>
+                        <a class="see-all" href="hotels">View all <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                     <div class="grid hotels-grid home-grid" id="featuredHotels">
                         <?php foreach ($featured['hotels'] as $fHotel): ?>
@@ -248,7 +249,7 @@ $FEATURED_MART_ICONS = [
                         <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
                         <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
                     </div>
-                    <form action="contact_send.php" method="POST" class="contact-form">
+                    <form action="contact_send" method="POST" class="contact-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
                         <div class="contact-form-row">
                             <div><label>Your Name</label><input type="text" name="name" value="<?= htmlspecialchars($user['name'] ?? '') ?>" placeholder="Full name" required></div>
@@ -274,12 +275,12 @@ $FEATURED_MART_ICONS = [
   <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
-  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout.php" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
+  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu.php">Menu</a></li><li><a href="hotels.php">Hotels</a></li><li><a href="mart.php">Mart</a></li><li><a href="contact.php">Contact</a></li><li><a href="faq.php">FAQ &amp; Privacy</a></li><li><a href="terms.php">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Hotels</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>

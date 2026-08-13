@@ -4,7 +4,7 @@ require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: admin.php');
+    header('Location: admin');
     exit;
 }
 
@@ -42,6 +42,24 @@ function valid_category($value): string {
 function valid_mart_category($value): string {
     $allowed = ['vegetables', 'fruits', 'dairy', 'staples', 'oils', 'snacks'];
     return in_array($value, $allowed, true) ? $value : 'vegetables';
+}
+
+function resolve_product_category(?int $value, string $type): array {
+    if (!$value || $value <= 0) {
+        return [0, ''];
+    }
+    $pdo = $GLOBALS['pdo'] ?? null;
+    if (!$pdo instanceof PDO) {
+        return [0, ''];
+    }
+    $st = $pdo->prepare('SELECT id FROM categories WHERE id = :id AND type = :t');
+    $st->execute([':id' => $value, ':t' => $type]);
+    if (!$st->fetchColumn()) {
+        return [0, ''];
+    }
+    $path = lyaideu_category_path($value);
+    $topSlug = $path ? $path[0]['slug'] : '';
+    return [$value, $topSlug];
 }
 
 function uploaded_file_field(string $group, string|int $index, string $field): ?array {
@@ -169,10 +187,10 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['dishes', 'mart', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
-    header('Location: admin.php?error=' . urlencode('Unknown section.'));
+    header('Location: admin?error=' . urlencode('Unknown section.'));
     exit;
 }
 
@@ -183,13 +201,13 @@ try {
         $deleteDish = $pdo->prepare('DELETE FROM dishes WHERE id = ?');
         $updateDish = $pdo->prepare(
             'UPDATE dishes
-             SET name = :name, hotel = :hotel, cat = :cat, price = :price, phone = :phone,
-                 tag = :tag, `desc` = :descr, img = :img
+             SET name = :name, hotel = :hotel, cat = :cat, category_id = :category_id,
+                 price = :price, phone = :phone, tag = :tag, `desc` = :descr, img = :img
              WHERE id = :id'
         );
         $insertDish = $pdo->prepare(
-            'INSERT INTO dishes (name, hotel, cat, price, phone, tag, `desc`, img)
-             VALUES (:name, :hotel, :cat, :price, :phone, :tag, :descr, :img)'
+            'INSERT INTO dishes (name, hotel, cat, category_id, price, phone, tag, `desc`, img)
+             VALUES (:name, :hotel, :cat, :category_id, :price, :phone, :tag, :descr, :img)'
         );
 
         foreach (($_POST['dishes'] ?? []) as $i => $d) {
@@ -210,12 +228,14 @@ try {
             }
 
             $img = handle_item_image((string)($d['img'] ?? ''), $d, uploaded_file_field('dishes', $i, 'img_file'), 'dish_img');
+            $catRes = resolve_product_category((int)($d['category_id'] ?? 0), 'menu');
 
             $updateDish->execute([
                 ':id' => $id,
                 ':name' => $name,
                 ':hotel' => $hotel,
-                ':cat' => valid_category($d['cat'] ?? 'snacks'),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($d['cat'] ?? 'snacks'),
+                ':category_id' => $catRes[0] ?: null,
                 ':price' => max(0, (int)($d['price'] ?? 0)),
                 ':phone' => clean_phone($d['phone'] ?? ''),
                 ':tag' => clean_text($d['tag'] ?? ''),
@@ -237,11 +257,13 @@ try {
                 ]
                 : null;
             $img = handle_item_image('', $newDish, $newImgFile, 'dish_img');
+            $catRes = resolve_product_category((int)($newDish['category_id'] ?? 0), 'menu');
 
             $insertDish->execute([
                 ':name' => clean_text($newDish['name'] ?? ''),
                 ':hotel' => clean_text($newDish['hotel'] ?? ''),
-                ':cat' => valid_category($newDish['cat'] ?? 'snacks'),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($newDish['cat'] ?? 'snacks'),
+                ':category_id' => $catRes[0] ?: null,
                 ':price' => max(0, (int)($newDish['price'] ?? 0)),
                 ':phone' => clean_phone($newDish['phone'] ?? ''),
                 ':tag' => clean_text($newDish['tag'] ?? ''),
@@ -255,13 +277,13 @@ try {
         $deleteItem = $pdo->prepare('DELETE FROM mart_items WHERE id = ?');
         $updateItem = $pdo->prepare(
             'UPDATE mart_items
-             SET name = :name, cat = :cat, unit = :unit, price = :price, tag = :tag,
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
                  `desc` = :descr, img = :img
              WHERE id = :id'
         );
         $insertItem = $pdo->prepare(
-            'INSERT INTO mart_items (name, cat, unit, price, tag, `desc`, img)
-             VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
+            'INSERT INTO mart_items (name, cat, category_id, unit, price, tag, `desc`, img)
+             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img)'
         );
 
         foreach (($_POST['mart'] ?? []) as $i => $m) {
@@ -281,11 +303,13 @@ try {
             }
 
             $img = handle_item_image((string)($m['img'] ?? ''), $m, uploaded_file_field('mart', $i, 'img_file'), 'mart_img');
+            $catRes = resolve_product_category((int)($m['category_id'] ?? 0), 'mart');
 
             $updateItem->execute([
                 ':id' => $id,
                 ':name' => $name,
-                ':cat' => valid_mart_category($m['cat'] ?? 'vegetables'),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($m['cat'] ?? 'vegetables'),
+                ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => max(0, (int)($m['price'] ?? 0)),
                 ':tag' => clean_text($m['tag'] ?? ''),
@@ -307,10 +331,12 @@ try {
                 ]
                 : null;
             $img = handle_item_image('', $newItem, $newImgFile, 'mart_img');
+            $catRes = resolve_product_category((int)($newItem['category_id'] ?? 0), 'mart');
 
             $insertItem->execute([
                 ':name' => clean_text($newItem['name'] ?? ''),
-                ':cat' => valid_mart_category($newItem['cat'] ?? 'vegetables'),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($newItem['cat'] ?? 'vegetables'),
+                ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => max(0, (int)($newItem['price'] ?? 0)),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
@@ -422,6 +448,131 @@ try {
                 ':phone' => clean_phone($newContact['phone'] ?? ''),
                 ':note' => clean_text($newContact['note'] ?? ''),
                 ':ico' => clean_text($newContact['ico'] ?? 'fa-phone'),
+            ]);
+        }
+    }
+
+    if ($section === 'categories') {
+        lyaideu_ensure_categories_table();
+
+        $allCats = $pdo->query('SELECT id, parent_id, type FROM categories')->fetchAll();
+        $byId = [];
+        foreach ($allCats as $c) {
+            $byId[(int)$c['id']] = $c;
+        }
+        $descOf = function (int $id) use ($byId): array {
+            $result = [];
+            $frontier = [$id];
+            while ($frontier) {
+                $next = array_shift($frontier);
+                foreach ($byId as $c) {
+                    if ((int)$c['parent_id'] === $next) {
+                        $result[] = (int)$c['id'];
+                        $frontier[] = (int)$c['id'];
+                    }
+                }
+            }
+            return $result;
+        };
+
+        $updateCat = $pdo->prepare(
+            'UPDATE categories
+             SET name = :name, slug = :slug, parent_id = :parent_id, sort_order = :sort_order, icon = :icon
+             WHERE id = :id'
+        );
+        $insertCat = $pdo->prepare(
+            'INSERT INTO categories (name, slug, type, parent_id, sort_order, icon)
+             VALUES (:name, :slug, :type, :parent_id, :sort_order, :icon)'
+        );
+        $nullDish = $pdo->prepare('UPDATE dishes SET category_id = NULL WHERE category_id = ?');
+        $nullMart = $pdo->prepare('UPDATE mart_items SET category_id = NULL WHERE category_id = ?');
+        $reparent = $pdo->prepare('UPDATE categories SET parent_id = ? WHERE parent_id = ?');
+        $deleteCat = $pdo->prepare('DELETE FROM categories WHERE id = ?');
+        $dupeCat = $pdo->prepare('SELECT id FROM categories WHERE slug = :slug AND type = :type AND id <> :id');
+
+        foreach (($_POST['categories'] ?? []) as $cat) {
+            $id = (int)($cat['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($cat['delete'])) {
+                $ids = array_merge([$id], $descOf($id));
+                foreach ($ids as $did) {
+                    $nullDish->execute([$did]);
+                    $nullMart->execute([$did]);
+                }
+                $parent = (int)($byId[$id]['parent_id'] ?? 0);
+                $reparent->execute([$parent ?: null, $id]);
+                $deleteCat->execute([$id]);
+                continue;
+            }
+
+            $name = clean_text($cat['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart'], true) ? clean_text($cat['type']) : 'menu';
+            $slug = lyaideu_slugify(clean_text($cat['slug'] ?? ''));
+            if ($slug === '' || $slug === 'category') {
+                $slug = lyaideu_slugify($name);
+            }
+            $parentId = (int)($cat['parent_id'] ?? 0);
+            if ($parentId > 0) {
+                if (!isset($byId[$parentId]) || $byId[$parentId]['type'] !== $type) {
+                    $parentId = 0;
+                } elseif ($parentId === $id || in_array($id, $descOf($parentId), true)) {
+                    $parentId = 0;
+                }
+            }
+            $sort = max(0, (int)($cat['sort_order'] ?? 0));
+            $icon = preg_replace('/[^a-z0-9-]/', '', clean_text($cat['icon'] ?? ''));
+
+            $dupeCat->execute([':slug' => $slug, ':type' => $type, ':id' => $id]);
+            if ($dupeCat->fetchColumn()) {
+                throw new RuntimeException('A category with the slug "' . $slug . '" already exists.');
+            }
+
+            $updateCat->execute([
+                ':name' => $name,
+                ':slug' => $slug,
+                ':parent_id' => $parentId ?: null,
+                ':sort_order' => $sort,
+                ':icon' => $icon,
+                ':id' => $id,
+            ]);
+        }
+
+        $newCat = $_POST['new_category'] ?? [];
+        if (clean_text($newCat['name'] ?? '') !== '') {
+            $name = clean_text($newCat['name']);
+            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart'], true) ? clean_text($newCat['type']) : 'menu';
+            $slug = lyaideu_slugify(clean_text($newCat['slug'] ?? ''));
+            if ($slug === '' || $slug === 'category') {
+                $slug = lyaideu_slugify($name);
+            }
+            $parentId = (int)($newCat['parent_id'] ?? 0);
+            if ($parentId > 0) {
+                if (!isset($byId[$parentId]) || $byId[$parentId]['type'] !== $type) {
+                    $parentId = 0;
+                }
+            }
+            $sort = max(0, (int)($newCat['sort_order'] ?? 0));
+            $icon = preg_replace('/[^a-z0-9-]/', '', clean_text($newCat['icon'] ?? ''));
+
+            $dupeNew = $pdo->prepare('SELECT id FROM categories WHERE slug = :slug AND type = :type');
+            $dupeNew->execute([':slug' => $slug, ':type' => $type]);
+            if ($dupeNew->fetchColumn()) {
+                throw new RuntimeException('A category with the slug "' . $slug . '" already exists.');
+            }
+
+            $insertCat->execute([
+                ':name' => $name,
+                ':slug' => $slug,
+                ':type' => $type,
+                ':parent_id' => $parentId ?: null,
+                ':sort_order' => $sort,
+                ':icon' => $icon,
             ]);
         }
     }

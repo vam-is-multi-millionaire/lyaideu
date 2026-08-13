@@ -34,9 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        header('Location: admin_messages.php?deleted=1');
+        header('Location: admin_messages?deleted=1');
     } else {
-        header('Location: admin_messages.php?saved=1');
+        header('Location: admin_messages?saved=1');
     }
     exit;
 }
@@ -78,9 +78,9 @@ admin_page_start('Messages', 'messages', 'Contact Messages');
     </div>
 
     <nav class="admin-tabs" aria-label="Filter messages">
-        <a class="admin-tab <?= $filter === 'all' ? 'active' : '' ?>" href="admin_messages.php?filter=all">All</a>
-        <a class="admin-tab <?= $filter === 'unread' ? 'active' : '' ?>" href="admin_messages.php?filter=unread">Unread (<?= $unreadCount ?>)</a>
-        <a class="admin-tab <?= $filter === 'read' ? 'active' : '' ?>" href="admin_messages.php?filter=read">Read</a>
+        <a class="admin-tab <?= $filter === 'all' ? 'active' : '' ?>" href="admin_messages?filter=all">All</a>
+        <a class="admin-tab <?= $filter === 'unread' ? 'active' : '' ?>" href="admin_messages?filter=unread">Unread (<?= $unreadCount ?>)</a>
+        <a class="admin-tab <?= $filter === 'read' ? 'active' : '' ?>" href="admin_messages?filter=read">Read</a>
     </nav>
 
     <section class="admin-section">

@@ -15,7 +15,7 @@ try {
 
 admin_page_start('Hotels', 'hotels', 'Partner Hotels');
 ?>
-<form action="admin_save.php" method="POST" enctype="multipart/form-data" class="admin-form">
+<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="hotels">
 

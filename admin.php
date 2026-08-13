@@ -13,9 +13,11 @@ $hotelCount = 0;
 $contactCount = 0;
 $messageCount = 0;
 $unreadMessageCount = 0;
+$categoryCount = 0;
 
 try {
     lyaideu_ensure_mart_table();
+    lyaideu_ensure_categories_table();
 
     $totalOrders = (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
     $totalSales = (float)$pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status <> 'Cancelled'")->fetchColumn();
@@ -24,6 +26,7 @@ try {
     $martCount = (int)$pdo->query('SELECT COUNT(*) FROM mart_items')->fetchColumn();
     $hotelCount = (int)$pdo->query('SELECT COUNT(*) FROM hotels')->fetchColumn();
     $contactCount = (int)$pdo->query('SELECT COUNT(*) FROM contacts')->fetchColumn();
+    $categoryCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
 
     if (lyaideu_ensure_messages_table()) {
         $messageCount = (int)$pdo->query('SELECT COUNT(*) FROM messages')->fetchColumn();
@@ -58,6 +61,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
         <div class="admin-hub-grid">
             <?php
             $cards = [
+                'categories' => ['count' => $categoryCount, 'desc' => 'Build menu & mart category trees'],
                 'orders' => ['count' => $totalOrders, 'desc' => 'Track and update customer orders'],
                 'dishes' => ['count' => $dishCount, 'desc' => 'Add, edit, or remove menu items'],
                 'mart' => ['count' => $martCount, 'desc' => 'Manage grocery items on the Mart page'],
@@ -82,9 +86,9 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
     <section class="admin-section admin-quick-actions">
         <h2><i class="fa-solid fa-globe"></i> Website</h2>
         <div class="hero-actions">
-            <a class="btn btn-primary" href="menu.php" target="_blank"><i class="fa-solid fa-utensils"></i> Preview Menu</a>
-            <a class="btn btn-outline" href="index.php" target="_blank">Open Website</a>
-            <a class="btn btn-outline" href="admin_settings.php"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a class="btn btn-primary" href="menu" target="_blank"><i class="fa-solid fa-utensils"></i> Preview Menu</a>
+            <a class="btn btn-outline" href="index" target="_blank">Open Website</a>
+            <a class="btn btn-outline" href="admin_settings"><i class="fa-solid fa-gear"></i> Settings</a>
         </div>
     </section>
 <?php

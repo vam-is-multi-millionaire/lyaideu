@@ -1,14 +1,14 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) { header('Location: login.php'); exit; }
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: checkout.php'); exit; }
+if (!isset($_SESSION['user'])) { header('Location: login'); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: checkout'); exit; }
 if (!hash_equals($_SESSION['csrf_order'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid checkout token.'); }
 
 require_once __DIR__ . '/db.php';
 
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
-function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg]; header('Location: checkout.php'); exit; }
+function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg]; header('Location: checkout'); exit; }
 
 $cart = json_decode($_POST['cart_json'] ?? '[]', true);
 if (!is_array($cart) || empty($cart)) {
@@ -150,5 +150,5 @@ try {
 }
 
 $_SESSION['last_order_id'] = $orderId;
-header('Location: order_success.php?id=' . $orderId);
+header('Location: order_success?id=' . $orderId);
 exit;

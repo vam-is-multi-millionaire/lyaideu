@@ -15,16 +15,16 @@ function redirect(string $to): void { header("Location: $to"); exit; }
 function sanitize($s) { return htmlspecialchars(strip_tags(trim($s))); }
 function safe_next(string $next): string {
     $next = trim((string)$next);
-    if ($next === '' || $next === 'login.php' || str_starts_with($next, '//') || strpos($next, ':') !== false || strpos($next, '..') !== false) return 'index.php';
-    if (!preg_match('#^[A-Za-z0-9_\-.?&=]+$#', $next)) return 'index.php';
+    if ($next === '' || $next === 'login' || str_starts_with($next, '//') || strpos($next, ':') !== false || strpos($next, '..') !== false) return 'index';
+    if (!preg_match('#^[A-Za-z0-9_\-.?&=]+$#', $next)) return 'index';
     return $next;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') redirect('login.php');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') redirect('login');
 
 $action = trim($_POST['action'] ?? '');
 $next   = safe_next($_POST['next'] ?? '');
-$nextQS = ($next !== 'index.php') ? '&next=' . urlencode($next) : '';
+$nextQS = ($next !== 'index') ? '&next=' . urlencode($next) : '';
 
 /* ===================== SIGN UP ===================== */
 if ($action === 'signup') {
@@ -97,7 +97,7 @@ if ($action === 'signup') {
 
     if ($errors) {
         flash('error', implode('<br>', $errors));
-        redirect('login.php?tab=signup' . $nextQS);
+        redirect('login?tab=signup' . $nextQS);
     }
 
     try {
@@ -107,11 +107,11 @@ if ($action === 'signup') {
 
         if ($existing && $existing['email'] === $email) {
             flash('error', 'This email is already registered. Please login instead.');
-            redirect('login.php?tab=signup' . $nextQS);
+            redirect('login?tab=signup' . $nextQS);
         }
         if ($existing && $existing['phone'] === $phone) {
             flash('error', 'This contact number is already registered. Please login instead.');
-            redirect('login.php?tab=signup' . $nextQS);
+            redirect('login?tab=signup' . $nextQS);
         }
 
         $insert = $pdo->prepare(
@@ -130,7 +130,7 @@ if ($action === 'signup') {
         $userId = (int)$pdo->lastInsertId();
     } catch (Throwable $e) {
         flash('error', 'Could not create your account right now. Please try again.');
-        redirect('login.php?tab=signup' . $nextQS);
+        redirect('login?tab=signup' . $nextQS);
     }
 
     unset($_SESSION['old']);
@@ -147,7 +147,7 @@ if ($action === 'login') {
 
     if ($username === '' || $pass === '') {
         flash('error', 'Please enter your username and password.');
-        redirect('login.php' . $nextQS);
+        redirect('login' . $nextQS);
     }
 
     try {
@@ -179,11 +179,11 @@ if ($action === 'login') {
         }
     } catch (Throwable $e) {
         flash('error', 'Could not log you in right now. Please try again.');
-        redirect('login.php' . $nextQS);
+        redirect('login' . $nextQS);
     }
 
     flash('error', 'Invalid username or password. Please try again or sign up.');
-    redirect('login.php' . $nextQS);
+    redirect('login' . $nextQS);
 }
 
-redirect('login.php' . $nextQS);
+redirect('login' . $nextQS);
