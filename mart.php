@@ -29,17 +29,6 @@ lyaideu_ensure_mart_table();
 </head>
 <body>
 
-<div class="promo-ticker"><div class="ticker-track">
-    <span><i class="fa-solid fa-fire"></i> Free delivery on your first order — code LYAIDEU</span>
-    <span><i class="fa-solid fa-basket-shopping"></i> Mart essentials delivered with your khaja!</span>
-    <span><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</span>
-    <span><i class="fa-solid fa-heart"></i> 25+ hotels across the city</span>
-    <span><i class="fa-solid fa-fire"></i> Free delivery on your first order — code LYAIDEU</span>
-    <span><i class="fa-solid fa-basket-shopping"></i> Mart essentials delivered with your khaja!</span>
-    <span><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</span>
-    <span><i class="fa-solid fa-heart"></i> 25+ hotels across the city</span>
-</div></div>
-
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index.php"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>

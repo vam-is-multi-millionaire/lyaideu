@@ -39,13 +39,6 @@ section{scroll-margin-top:96px;}
 .display{font-family:var(--font-display);font-weight:400;letter-spacing:.4px;color:var(--orange-950);}
 .container{max-width:1200px;margin:0 auto;}
 
-/* ---------------- TICKER ---------------- */
-.ticker-track{display:flex;gap:2.2rem;width:max-content;white-space:nowrap;
-              animation:ticker 24s linear infinite;font-weight:800;font-size:.85rem;letter-spacing:.04em;}
-@keyframes ticker{to{transform:translateX(-50%);}}
-
-.promo-ticker{background:var(--orange-950);color:var(--orange-200);overflow:hidden;padding:.5rem 0;}
-
 /* ---------------- FLOATING FOOD ---------------- */
 .float-emoji{position:absolute;opacity:.85;pointer-events:none;z-index:0;
              animation:bob 6s ease-in-out infinite;
