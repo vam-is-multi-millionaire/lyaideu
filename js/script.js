@@ -13,7 +13,7 @@ function emojisToIcons(s){s=String(s||'').replace(/\uFE0F/g,'');return s.replace
 function toast(msg){let e=$('.toast');if(!e){e=document.createElement('div');e.className='toast';document.body.appendChild(e)}e.innerHTML=msg;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2800)}
 
 document.addEventListener('DOMContentLoaded',()=>{
-  initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();
+  initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();
   if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||document.body.hasAttribute('data-needs-catalog'))fetch('api.php').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
@@ -105,6 +105,19 @@ function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay'
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
 function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;addToCart(Number(b.dataset.id),b.dataset.type||'dish')})}
 function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href='product.php?type='+(card.dataset.type||'dish')+'&id='+card.dataset.id})}
+function initHeroSlider(){
+  const wrap=$('#heroSlides');if(!wrap)return;
+  const slides=$$('.hero-slide',wrap),dotsBox=$('#heroDots');
+  if(slides.length<2)return;
+  let cur=0,timer=null;
+  slides.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Slide '+(i+1));b.addEventListener('click',()=>{go(i);restart()});if(i===0)b.classList.add('active');dotsBox?.appendChild(b)});
+  const dots=$$('button',dotsBox);
+  function go(i){cur=(i+slides.length)%slides.length;wrap.style.transform='translateX(-'+(cur*100)+'%)';dots.forEach((d,k)=>d.classList.toggle('active',k===cur))}
+  function restart(){if(timer)clearInterval(timer);timer=setInterval(()=>go(cur+1),3000)}
+  $('#heroPrev')?.addEventListener('click',()=>{go(cur-1);restart()});
+  $('#heroNext')?.addEventListener('click',()=>{go(cur+1);restart()});
+  restart();
+}
 function toggleFav(id,b){let f=getFav();if(f.includes(id)){f=f.filter(x=>x!==id);b.classList.remove('active');b.innerHTML='<i class="fa-regular fa-heart"></i>';toast('Removed from favorites')}else{f.push(id);b.classList.add('active');b.innerHTML='<i class="fa-solid fa-heart"></i>';toast('<i class="fa-solid fa-heart"></i> Added to favorites')}saveFav(f)}
 function applyFilters(){
   const cards=$$('.dish-card'),sort=$('#sortMenu')?.value||'default';

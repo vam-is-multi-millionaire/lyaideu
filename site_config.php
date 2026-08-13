@@ -305,6 +305,23 @@ function site_apple_icon_url(): string {
     return site_setting('site_apple_icon', 'apple-touch-icon.png');
 }
 
+function site_hero_slides(): array {
+    $defaults = [
+        'uploads/mart_img_20260812_131222_24f22173.jpg',
+        'uploads/mart_img_20260812_131222_4639f9bb.jpg',
+        'uploads/hotel_logo_20260812_104849_51266950.jpg',
+        'uploads/mart_img_20260812_131222_31e223f3.webp',
+    ];
+    $slides = [];
+    for ($i = 1; $i <= 4; $i++) {
+        $slide = site_setting('hero_slide_' . $i, '');
+        if ($slide !== '') {
+            $slides[] = $slide;
+        }
+    }
+    return $slides ?: $defaults;
+}
+
 function site_icon_type(string $path): string {
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     switch ($ext) {

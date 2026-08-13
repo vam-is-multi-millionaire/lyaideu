@@ -100,6 +100,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if (isset($_POST['save_hero'])) {
+        try {
+            $defaults = site_hero_slides();
+            for ($i = 1; $i <= 4; $i++) {
+                $settingKey = 'hero_slide_' . $i;
+                $hasUpload = !empty($_FILES['hero_slide_' . $i . '_file'])
+                    && ($_FILES['hero_slide_' . $i . '_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+                $current = site_setting($settingKey, '');
+                if (!$hasUpload && $current === '') {
+                    $default = $defaults[$i - 1] ?? '';
+                    if ($default !== '') {
+                        $pdo->prepare(
+                            'INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                             ON DUPLICATE KEY UPDATE sval = VALUES(sval)'
+                        )->execute([':skey' => $settingKey, ':sval' => $default]);
+                    }
+                } else {
+                    save_site_image('hero_slide_' . $i . '_file', $settingKey, 'Hero Slide ' . $i);
+                }
+            }
+            lyaideu_settings_clear();
+            settings_redirect(true);
+        } catch (Throwable $e) {
+            settings_redirect(false, 'Could not save the hero slider images.');
+        }
+    }
+
     if (isset($_POST['save_creds'])) {
         $username = trim((string)($_POST['admin_username'] ?? ''));
         $current = (string)($_POST['current_password'] ?? '');
@@ -144,6 +171,7 @@ $logoUrl = site_logo_url();
 $faviconUrl = site_favicon_url();
 $appleUrl = site_apple_icon_url();
 $currentUser = site_setting('admin_username', 'admin');
+$heroSlides = site_hero_slides();
 
 admin_page_start('Settings', 'settings', 'Settings');
 ?>
@@ -183,6 +211,30 @@ admin_page_start('Settings', 'settings', 'Settings');
         </section>
 
         <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Branding</button>
+    </form>
+
+    <form action="admin_settings.php" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="save_hero" value="1">
+
+        <section class="admin-section">
+            <div class="admin-section-top">
+                <p class="section-sub">Change the images that slide on the homepage banner. Upload up to 4 images — leave a slot blank to keep the current slide.</p>
+            </div>
+            <div class="admin-grid">
+                <?php for ($i = 1; $i <= 4; $i++): ?>
+                <div class="admin-card">
+                    <h3><i class="fa-solid fa-images"></i> Hero Slide <?= $i ?></h3>
+                    <div class="settings-preview"><img src="<?= htmlspecialchars($heroSlides[$i - 1] ?? 'logo.png', ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide <?= $i ?>"></div>
+                    <label>Slide image</label>
+                    <input type="file" name="hero_slide_<?= $i ?>_file" accept="image/png,image/jpeg,image/webp,image/gif">
+                    <small class="small-note">Wide banner images look best (e.g. 1920×420). Max 2 MB.</small>
+                </div>
+                <?php endfor; ?>
+            </div>
+        </section>
+
+        <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Hero Slider</button>
     </form>
 
     <form action="admin_settings.php" method="POST">

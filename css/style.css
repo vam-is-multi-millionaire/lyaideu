@@ -93,6 +93,17 @@ section{scroll-margin-top:96px;}
 /* ---------------- HERO ---------------- */
 .hero{position:relative;overflow:hidden;padding:3.6rem 1.25rem 3rem;
       background:linear-gradient(180deg,var(--orange-100) 0%,var(--orange-50) 100%);}
+.hero-slider{padding:0;background:var(--orange-100);}
+.hero-slider-viewport{position:relative;width:100%;height:420px;overflow:hidden;}
+.hero-slides{position:relative;width:100%;height:100%;display:flex;transition:transform .7s ease;}
+.hero-slide{position:relative;flex:0 0 100%;width:100%;height:100%;}
+.hero-slide img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center;}
+.hero-slider-arrows{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 1rem;pointer-events:none;}
+.hero-slider-arrows button{pointer-events:auto;width:46px;height:46px;border-radius:999px;border:0;background:rgba(255,255,255,.85);color:var(--orange-700);font-size:1.1rem;cursor:pointer;box-shadow:var(--shadow-sm);transition:.2s;}
+.hero-slider-arrows button:hover{background:#fff;transform:scale(1.08);}
+.hero-slider-dots{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:.5rem;z-index:2;}
+.hero-slider-dots button{width:10px;height:10px;border-radius:999px;border:0;padding:0;background:rgba(255,255,255,.55);cursor:pointer;transition:.25s;}
+.hero-slider-dots button.active{width:26px;background:#fff;}
 .hero-inner{position:relative;z-index:1;max-width:1200px;margin:0 auto;}
 .kicker{display:inline-block;font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em;
         color:var(--orange-700);background:#fff;border:2px solid var(--orange-200);
@@ -324,6 +335,12 @@ section{scroll-margin-top:96px;}
   .hero{padding:2.2rem .95rem 2rem;}
   .hero h1{font-size:clamp(1.6rem,7vw,2.2rem);}
   .hero-actions .btn{flex:1;min-width:0;}
+  .hero-slider{padding:0;}
+  .hero-slider-viewport{height:220px;}
+  .hero-slider-arrows button{width:34px;height:34px;font-size:.9rem;}
+  .hero-slider-arrows{padding:0 .6rem;}
+  .hero-slider-dots button{width:8px;height:8px;}
+  .hero-slider-dots button.active{width:20px;}
   .profile-menu{width:min(250px,calc(100vw - 2rem));}
   .search-bar{padding:.3rem .4rem .3rem .9rem;}
   .footer{padding:2.5rem .95rem 0;}

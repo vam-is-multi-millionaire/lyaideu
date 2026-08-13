@@ -109,16 +109,19 @@ $FEATURED_MART_ICONS = [
 <?php endif; ?>
 
 <main>
-    <section id="home" class="hero">
-        <span class="float-emoji" style="top:18%;right:8%;font-size:3.4rem;"><i class="fa-solid fa-pizza-slice"></i></span>
-        <span class="float-emoji" style="bottom:16%;right:18%;font-size:2.6rem;"><i class="fa-solid fa-drumstick-bite"></i></span>
-        <span class="float-emoji" style="top:26%;right:26%;font-size:2.1rem;"><i class="fa-solid fa-mug-saucer"></i></span>
-        <div class="container hero-inner">
-            <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast Delivery · Surkhet Valley</p>
-            <h1 class="display"><?= $user ? 'Namaste ' . htmlspecialchars($firstName) . '!' : 'Welcome to LyaiDeu!' ?> <i class="fa-solid fa-hand"></i><br>Khaja time — <em>what's the craving?</em></h1>
-            <form class="search-bar" action="menu.php" method="get"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
-            <div class="hero-actions"><a class="btn btn-primary" href="menu.php"><i class="fa-solid fa-utensils"></i> Browse Menu</a><button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> Cart <span class="cart-count">0</span></button></div>
+    <section id="home" class="hero hero-slider">
+        <div class="hero-slider-viewport">
+        <div class="hero-slides" id="heroSlides">
+            <?php foreach (site_hero_slides() as $heroSlide): ?>
+            <div class="hero-slide"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
+            <?php endforeach; ?>
         </div>
+        </div>
+        <div class="hero-slider-arrows">
+            <button type="button" id="heroPrev" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" id="heroNext" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="hero-slider-dots" id="heroDots"></div>
     </section>
 
     <section id="featured" class="section">
