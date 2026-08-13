@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS dishes (
   hotel VARCHAR(255) NOT NULL,
   cat VARCHAR(50) NOT NULL,
   category_id INT UNSIGNED NULL,
+  name_slug VARCHAR(120) NOT NULL DEFAULT '',
   price INT UNSIGNED NOT NULL DEFAULT 0,
   phone VARCHAR(20) NOT NULL DEFAULT '',
   tag VARCHAR(100) NOT NULL DEFAULT '',
@@ -92,6 +93,7 @@ CREATE TABLE IF NOT EXISTS mart_items (
   name VARCHAR(255) NOT NULL,
   cat VARCHAR(50) NOT NULL,
   category_id INT UNSIGNED NULL,
+  name_slug VARCHAR(120) NOT NULL DEFAULT '',
   unit VARCHAR(50) NOT NULL DEFAULT '',
   price INT UNSIGNED NOT NULL DEFAULT 0,
   tag VARCHAR(100) NOT NULL DEFAULT '',
@@ -259,6 +261,8 @@ CREATE TABLE IF NOT EXISTS categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ALTER TABLE dishes ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_dishes_category (category_id);
 ALTER TABLE mart_items ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_mart_items_category (category_id);
+ALTER TABLE dishes ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT '';
+ALTER TABLE mart_items ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT '';
 
 INSERT INTO categories (name, slug, type, parent_id, sort_order, icon) VALUES
 ('Momos','momo','menu',NULL,1,'fa-drumstick-bite'),

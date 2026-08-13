@@ -139,7 +139,7 @@ function lyaideu_ensure_mart_table(): bool {
 }
 
 function lyaideu_slugify(string $value): string {
-    $slug = strtolower(trim((string)$value));
+    $slug = strtolower(trim(html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8')));
     $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
     $slug = trim($slug, '-');
     return $slug === '' ? 'category' : $slug;
@@ -451,6 +451,71 @@ function lyaideu_cat_name(?int $categoryId): string {
 }
 
 /**
+ * Adds a unique `name_slug` column to dishes/mart_items and backfills unique
+ * slugs (name-slug, with "-2", "-3" ... suffixes for duplicate names).
+ */
+function lyaideu_ensure_product_slugs(): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        foreach (['dishes', 'mart_items'] as $table) {
+            $cols = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'name_slug'")->fetchAll();
+            if (!$cols) {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT ''");
+            }
+            $used = $pdo->query("SELECT name_slug FROM `$table` WHERE name_slug <> ''")->fetchAll(PDO::FETCH_COLUMN);
+            $used = array_flip($used);
+            $update = $pdo->prepare("UPDATE `$table` SET name_slug = :s WHERE id = :id");
+            $st = $pdo->query("SELECT id, name FROM `$table` WHERE name_slug = '' ORDER BY id");
+            foreach ($st as $row) {
+                $base = lyaideu_slugify((string)$row['name']);
+                if ($base === '' || $base === 'category') {
+                    $base = 'item';
+                }
+                $slug = $base;
+                $n = 2;
+                while (isset($used[$slug])) {
+                    $slug = $base . '-' . $n++;
+                }
+                $used[$slug] = true;
+                $update->execute([':s' => $slug, ':id' => (int)$row['id']]);
+            }
+        }
+    } catch (Throwable $e) {
+        // Best-effort; never break the page because of it.
+    }
+}
+
+/**
+ * Returns a unique name slug for a new/renamed product in a given table.
+ */
+function lyaideu_sync_item_slug(string $table, int $id, string $name): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || !in_array($table, ['dishes', 'mart_items'], true) || $id <= 0) {
+        return;
+    }
+    try {
+        $base = lyaideu_slugify($name);
+        if ($base === '' || $base === 'category') {
+            $base = 'item';
+        }
+        $used = $pdo->query("SELECT name_slug FROM `$table` WHERE id <> " . (int)$id . " AND name_slug <> ''")->fetchAll(PDO::FETCH_COLUMN);
+        $used = array_flip($used);
+        $slug = $base;
+        $n = 2;
+        while (isset($used[$slug])) {
+            $slug = $base . '-' . $n++;
+        }
+        $st = $pdo->prepare("UPDATE `$table` SET name_slug = :s WHERE id = :id");
+        $st->execute([':s' => $slug, ':id' => $id]);
+    } catch (Throwable $e) {
+        // Best-effort.
+    }
+}
+
+/**
  * Ensures a generous catalog exists (dishes, mart items, hotels).
  * Idempotent — inserts any missing rows by name, safe on existing installs.
  */
@@ -463,6 +528,7 @@ function lyaideu_seed_catalog(): void {
     try {
         lyaideu_ensure_mart_table();
         lyaideu_ensure_categories_table();
+        lyaideu_ensure_product_slugs();
 
         $dishes = [
             ['Chicken Chowmein', 'Wok Star Kitchen', 'chowmein', 220, '', 'Street Style', 'Wok-tossed noodles with tender chicken strips and crunchy veggies.', ''],

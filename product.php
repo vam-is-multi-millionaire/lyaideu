@@ -11,6 +11,21 @@ lyaideu_ensure_categories_table();
 
 $type = (($_GET['type'] ?? 'dish') === 'mart') ? 'mart' : 'dish';
 $id = (int)($_GET['id'] ?? 0);
+$slug = trim((string)($_GET['slug'] ?? ''));
+if ($id <= 0 && $slug !== '') {
+    if (preg_match('/^[0-9]+$/', $slug)) {
+        $id = (int)$slug;
+    } else {
+        try {
+            $table = $type === 'mart' ? 'mart_items' : 'dishes';
+            $st = $pdo->prepare("SELECT id FROM `$table` WHERE name_slug = :s LIMIT 1");
+            $st->execute([':s' => $slug]);
+            $id = (int)$st->fetchColumn();
+        } catch (Throwable $e) {
+            $id = 0;
+        }
+    }
+}
 $back = $type === 'mart' ? 'mart' : 'menu';
 
 $item = null;
@@ -18,20 +33,20 @@ $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
     } else {
-        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -42,7 +57,7 @@ try {
 
 if (!$item) {
     $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Product not found.'];
-    header('Location: ' . $back);
+    header('Location: ' . lyaideu_base_url() . $back);
     exit;
 }
 
@@ -197,7 +212,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <div class="related-grid">
                     <?php foreach ($related as $rItem): ?>
                         <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
-                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= e($relPath) ?>/<?= (int)$rItem['id'] ?>">
+                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= e($relPath) ?>/<?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
                             <div class="related-img">
                                 <?php if ($rItem['img'] !== ''): ?>
                                     <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">

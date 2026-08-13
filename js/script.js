@@ -31,15 +31,16 @@ function renderDishes(dishes){
   grid.innerHTML=dishes.map(d=>{
     const id=Number(d.id),name=esc(d.name),hotel=esc(d.hotel),desc=esc(d.desc),tag=esc(d.tag),img=esc(d.img),cat=esc(d.cat),phone=esc(d.phone);
     const cats=(d.cats&&d.cats.length)?d.cats.map(esc):[cat];
+    const slug=d.slug||slugify(d.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:`<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>`;
-    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
+    return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
       <div class="dish-art">${art}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
       <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
-  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.id,(c.dataset.cats||'').split(','))}));
+  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
 }
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible" data-search="${esc((h.name+' '+h.type+' '+(h.hotel||'')+' '+(h.location||'')).toLowerCase())}"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('');applyHotelFilters()}
@@ -57,8 +58,9 @@ function renderMart(items){
   grid.innerHTML=items.map(m=>{
     const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),unit=esc(m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
+    const slug=m.slug||slugify(m.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:martCatIcon(cat);
-    return `<article class="dish-card reveal visible" data-id="${id}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
+    return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
       <div class="dish-art mart-art">${art}
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
@@ -66,11 +68,12 @@ function renderMart(items){
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
-  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.id,(c.dataset.cats||'').split(','))}));
+  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
 }
 function catMatch(card){const s=card.dataset.cats;return s?s.split(',').includes(currentCat):card.dataset.cat===currentCat}
-function productUrl(type,id,cats){type=type||'dish';const p=(cats&&cats.length)?cats.map(x=>encodeURIComponent(String(x))).join('/')+'/':'';return (type==='mart'?'mart':'menu')+'/'+p+Number(id)}
+function slugify(s){return (s||'').toString().replace(/&amp;/g,'&').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'item'}
+function productUrl(type,slug,cats){type=type||'dish';const p=(cats&&cats.length)?cats.map(x=>encodeURIComponent(String(x))).join('/')+'/':'';return (type==='mart'?'mart':'menu')+'/'+p+(slug||slugify('item'))}
 function applyMartFilters(){
   const cards=$$('#mart-grid .dish-card'),sort=$('#sortMart')?.value||'default';
   let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
@@ -116,7 +119,7 @@ function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classLi
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open')}
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
 function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;addToCart(Number(b.dataset.id),b.dataset.type||'dish',undefined,b)})}
-function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href=productUrl(card.dataset.type||'dish',card.dataset.id,(card.dataset.cats||'').split(','))})}
+function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href=productUrl(card.dataset.type||'dish',card.dataset.slug||slugify(card.dataset.name),(card.dataset.cats||'').split(','))})}
 function initHeroSlider(){
   const wrap=$('#heroSlides');if(!wrap)return;
   const slides=$$('.hero-slide',wrap),dotsBox=$('#heroDots');

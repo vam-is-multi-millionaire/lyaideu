@@ -11,7 +11,7 @@ try {
     lyaideu_ensure_categories_table();
 
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id
+        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug
          FROM dishes
          ORDER BY id'
     )->fetchAll();
@@ -29,7 +29,7 @@ try {
     )->fetchAll();
 
     $mart = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id
+        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug
          FROM mart_items
          ORDER BY id'
     )->fetchAll();

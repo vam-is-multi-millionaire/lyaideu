@@ -242,6 +242,7 @@ try {
                 ':descr' => clean_text($d['desc'] ?? ''),
                 ':img' => $img,
             ]);
+            lyaideu_sync_item_slug('dishes', $id, $name);
         }
 
         $newDish = $_POST['new_dish'] ?? [];
@@ -270,6 +271,7 @@ try {
                 ':descr' => clean_text($newDish['desc'] ?? ''),
                 ':img' => $img,
             ]);
+            lyaideu_sync_item_slug('dishes', (int)$pdo->lastInsertId(), clean_text($newDish['name'] ?? ''));
         }
     }
 
@@ -316,6 +318,7 @@ try {
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
             ]);
+            lyaideu_sync_item_slug('mart_items', $id, $name);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
@@ -343,6 +346,7 @@ try {
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
             ]);
+            lyaideu_sync_item_slug('mart_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
         }
     }
 

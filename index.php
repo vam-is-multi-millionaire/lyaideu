@@ -20,8 +20,8 @@ $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_seed_catalog();
-        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes')->fetchAll();
-        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items')->fetchAll();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
+        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items')->fetchAll();
         $featured['hotels'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo FROM hotels')->fetchAll();
     } catch (Throwable $e) {
         $featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
@@ -127,7 +127,7 @@ $FEATURED_MART_ICONS = [
                     </div>
                     <div class="grid dish-grid home-grid" id="featuredDishes">
                         <?php foreach ($featured['dishes'] as $fDish): ?>
-                        <article class="dish-card reveal visible" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fDish['category_id'] ?? 0), (string)$fDish['cat']))) ?>">
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($fDish['name']) ?>" data-slug="<?= lyaideu_featured_e($fDish['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fDish['category_id'] ?? 0), (string)$fDish['cat']))) ?>">
                             <div class="dish-art">
                                 <?php if ($fDish['img'] !== ''): ?>
                                     <img src="<?= lyaideu_featured_e($fDish['img']) ?>" alt="<?= lyaideu_featured_e($fDish['name']) ?>" loading="lazy">
@@ -152,7 +152,7 @@ $FEATURED_MART_ICONS = [
                     </div>
                     <div class="grid dish-grid home-grid" id="featuredMart">
                         <?php foreach ($featured['mart'] as $fMart): ?>
-                        <article class="dish-card reveal visible" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fMart['category_id'] ?? 0), (string)$fMart['cat']))) ?>">
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-slug="<?= lyaideu_featured_e($fMart['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fMart['category_id'] ?? 0), (string)$fMart['cat']))) ?>">
                             <div class="dish-art mart-art">
                                 <?php if ($fMart['img'] !== ''): ?>
                                     <img src="<?= lyaideu_featured_e($fMart['img']) ?>" alt="<?= lyaideu_featured_e($fMart['name']) ?>" loading="lazy">
