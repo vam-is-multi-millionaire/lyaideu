@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
+    renderCart();
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
     if($('#mart-grid')){renderMart(allMart);initMartFilters();}
     if($('#hotels-grid')){renderHotels(d.hotels||[]);initHotelFilters();}
@@ -102,17 +103,17 @@ function syncSubChips(scope){
 }
 function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;syncSubChips('mart');applyMartFilters()}));const s=$('#martSearch');if(s){searchQuery=s.value.trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters);const p=new URLSearchParams(location.search).get('mcat');if(p){const t=document.querySelector('.chip[data-mcat="'+p+'"]');if(t)t.click()}else if(searchQuery)applyMartFilters()}
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
-function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i)i.qty=Math.min(20,i.qty+1);else c.push({id,type,qty:1});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');if(openDrawer!==false)openCart();}
+function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||''});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.reduce((a,x)=>a+x.qty,0);countEls.forEach(e=>e.textContent=count);if(!box)return;
   if(!c.length){box.innerHTML='';empty?.classList.add('show');$('#checkoutBtn')?.classList.add('disabled')}
   else{empty?.classList.remove('show');
-    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type);if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
+    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
     $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q))));
     $('#checkoutBtn')?.classList.remove('disabled');
   }
-  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type);return a+(d?Number(d.price)*r.qty:0)},0);
+  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||r;return a+(d?Number(d.price)*r.qty:0)},0);
   if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;if($('#cartTotal'))$('#cartTotal').textContent='Rs. '+(sub+(sub?50:0));
 }
 function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open')}}
@@ -176,7 +177,7 @@ function initCheckout(){
     const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}
     $('#checkoutEmpty')?.classList.remove('show');
-    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type);if(!d)return '';const line=d.price*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('');
+    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('');
     const delivery=50,discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?50:0;$('#coSubtotal').textContent='Rs. '+sub;$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);$('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
   }
   $('#promoBtn')?.addEventListener('click',()=>{promo=$('#promoInput').value.trim().toUpperCase();$('#promoMsg').innerHTML=(promo==='LYAIDEU'||promo==='FOODXPRESS')?'<i class="fa-solid fa-circle-check"></i> Free delivery applied!':'<i class="fa-solid fa-circle-xmark"></i> Invalid demo code. Try LYAIDEU.';update()});
