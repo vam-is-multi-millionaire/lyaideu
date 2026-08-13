@@ -75,7 +75,6 @@ $FEATURED_MART_ICONS = [
             <li><a href="hotels.php" class="nav-a">Hotels</a></li>
             <li><a href="mart.php" class="nav-a">Mart</a></li>
             <li><a href="contact.php" class="nav-a">Contact</a></li>
-            <li><a href="faq.php" class="nav-a">FAQ</a></li>
             <li><a href="orders.php" class="nav-a"><i class="fa-solid fa-box"></i> Orders</a></li>
             <?php if ($user): ?>
             <li>
