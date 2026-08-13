@@ -167,6 +167,8 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <span class="crumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
                 <a href="<?= $back ?>?<?= $type === 'mart' ? 'mcat' : 'cat' ?>=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
             <?php endforeach; ?>
+            <span class="crumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="crumb-current"><?= e($item['name']) ?></span>
         </div>
 
         <div class="product-main">

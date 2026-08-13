@@ -760,6 +760,7 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .product-breadcrumb a{color:var(--orange-700);text-decoration:none;font-weight:900;transition:.2s;}
 .product-breadcrumb a:hover{color:var(--orange-600);text-decoration:underline;}
 .product-breadcrumb .crumb-sep{display:inline-flex;color:var(--orange-300);font-size:.6rem;}
+.product-breadcrumb .crumb-current{color:var(--ink);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:18ch;}
 .admin-cat-badges{float:right;display:inline-flex;align-items:center;gap:.4rem;}
 .admin-cat-type{font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;padding:.3rem .6rem;border-radius:999px;}
 .admin-cat-type.cat-type-menu{background:#fff3d6;color:#9a6b00;}
