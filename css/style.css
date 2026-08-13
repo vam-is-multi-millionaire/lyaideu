@@ -715,7 +715,8 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .product-call{font-weight:900;color:var(--orange-700);}
 .related-section{margin-top:2.4rem;}
 .related-section>h3{font-family:var(--font-display);font-weight:400;font-size:1.3rem;color:var(--orange-900);margin-bottom:1.1rem;text-transform:capitalize;}
-.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem;}
+.related-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.9rem;}
+@media (max-width:1024px){.related-grid{grid-template-columns:repeat(3,1fr);}}
 .related-card{display:block;border:1px solid var(--orange-100);border-radius:10px;overflow:hidden;background:#fff;color:inherit;text-decoration:none !important;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;}
 .related-card:hover{transform:translateY(-3px);border-color:var(--orange-300);box-shadow:var(--shadow-md);}
 .related-img{aspect-ratio:1/1;background:var(--orange-100);display:grid;place-items:center;color:var(--orange-600);}
@@ -751,7 +752,7 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 }
 
 /* ==========================================================
-   CATEGORIES — sub-chips, breadcrumbs, admin category tree
+   CATEGORIES ï¿½ sub-chips, breadcrumbs, admin category tree
    ========================================================== */
 .chip.sub-chip{font-weight:700;font-size:.78rem;padding:.4rem .95rem;border-style:dashed;background:var(--orange-50);color:var(--orange-800);display:none;}
 .chip-row .chip.sub-chip:hover{border-style:dashed;}
