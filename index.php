@@ -209,31 +209,38 @@ $FEATURED_MART_ICONS = [
         </div>
     </section>
 
-    <section id="menu" class="section">
+    <section id="faq" class="section section-white">
         <div class="container">
             <div class="section-head">
-                <h2 class="display">What are you craving? <i class="fa-solid fa-utensils"></i></h2>
-                <p class="section-sub">Jump straight into the food, our partner hotels, or get in touch.</p>
+                <p class="kicker"><i class="fa-solid fa-circle-question"></i> Need a hand?</p>
+                <h2 class="display">Frequently Asked Questions <i class="fa-solid fa-circle-question"></i></h2>
+                <p class="section-sub">Everything you need to know about ordering, delivery and payments on LyaiDeu.</p>
             </div>
-            <div class="grid browse-grid">
-                <a class="browse-card" href="menu.php">
-                    <span class="browse-ico"><i class="fa-solid fa-utensils"></i></span>
-                    <h3>Today's Menu</h3>
-                    <p>Browse fresh dishes from our partner kitchens and order now.</p>
-                    <span class="browse-link">Explore Menu <i class="fa-solid fa-arrow-right"></i></span>
-                </a>
-                <a class="browse-card" href="hotels.php">
-                    <span class="browse-ico"><i class="fa-solid fa-hotel"></i></span>
-                    <h3>Partner Hotels</h3>
-                    <p>Discover the trusted kitchens cooking for you right now.</p>
-                    <span class="browse-link">View Hotels <i class="fa-solid fa-arrow-right"></i></span>
-                </a>
-                <a class="browse-card" href="contact.php">
-                    <span class="browse-ico"><i class="fa-solid fa-phone"></i></span>
-                    <h3>Contact Us</h3>
-                    <p>One call away — order hotline, delivery support & partnerships.</p>
-                    <span class="browse-link">Get In Touch <i class="fa-solid fa-arrow-right"></i></span>
-                </a>
+            <div class="faq-list">
+                <details class="faq-item" open>
+                    <summary>How do I place an order?</summary>
+                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel — we'll confirm it by phone if needed.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>How long does delivery take?</summary>
+                    <p>We aim for fast delivery across the Surkhet Valley, usually within 30 minutes. Exact time depends on distance, traffic and how busy the kitchen is.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>How much is delivery?</summary>
+                    <p>Delivery is a flat Rs. 50 to anywhere in the valley. Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>What payment methods do you accept?</summary>
+                    <p>We accept Cash on Delivery and eSewa / Khalti on delivery. Please have the exact amount ready for a smooth handover.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Can I track my order?</summary>
+                    <p>Yes! Open the Orders page at any time to see your order status — from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>What if my order is late or wrong?</summary>
+                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best.</p>
+                </details>
             </div>
         </div>
     </section>
