@@ -236,9 +236,7 @@ $FEATURED_MART_ICONS = [
             <div class="contact-split">
                 <div class="contact-split-left">
                     <div class="section-head">
-                        <p class="kicker"><i class="fa-solid fa-phone"></i> We're one call away</p>
                         <h2 class="display">Contact Our Service Team <i class="fa-solid fa-phone"></i></h2>
-                        <p class="section-sub">We're one call away, every single day.</p>
                     </div>
                     <div class="grid contact-grid" id="contact-grid"></div>
                     <div class="contact-map">
@@ -247,7 +245,6 @@ $FEATURED_MART_ICONS = [
                 </div>
                 <div class="contact-split-right">
                     <div class="section-head">
-                        <p class="kicker"><i class="fa-solid fa-envelope"></i> We'd love to hear from you</p>
                         <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
                         <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
                     </div>
