@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     allMart=d.mart||[];
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
     if($('#mart-grid')){renderMart(allMart);initMartFilters();}
-    if($('#hotels-grid'))renderHotels(d.hotels||[]);
+    if($('#hotels-grid')){renderHotels(d.hotels||[]);initHotelFilters();}
     if($('#contact-grid'))renderContacts(d.contacts||[]);
     if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
     if($('#checkoutForm'))initCheckout();
@@ -41,7 +41,13 @@ function renderDishes(dishes){
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href='product.php?type=dish&id='+Number(c.dataset.id)}));
   applyFilters();
 }
-function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('')}
+function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';return `<div class="hotel-card reveal visible" data-search="${esc((h.name+' '+h.type+' '+(h.hotel||'')+' '+(h.location||'')).toLowerCase())}"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p></div><a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> ${esc(h.phone)}</a></div>`}).join('');applyHotelFilters()}
+function applyHotelFilters(){
+  const cards=$$('#hotels-grid .hotel-card'),q=($('#hotelSearch')?.value||'').trim().toLowerCase();
+  cards.forEach(c=>c.style.display=(!q||c.dataset.search.includes(q))?'':'none');
+  if($('#hotelsEmpty'))$('#hotelsEmpty').style.display=(!q||cards.some(c=>c.style.display!=='none'))?'none':'block';
+}
+function initHotelFilters(){const s=$('#hotelSearch');if(s)s.addEventListener('input',applyHotelFilters)}
 function renderContacts(cs){const g=$('#contact-grid');if(!g)return;g.innerHTML=cs.map(c=>`<div class="contact-card reveal visible"><span class="contact-ico">${faIcon(c.ico)}</span><h3>${esc(c.role)}</h3><p class="contact-person">${esc(c.person)}</p><a class="contact-num" href="tel:+977${esc(c.phone)}">${esc(c.phone)}</a><small>${esc(c.note)}</small></div>`).join('')}
 const MART_CAT_ICONS={'vegetables':'fa-carrot','fruits':'fa-apple-whole','dairy':'fa-cow','staples':'fa-bowl-rice','oils':'fa-mortar-pestle','snacks':'fa-cookie'};
 function martCatIcon(cat){const ic=MART_CAT_ICONS[cat]||'fa-basket-shopping';return '<i class="fa-solid '+ic+'"></i>';}
