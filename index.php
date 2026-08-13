@@ -123,7 +123,6 @@ $FEATURED_MART_ICONS = [
     <section id="featured" class="section">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-shuffle"></i> Fresh every visit</p>
                 <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
                 <p class="section-sub">Tasty dishes, grocery essentials and partner kitchens — shuffled fresh on every refresh.</p>
             </div>
@@ -210,7 +209,6 @@ $FEATURED_MART_ICONS = [
     <section id="faq" class="section section-white">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-circle-question"></i> Need a hand?</p>
                 <h2 class="display">Frequently Asked Questions <i class="fa-solid fa-circle-question"></i></h2>
                 <p class="section-sub">Everything you need to know about ordering, delivery and payments on LyaiDeu.</p>
             </div>
