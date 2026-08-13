@@ -38,7 +38,6 @@ require_once __DIR__ . '/site_config.php';
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="hotels" class="nav-a">Hotels</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
-            <li><a href="contact" class="nav-a">Contact</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>

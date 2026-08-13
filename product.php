@@ -123,7 +123,6 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
             <li><a href="menu" class="nav-a <?= $type === 'dish' ? 'active' : '' ?>">Menu</a></li>
             <li><a href="hotels" class="nav-a">Hotels</a></li>
             <li><a href="mart" class="nav-a <?= $type === 'mart' ? 'active' : '' ?>">Mart</a></li>
-            <li><a href="contact" class="nav-a">Contact</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
