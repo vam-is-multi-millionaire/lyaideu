@@ -74,7 +74,8 @@ $catPath = lyaideu_category_path((int)($item['category_id'] ?? 0));
 if (!$catPath) {
     $urlCat = trim((string)($_GET['catpath'] ?? ''), '/');
     if ($urlCat !== '') {
-        $cid = lyaideu_category_id_by_slug((string)end(explode('/', $urlCat)), $type);
+        $urlCatParts = explode('/', $urlCat);
+        $cid = lyaideu_category_id_by_slug((string)end($urlCatParts), $type);
         if ($cid) {
             $catPath = lyaideu_category_path($cid);
         }
