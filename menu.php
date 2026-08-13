@@ -99,7 +99,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                 <button class="chip sub-chip" data-cat="<?= $ce($cc['slug']) ?>" data-parent="<?= $ce($pc['slug']) ?>"><?= $ce($cc['name']) ?></button>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
-            </div><div class="menu-tools"><div class="search-bar menu-search"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" id="dishSearch" placeholder="Search momo, pizza…" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>"></div><select id="sortMenu" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
+            </div><div class="menu-tools"><select id="sortMenu" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
             <div class="grid dish-grid" id="menu-grid"></div>
             <div class="empty-state" id="emptyState"><span class="big"><i class="fa-solid fa-utensils"></i></span><p>No dishes match your search.</p></div>
         </div>

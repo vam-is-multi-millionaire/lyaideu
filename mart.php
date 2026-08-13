@@ -103,7 +103,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                 <button class="chip sub-chip" data-mcat="<?= $mce($cc['slug']) ?>" data-parent="<?= $mce($pc['slug']) ?>"><?= $mce($cc['name']) ?></button>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
-            </div><div class="menu-tools"><div class="search-bar menu-search"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" id="martSearch" placeholder="Search potatoes, milk, rice…" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>"></div><select id="sortMart" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
+            </div><div class="menu-tools"><select id="sortMart" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
             <div class="grid dish-grid" id="mart-grid"></div>
             <div class="empty-state" id="martEmpty"><span class="big"><i class="fa-solid fa-basket-shopping"></i></span><p>No groceries match your search.</p></div>
         </div>

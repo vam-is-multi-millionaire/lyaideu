@@ -81,7 +81,7 @@ require_once __DIR__ . '/site_config.php';
                 <h1 class="display">Our Partner Hotels <i class="fa-solid fa-hotel"></i></h1>
                 <p class="section-sub">Trusted kitchens cooking for you right now.</p>
             </div>
-            <div class="menu-toolbar"><div class="menu-tools"><div class="search-bar menu-search"><span><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" id="hotelSearch" placeholder="Search hotels…" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>"></div></div></div>
+            <div class="menu-toolbar"><div class="menu-tools"></div></div>
             <div class="grid hotels-grid" id="hotels-grid"></div>
             <div class="empty-state" id="hotelsEmpty"><span class="big"><i class="fa-solid fa-hotel"></i></span><p>No hotels match your search.</p></div>
         </div>
