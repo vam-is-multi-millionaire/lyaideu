@@ -135,11 +135,12 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=6"></head><body class="admin-body">';
-    echo '<header class="admin-header"><div class="admin-header-brand"><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
+    echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin.php" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index.php" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
     echo '</div></header>';
-    echo '<div class="admin-shell"><aside class="admin-sidebar"><nav class="admin-nav" aria-label="Admin sections">';
+    echo '<div class="admin-nav-backdrop" id="adminNavBackdrop"></div>';
+    echo '<div class="admin-shell"><aside class="admin-sidebar" id="adminSidebar"><nav class="admin-nav" aria-label="Admin sections">';
     foreach ($navItems as $key => $item) {
         $active = $key === $activeNav ? ' active' : '';
         echo '<a class="admin-nav-link' . $active . '" href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">';
@@ -152,7 +153,9 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 }
 
 function admin_page_end(): void {
-    echo '</div></main></div></body></html>';
+    echo '</div></main></div>';
+    echo '<script>(function(){var t=document.getElementById("adminNavToggle"),s=document.getElementById("adminSidebar"),b=document.getElementById("adminNavBackdrop");if(!t||!s)return;var h=document.querySelector(".admin-header");function isMobile(){return window.innerWidth<=900}function pos(){var ht=h?h.offsetHeight:64;s.style.top=ht+"px";if(b)b.style.top=ht+"px"}function setOpen(o){s.classList.toggle("open",o);t.classList.toggle("open",o);t.setAttribute("aria-expanded",o?"true":"false");if(b)b.classList.toggle("show",o)}pos();window.addEventListener("resize",function(){pos();if(!isMobile()&&s.classList.contains("open"))setOpen(false)});t.addEventListener("click",function(){if(isMobile())setOpen(!s.classList.contains("open"))});if(b)b.addEventListener("click",function(){setOpen(false)});s.addEventListener("click",function(e){if(e.target.closest("a"))setOpen(false)})})();</script>';
+    echo '</body></html>';
 }
 
 function admin_section_redirect(string $section, bool $saved, ?string $error = null): void {
