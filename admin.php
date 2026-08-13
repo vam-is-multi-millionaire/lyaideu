@@ -46,7 +46,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
 ?>
     <div class="admin-stats">
         <div><strong><?= $totalOrders ?></strong><span>Total Orders</span></div>
-        <div><strong>Rs. <?= number_format($totalSales) ?></strong><span>Order Value</span></div>
+        <div><strong>Rs.&nbsp;<?= number_format($totalSales) ?></strong><span>Order Value</span></div>
         <div><strong><?= $orderCounts['Pending'] ?></strong><span>Pending</span></div>
         <div><strong><?= $userCount ?></strong><span>Registered Users</span></div>
         <div><strong><?= $dishCount ?></strong><span>Menu Items</span></div>
