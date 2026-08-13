@@ -147,7 +147,7 @@ $FEATURED_MART_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fDish['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fDish['price'] ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($fDish['name']) ?>" data-price="<?= (int)$fDish['price'] ?>" data-unit="" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -173,7 +173,7 @@ $FEATURED_MART_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fMart['price'] ?><?= $fMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fMart['unit']) . '</span>' : '' ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" type="button"><i class="fa-solid fa-cart-plus"></i> Buy</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
