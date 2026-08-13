@@ -656,6 +656,10 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .empty-state,.cart-empty,#checkoutEmpty{border:2px dashed var(--orange-200,#fbd9bb);border-radius:18px;padding:2rem;text-align:center;background:rgba(255,255,255,.7)}.order-status-pill{white-space:nowrap;border:1px solid transparent;letter-spacing:.01em}
 .live-indicator{display:inline-flex;align-items:center;gap:.35rem;margin:.5rem 0 1rem;padding:.35rem .65rem;border-radius:999px;background:#f7efe7;color:#7d634b;font-size:.75rem;font-weight:850}.live-indicator.live-on{background:#fdecd9;color:#a03c07}
 @media(max-width:760px){.btn,.btn-order,.btn-outline{min-height:46px}.hero-actions .btn{flex:1 1 180px}.success-actions .btn{width:100%}.toast{bottom:14px;max-width:calc(100vw - 28px);text-align:center}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.dish-foot .btn-order.add-cart{min-height:0;height:auto;padding:.38rem .72rem;font-size:.68rem;font-weight:800;gap:.32rem;border:0;border-radius:999px;box-shadow:0 3px 0 rgba(199,88,0,.9);flex:none;line-height:1}
+.dish-foot .btn-order.add-cart i{font-size:.68rem}
+.dish-foot .btn-order.add-cart:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(231,102,8,.25);background:var(--orange-500,#d95c00)!important}
+.dish-foot .btn-order.add-cart:active{transform:translateY(0) scale(.96)}
 
 /* ==========================================================
    LYAIDEU MART — grocery cards
