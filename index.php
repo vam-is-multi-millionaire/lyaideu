@@ -116,11 +116,7 @@ $FEATURED_MART_ICONS = [
             <div class="hero-slide"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
             <?php endforeach; ?>
         </div>
-        </div>
-        <div class="hero-slider-arrows">
-            <button type="button" id="heroPrev" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" id="heroNext" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></button>
-        </div>
+</div>
         <div class="hero-slider-dots" id="heroDots"></div>
     </section>
 
