@@ -172,7 +172,7 @@ require_once __DIR__ . '/site_config.php';
 </main>
 </div>
 <script src="js/script.js?v=11"></script>
-<script src="js/notify.js?v=3"></script>
+<script src="js/notify.js?v=4"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)
 document.addEventListener('click', function (e) {

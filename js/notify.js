@@ -42,30 +42,35 @@
 
     function placeBell() {
         var delivery = document.body.classList.contains('delivery-body');
-        if (mq.matches) {
-            var host = delivery ? document.querySelector('.delivery-topbar') : document.querySelector('header.topbar .nav');
+        // User pages: on mobile/tablet the bell joins the nav row next to the
+        // hamburger so it never overlaps it. Delivery pages keep the bell
+        // floating just below their sticky header instead (never touching the
+        // .delivery-topbar flex layout, which would otherwise wrap/burst).
+        if (!delivery && mq.matches) {
+            var host = document.querySelector('header.topbar .nav');
             if (host) {
                 bell.style.position = 'relative';
                 bell.style.top = 'auto';
                 bell.style.right = 'auto';
                 bell.style.bottom = 'auto';
                 bell.style.margin = '0';
-                if (delivery) {
-                    host.appendChild(bell);
-                } else {
-                    bell.style.marginLeft = 'auto';
-                    var toggle = host.querySelector('.nav-toggle');
-                    host.insertBefore(bell, toggle);
-                }
+                bell.style.marginLeft = 'auto';
+                var toggle = host.querySelector('.nav-toggle');
+                host.insertBefore(bell, toggle);
                 return;
             }
         }
         if (bell.parentNode !== document.body) document.body.appendChild(bell);
         bell.style.position = 'fixed';
-        bell.style.top = delivery ? '74px' : '12px';
         bell.style.right = '14px';
         bell.style.bottom = 'auto';
         bell.style.margin = '0';
+        if (delivery) {
+            var tb = document.querySelector('.delivery-topbar');
+            bell.style.top = (tb ? tb.getBoundingClientRect().height + 6 : 74) + 'px';
+        } else {
+            bell.style.top = '12px';
+        }
     }
 
     function buildBell() {
