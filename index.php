@@ -121,15 +121,33 @@ $FEATURED_MART_ICONS = [
 
 <main>
     <?php if ($q === ''): ?>
-    <section id="home" class="hero hero-slider">
-        <div class="hero-slider-viewport">
-        <div class="hero-slides" id="heroSlides">
-            <?php foreach (site_hero_slides() as $heroSlide): ?>
-            <div class="hero-slide"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
-            <?php endforeach; ?>
+    <section id="home" class="hero hero-split">
+        <div class="container hero-split-inner">
+            <div class="hero-split-text">
+                <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast delivery across Surkhet Valley</p>
+                <h1 class="display">Delicious food, delivered fast &amp; <em>fresh</em></h1>
+                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door — hot and on time.</p>
+                <div class="hero-ctas">
+                    <a class="btn btn-primary" href="menu">Order Now <i class="fa-solid fa-arrow-right"></i></a>
+                    <a class="btn btn-outline" href="mart">Shop the Mart</a>
+                </div>
+                <div class="hero-badges">
+                    <span><i class="fa-solid fa-truck-fast"></i> 30 min delivery</span>
+                    <span><i class="fa-solid fa-wallet"></i> eSewa &middot; Khalti &middot; COD</span>
+                    <span><i class="fa-solid fa-star"></i> Trusted hotels</span>
+                </div>
+            </div>
+            <div class="hero-split-slider">
+                <div class="hero-slider-viewport">
+                    <div class="hero-slides" id="heroSlides">
+                        <?php foreach (site_hero_slides() as $heroSlide): ?>
+                        <div class="hero-slide" style="--bg:url('<?= lyaideu_featured_e($heroSlide) ?>')"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="hero-slider-dots" id="heroDots"></div>
+            </div>
         </div>
-</div>
-<div class="hero-slider-dots" id="heroDots"></div>
     </section>
     <?php endif; ?>
 

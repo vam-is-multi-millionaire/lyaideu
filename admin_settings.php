@@ -219,7 +219,7 @@ admin_page_start('Settings', 'settings', 'Settings');
 
         <section class="admin-section">
             <div class="admin-section-top">
-                <p class="section-sub">Change the images that slide on the homepage banner. Upload up to 4 images — leave a slot blank to keep the current slide.</p>
+                <p class="section-sub">Change the images that slide on the homepage banner. Upload up to 4 images — leave a slot blank to keep the current slide. Recommended size: <strong>1200×900 px (4:3)</strong>.</p>
             </div>
             <div class="admin-grid">
                 <?php for ($i = 1; $i <= 4; $i++): ?>
@@ -228,7 +228,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <div class="settings-preview"><img src="<?= htmlspecialchars($heroSlides[$i - 1] ?? 'logo.png', ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide <?= $i ?>"></div>
                     <label>Slide image</label>
                     <input type="file" name="hero_slide_<?= $i ?>_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                    <small class="small-note">Wide banner images look best (e.g. 1920×420). Max 2 MB.</small>
+                    <small class="small-note">4:3 images look best (e.g. <strong>1200×900</strong>). Any size works — images always show fully with no cropping or gaps. Max 2 MB.</small>
                 </div>
                 <?php endfor; ?>
             </div>
