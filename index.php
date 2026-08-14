@@ -120,6 +120,7 @@ $FEATURED_MART_ICONS = [
 <?php endif; ?>
 
 <main>
+    <?php if ($q === ''): ?>
     <section id="home" class="hero hero-slider">
         <div class="hero-slider-viewport">
         <div class="hero-slides" id="heroSlides">
@@ -130,6 +131,7 @@ $FEATURED_MART_ICONS = [
 </div>
 <div class="hero-slider-dots" id="heroDots"></div>
     </section>
+    <?php endif; ?>
 
     <?php if ($q !== '' && $searchResults): ?>
     <section id="search" class="section">
