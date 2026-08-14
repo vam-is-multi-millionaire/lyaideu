@@ -1,6 +1,7 @@
 /* LyaiDeu live notification feed: bell + beep + toast + browser notifications. */
 (function () {
     var POLL_MS = 5000;
+    var mq = window.matchMedia('(max-width: 960px)');
     var endpoint = 'api/notifications.php?role=' + encodeURIComponent(window.LYAIDEU_NOTIFY_ROLE || '');
     var seen = {};
     var first = true;
@@ -39,21 +40,52 @@
         }
     }
 
+    function placeBell() {
+        var delivery = document.body.classList.contains('delivery-body');
+        if (mq.matches) {
+            var host = delivery ? document.querySelector('.delivery-topbar') : document.querySelector('header.topbar .nav');
+            if (host) {
+                bell.style.position = 'relative';
+                bell.style.top = 'auto';
+                bell.style.right = 'auto';
+                bell.style.bottom = 'auto';
+                bell.style.margin = '0';
+                if (delivery) {
+                    host.appendChild(bell);
+                } else {
+                    bell.style.marginLeft = 'auto';
+                    var toggle = host.querySelector('.nav-toggle');
+                    host.insertBefore(bell, toggle);
+                }
+                return;
+            }
+        }
+        if (bell.parentNode !== document.body) document.body.appendChild(bell);
+        bell.style.position = 'fixed';
+        bell.style.top = delivery ? '74px' : '12px';
+        bell.style.right = '14px';
+        bell.style.bottom = 'auto';
+        bell.style.margin = '0';
+    }
+
     function buildBell() {
         if (bell) return;
-        var topOffset = document.body.classList.contains('delivery-body') ? '74px' : '12px';
         bell = document.createElement('div');
         bell.id = 'notifyBell';
-        bell.style.cssText = 'position:fixed;top:' + topOffset + ';right:14px;z-index:99998;font-family:Nunito,sans-serif;';
+        bell.style.position = 'relative';
+        bell.style.zIndex = '99998';
+        bell.style.fontFamily = 'Nunito,sans-serif';
         bell.innerHTML =
             '<button type="button" aria-label="Notifications" style="position:relative;background:#fff;border:2px solid var(--orange-200);border-radius:50%;width:46px;height:46px;font-size:1.05rem;cursor:pointer;color:var(--orange-700);box-shadow:0 6px 18px rgba(0,0,0,.12);">' +
             '<i class="fa-solid fa-bell"></i>' +
             '<span id="notifyBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#c93a3a;color:#fff;font-size:.7rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;line-height:18px;text-align:center;padding:0 4px;"></span>' +
             '</button>' +
             '<div id="notifyList" style="display:none;position:absolute;right:0;top:52px;width:330px;max-width:92vw;background:#fff;border:2px solid var(--orange-100);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:.6rem;font-size:.85rem;"></div>';
-        document.body.appendChild(bell);
         badge = bell.querySelector('#notifyBadge');
         list = bell.querySelector('#notifyList');
+        placeBell();
+        if (mq.addEventListener) mq.addEventListener('change', placeBell);
+        else if (mq.addListener) mq.addListener(placeBell);
         var btn = bell.querySelector('button');
         btn.addEventListener('click', function () { open ? hideList() : showList(); });
         document.addEventListener('click', function (e) { if (open && !bell.contains(e.target)) hideList(); });
