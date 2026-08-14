@@ -91,8 +91,8 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     var startLat, startLng, hasPin;
     if (!isNaN(homeLat) && !isNaN(homeLng)) { startLat = homeLat; startLng = homeLng; hasPin = true; }
     else if (saved) { startLat = saved.lat; startLng = saved.lng; hasPin = true; latIn.value = saved.lat.toFixed(7); lngIn.value = saved.lng.toFixed(7); }
-    else { startLat = 27.7172; startLng = 85.3240; hasPin = false; }
-    var map = L.map('deliveryMap', { scrollWheelZoom: false, attributionControl: false }).setView([startLat, startLng], hasPin ? 15 : 12);
+    else { startLat = 28.5967; startLng = 81.6166; hasPin = false; }
+    var map = L.map('deliveryMap', { scrollWheelZoom: false, attributionControl: false }).setView([startLat, startLng], hasPin ? 15 : 14);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     var marker = L.marker([startLat, startLng], { draggable: true }).addTo(map).bindPopup('Drag to your exact delivery spot');
     function setPos(lat, lng, reverse) {
