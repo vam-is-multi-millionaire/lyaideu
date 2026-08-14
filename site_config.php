@@ -646,8 +646,10 @@ function lyaideu_seed_catalog(): void {
 }
 
 /**
- * Ensures the delivery system tables exist (vendors, riders) and adds the
- * vendor/rider assignment columns to the `orders` table.
+ * Ensures the delivery system tables exist (vendors, riders), adds the
+ * vendor/rider assignment columns to the `orders` table, and adds the
+ * vendor -> hotel / product ownership columns. Runs a one-time backfill so
+ * existing vendors and products are linked on first upgrade.
  */
 function lyaideu_ensure_delivery_tables(): bool {
     $pdo = lyaideu_load_pdo();
@@ -662,6 +664,8 @@ function lyaideu_ensure_delivery_tables(): bool {
                 email VARCHAR(255) NOT NULL DEFAULT \'\',
                 phone VARCHAR(20) NOT NULL DEFAULT \'\',
                 pass VARCHAR(255) NOT NULL DEFAULT \'\',
+                scope VARCHAR(20) NOT NULL DEFAULT \'hotel\',
+                hotel_id INT UNSIGNED NULL DEFAULT NULL,
                 is_active TINYINT(1) NOT NULL DEFAULT 1,
                 created_at DATETIME NOT NULL,
                 PRIMARY KEY (id),
@@ -697,10 +701,184 @@ function lyaideu_ensure_delivery_tables(): bool {
             }
         }
 
+        $changed = false;
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'scope', "VARCHAR(20) NOT NULL DEFAULT 'hotel'") || $changed;
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'hotel_id', 'INT UNSIGNED NULL DEFAULT NULL') || $changed;
+        $dishColAdded = lyaideu_ensure_column($pdo, 'dishes', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
+        $martColAdded = lyaideu_ensure_column($pdo, 'mart_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
+
+        if ($changed || $dishColAdded || $martColAdded) {
+            lyaideu_reindex_item_vendors();
+        }
+
         return true;
     } catch (Throwable $e) {
         return false;
     }
+}
+
+/**
+ * Adds a column to a table if it does not already exist.
+ * Returns true when the column was newly added.
+ */
+function lyaideu_ensure_column(PDO $pdo, string $table, string $column, string $definition): bool {
+    try {
+        $cols = array_column($pdo->query("SHOW COLUMNS FROM `$table`")->fetchAll(), 'Field');
+        if (!in_array($column, $cols, true)) {
+            $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            return true;
+        }
+    } catch (Throwable $e) {
+        return false;
+    }
+    return false;
+}
+
+/**
+ * Re-syncs product -> vendor links: dishes are owned by the vendor assigned to
+ * their hotel, mart items are owned by the mart-scope vendor. Also links vendors
+ * to hotels by matching names (one-time migration for pre-existing accounts).
+ */
+function lyaideu_reindex_item_vendors(): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $pdo->exec(
+            "UPDATE vendors v
+             JOIN hotels h ON h.name = v.name
+             SET v.hotel_id = h.id
+             WHERE v.scope = 'hotel' AND v.hotel_id IS NULL"
+        );
+        $pdo->exec(
+            "UPDATE dishes d
+             JOIN hotels h ON h.name = d.hotel
+             JOIN vendors v ON v.hotel_id = h.id AND v.scope = 'hotel' AND v.is_active = 1
+             SET d.vendor_id = v.id
+             WHERE d.vendor_id IS NULL OR d.vendor_id <> v.id"
+        );
+        $pdo->exec(
+            "UPDATE mart_items m
+             JOIN vendors v ON v.scope = 'mart' AND v.is_active = 1
+             SET m.vendor_id = v.id
+             WHERE m.vendor_id IS NULL OR m.vendor_id <> v.id"
+        );
+    } catch (Throwable $e) {
+        // Best-effort migration; never break the page because of it.
+    }
+}
+
+/**
+ * Sets a dish's owning vendor based on the hotel the dish belongs to.
+ * Returns the resolved vendor id (0 when none).
+ */
+function lyaideu_resolve_dish_vendor(int $dishId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $dishId <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare('SELECT hotel FROM dishes WHERE id = ?');
+        $st->execute([$dishId]);
+        $hotel = (string)$st->fetchColumn();
+        $vendorId = 0;
+        if ($hotel !== '') {
+            $st = $pdo->prepare(
+                "SELECT v.id FROM vendors v
+                 JOIN hotels h ON h.id = v.hotel_id
+                 WHERE v.scope = 'hotel' AND v.is_active = 1 AND h.name = :h
+                 ORDER BY v.id LIMIT 1"
+            );
+            $st->execute([':h' => $hotel]);
+            $vendorId = (int)$st->fetchColumn();
+        }
+        $upd = $pdo->prepare('UPDATE dishes SET vendor_id = ? WHERE id = ?');
+        $upd->execute([$vendorId > 0 ? $vendorId : null, $dishId]);
+        return $vendorId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Sets a mart item's owning vendor to the mart-scope vendor.
+ * Returns the resolved vendor id (0 when none).
+ */
+function lyaideu_resolve_mart_vendor(int $itemId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1");
+        $st->execute();
+        $vendorId = (int)$st->fetchColumn();
+        $upd = $pdo->prepare('UPDATE mart_items SET vendor_id = ? WHERE id = ?');
+        $upd->execute([$vendorId > 0 ? $vendorId : null, $itemId]);
+        return $vendorId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Shared image-upload handler for product images (admin + vendor dashboards).
+ * Returns the saved upload path, or the existing image when no new file is sent.
+ */
+function lyaideu_handle_item_image(string $existingImg, array $post, ?array $file, string $prefix): string {
+    $img = $existingImg;
+
+    if (!empty($post['remove_img'])) {
+        if ($img !== '' && str_starts_with($img, 'uploads/')) {
+            @unlink(__DIR__ . '/' . $img);
+        }
+        return '';
+    }
+
+    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $img;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Image upload failed. Please try again.');
+    }
+    if ($file['size'] > 2 * 1024 * 1024) {
+        throw new RuntimeException('Image is too large (max 2 MB).');
+    }
+
+    $allowed = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'image/svg+xml' => 'svg',
+    ];
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($file['tmp_name']);
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Image must be a PNG, JPG, WebP, GIF or SVG image.');
+    }
+
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            throw new RuntimeException('Could not create the uploads folder.');
+        }
+    }
+
+    $ext = $allowed[$mime];
+    $filename = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('Could not save the uploaded image.');
+    }
+
+    if ($img !== '' && str_starts_with($img, 'uploads/')) {
+        @unlink(__DIR__ . '/' . $img);
+    }
+
+    return 'uploads/' . $filename;
 }
 
 /**
@@ -739,8 +917,10 @@ function lyaideu_delivery_credential_conflict(string $role, string $phone, strin
 }
 
 /**
- * Auto-assigns a vendor to an order. Prefers a vendor whose name matches the
- * first non-mart hotel on the order; falls back to any active vendor.
+ * Auto-assigns the vendor for an order. Food items are routed to the vendor
+ * that owns the dish's hotel; a mart-only order goes to the mart-scope vendor.
+ * Never falls back to "the first vendor" — if no linked vendor exists the
+ * order is left unassigned for the admin to handle.
  */
 function lyaideu_auto_assign_vendor(int $orderId): int {
     $pdo = lyaideu_load_pdo();
@@ -748,34 +928,55 @@ function lyaideu_auto_assign_vendor(int $orderId): int {
         return 0;
     }
     try {
-        $hotels = $pdo->query('SELECT hotel FROM order_items WHERE order_id = ' . (int)$orderId)->fetchAll(PDO::FETCH_COLUMN);
+        $itemStmt = $pdo->prepare('SELECT dish_id, hotel FROM order_items WHERE order_id = ?');
+        $itemStmt->execute([$orderId]);
+        $rows = $itemStmt->fetchAll();
 
         $vendorId = 0;
-        foreach ($hotels as $h) {
-            if ($h === '' || $h === 'LyaiDeu Mart') {
-                continue;
-            }
-            $st = $pdo->prepare('SELECT id FROM vendors WHERE is_active = 1 AND (name LIKE :n1 OR name LIKE :n2) ORDER BY id LIMIT 1');
-            $st->execute([':n1' => '%' . $h . '%', ':n2' => '%' . mb_substr($h, 0, 8) . '%']);
-            $vendorId = (int)$st->fetchColumn();
-            if ($vendorId > 0) {
-                break;
+        $hasFood = false;
+        $hasMart = false;
+
+        foreach ($rows as $row) {
+            if ((int)$row['dish_id'] > 0) {
+                $hasFood = true;
+                $st = $pdo->prepare('SELECT vendor_id FROM dishes WHERE id = ?');
+                $st->execute([(int)$row['dish_id']]);
+                $vid = (int)$st->fetchColumn();
+                if ($vid > 0) {
+                    if ($vendorId > 0 && $vendorId !== $vid) {
+                        return 0;
+                    }
+                    $vendorId = $vid;
+                }
+            } else {
+                $hasMart = true;
             }
         }
-        if ($vendorId <= 0) {
-            $vendorId = (int)$pdo->query('SELECT id FROM vendors WHERE is_active = 1 ORDER BY id LIMIT 1')->fetchColumn();
-        }
+
         if ($vendorId > 0) {
             $pdo->prepare('UPDATE orders SET vendor_id = ? WHERE id = ?')->execute([$vendorId, $orderId]);
+            return $vendorId;
         }
-        return $vendorId;
+
+        if (!$hasFood && $hasMart) {
+            $martVendor = (int)$pdo->query(
+                "SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1"
+            )->fetchColumn();
+            if ($martVendor > 0) {
+                $pdo->prepare('UPDATE orders SET vendor_id = ? WHERE id = ?')->execute([$martVendor, $orderId]);
+                return $martVendor;
+            }
+        }
+
+        return 0;
     } catch (Throwable $e) {
         return 0;
     }
 }
 
 /**
- * Auto-assigns the first available rider to an order (after a vendor marks it ready).
+ * Auto-assigns the least-busy active rider to an order (fewest open
+ * deliveries), so work spreads across all riders instead of one.
  */
 function lyaideu_auto_assign_rider(int $orderId): int {
     $pdo = lyaideu_load_pdo();
@@ -783,7 +984,23 @@ function lyaideu_auto_assign_rider(int $orderId): int {
         return 0;
     }
     try {
-        $riderId = (int)$pdo->query('SELECT id FROM riders WHERE is_active = 1 ORDER BY id LIMIT 1')->fetchColumn();
+        $st = $pdo->prepare('SELECT rider_id FROM orders WHERE id = ?');
+        $st->execute([$orderId]);
+        if ((int)$st->fetchColumn() > 0) {
+            return 0;
+        }
+
+        $riderId = (int)$pdo->query(
+            "SELECT r.id
+             FROM riders r
+             LEFT JOIN orders o ON o.rider_id = r.id
+                 AND o.status IN ('Pending','Accepted','Preparing','Ready for pickup','Out for delivery')
+             WHERE r.is_active = 1
+             GROUP BY r.id
+             ORDER BY COUNT(o.id) ASC, r.id ASC
+             LIMIT 1"
+        )->fetchColumn();
+
         if ($riderId > 0) {
             $pdo->prepare('UPDATE orders SET rider_id = ? WHERE id = ?')->execute([$riderId, $orderId]);
         }

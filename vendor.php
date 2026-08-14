@@ -117,7 +117,7 @@ if ($user) {
                 default => 'pending',
             };
             ?>
-            <article class="delivery-card status-<?= $pill ?>">
+            <article class="delivery-card status-<?= $pill ?>" data-order-id="<?= (int)$o['id'] ?>">
                 <div class="delivery-card-head">
                     <div>
                         <h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-<?= $pill ?>"><?= delivery_esc($o['status']) ?></span></h2>

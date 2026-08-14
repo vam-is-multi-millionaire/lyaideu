@@ -186,6 +186,10 @@ section{scroll-margin-top:96px;}
 .hotel-call{flex-shrink:0;font-size:.76rem;font-weight:900;color:var(--orange-700);text-decoration:none;
             border:2px solid var(--orange-300);padding:.45rem .85rem;border-radius:8px;transition:.2s;}
 .hotel-call:hover{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+.hotel-vendor{font-size:.76rem;font-weight:800;color:var(--orange-700);margin-top:.15rem;}
+.hotel-login{display:inline-block;margin-top:.35rem;font-size:.72rem;font-weight:900;color:var(--orange-700);
+            border:2px solid var(--orange-300);padding:.35rem .7rem;border-radius:8px;text-decoration:none;transition:.2s;}
+.hotel-login:hover{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
 
 /* ---------------- CONTACT ---------------- */
 .contact-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}

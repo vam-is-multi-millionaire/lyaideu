@@ -192,6 +192,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
 <div class="delivery-user">
   <span class="avatar">' . delivery_esc(substr($user['name'] ?? '', 0, 1)) . '</span>
   <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
+  ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '') . '
   <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
 </div></header>
 <main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>● Live updates</span> New orders appear here automatically.</p></div>';
@@ -209,6 +210,28 @@ function delivery_footer(): void {
       .catch(function(){});
   }
   refresh();setInterval(refresh,6000);
+})();
+</script>
+<script>
+/* New-order notification: beep + banner when a fresh order card appears. */
+(function(){
+  var seen={},first=true;
+  function beep(){
+    try{var Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;var ctx=new Ctx();var o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o.start();o.stop(ctx.currentTime+0.5);}catch(e){}
+  }
+  function banner(){
+    var el=document.createElement("div");el.className="flash-banner flash-success delivery-flash";el.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.18)";el.innerHTML="<i class=\"fa-solid fa-motorcycle\"></i> New order assigned to you!";document.body.appendChild(el);setTimeout(function(){el.remove()},4200);
+  }
+  function scan(){
+    var box=document.querySelector("#deliveryQueue");if(!box)return;
+    box.querySelectorAll(".delivery-card").forEach(function(c){
+      var id=c.getAttribute("data-order-id");if(!id)return;
+      if(first){seen[id]=true;return;}
+      if(!seen[id]){seen[id]=true;beep();banner();if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:"A new order appeared in your queue."})}catch(e){}}}
+    });
+  }
+  if(window.Notification&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}
+  scan();first=false;setInterval(scan,2500);
 })();
 </script>
 </body></html>';

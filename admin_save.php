@@ -132,58 +132,7 @@ function handle_hotel_logo(string $existingLogo, array $post, ?array $file): str
 }
 
 function handle_item_image(string $existingImg, array $post, ?array $file, string $prefix): string {
-    $img = $existingImg;
-
-    if (!empty($post['remove_img'])) {
-        if ($img !== '' && str_starts_with($img, 'uploads/')) {
-            @unlink(__DIR__ . '/' . $img);
-        }
-        return '';
-    }
-
-    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-        return $img;
-    }
-
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        throw new RuntimeException('Image upload failed. Please try again.');
-    }
-    if ($file['size'] > 2 * 1024 * 1024) {
-        throw new RuntimeException('Image is too large (max 2 MB).');
-    }
-
-    $allowed = [
-        'image/png' => 'png',
-        'image/jpeg' => 'jpg',
-        'image/webp' => 'webp',
-        'image/gif' => 'gif',
-        'image/svg+xml' => 'svg',
-    ];
-
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = (string)$finfo->file($file['tmp_name']);
-    if (!isset($allowed[$mime])) {
-        throw new RuntimeException('Image must be a PNG, JPG, WebP, GIF or SVG image.');
-    }
-
-    $uploadDir = __DIR__ . '/uploads';
-    if (!is_dir($uploadDir)) {
-        if (!mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
-            throw new RuntimeException('Could not create the uploads folder.');
-        }
-    }
-
-    $ext = $allowed[$mime];
-    $filename = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
-        throw new RuntimeException('Could not save the uploaded image.');
-    }
-
-    if ($img !== '' && str_starts_with($img, 'uploads/')) {
-        @unlink(__DIR__ . '/' . $img);
-    }
-
-    return 'uploads/' . $filename;
+    return lyaideu_handle_item_image($existingImg, $post, $file, $prefix);
 }
 
 $section = trim($_POST['section'] ?? '');
@@ -243,6 +192,7 @@ try {
                 ':img' => $img,
             ]);
             lyaideu_sync_item_slug('dishes', $id, $name);
+            lyaideu_resolve_dish_vendor($id);
         }
 
         $newDish = $_POST['new_dish'] ?? [];
@@ -272,6 +222,7 @@ try {
                 ':img' => $img,
             ]);
             lyaideu_sync_item_slug('dishes', (int)$pdo->lastInsertId(), clean_text($newDish['name'] ?? ''));
+            lyaideu_resolve_dish_vendor((int)$pdo->lastInsertId());
         }
     }
 
@@ -319,6 +270,7 @@ try {
                 ':img' => $img,
             ]);
             lyaideu_sync_item_slug('mart_items', $id, $name);
+            lyaideu_resolve_mart_vendor($id);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
@@ -347,6 +299,7 @@ try {
                 ':img' => $img,
             ]);
             lyaideu_sync_item_slug('mart_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            lyaideu_resolve_mart_vendor((int)$pdo->lastInsertId());
         }
     }
 

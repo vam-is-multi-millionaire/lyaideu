@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS dishes (
   tag VARCHAR(100) NOT NULL DEFAULT '',
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
+  vendor_id INT UNSIGNED NULL DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_dishes_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -82,6 +83,8 @@ CREATE TABLE IF NOT EXISTS vendors (
   email VARCHAR(255) NOT NULL DEFAULT '',
   phone VARCHAR(20) NOT NULL DEFAULT '',
   pass VARCHAR(255) NOT NULL DEFAULT '',
+  scope VARCHAR(20) NOT NULL DEFAULT 'hotel',
+  hotel_id INT UNSIGNED NULL DEFAULT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL,
   PRIMARY KEY (id),
@@ -130,6 +133,7 @@ CREATE TABLE IF NOT EXISTS mart_items (
   tag VARCHAR(100) NOT NULL DEFAULT '',
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
+  vendor_id INT UNSIGNED NULL DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_mart_items_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -294,6 +298,12 @@ ALTER TABLE dishes ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KE
 ALTER TABLE mart_items ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_mart_items_category (category_id);
 ALTER TABLE dishes ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT '';
 ALTER TABLE mart_items ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT '';
+
+-- Vendor -> hotel / product ownership (idempotent at runtime via lyaideu_ensure_delivery_tables).
+ALTER TABLE vendors ADD COLUMN scope VARCHAR(20) NOT NULL DEFAULT 'hotel';
+ALTER TABLE vendors ADD COLUMN hotel_id INT UNSIGNED NULL DEFAULT NULL;
+ALTER TABLE dishes ADD COLUMN vendor_id INT UNSIGNED NULL DEFAULT NULL;
+ALTER TABLE mart_items ADD COLUMN vendor_id INT UNSIGNED NULL DEFAULT NULL;
 
 INSERT INTO categories (name, slug, type, parent_id, sort_order, icon) VALUES
 ('Momos','momo','menu',NULL,1,'fa-drumstick-bite'),

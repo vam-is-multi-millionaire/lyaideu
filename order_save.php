@@ -71,6 +71,14 @@ if (!$items) {
     flash_checkout('No valid items were found in your cart.');
 }
 
+$shops = [];
+foreach ($items as $it) {
+    $shops[$it['hotel']] = true;
+}
+if (count($shops) > 1) {
+    flash_checkout('Your cart can only contain items from one hotel (or only the Mart). Please remove items from the other place before checking out.');
+}
+
 $promo = strtoupper(trim(clean_text($_POST['promo'] ?? '')));
 $delivery = 50;
 $discount = ($promo === 'LYAIDEU' || $promo === 'FOODXPRESS') ? 50 : 0;

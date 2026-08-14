@@ -17,9 +17,11 @@ try {
     )->fetchAll();
 
     $hotels = $pdo->query(
-        'SELECT id, name, type, phone, emoji, logo
-         FROM hotels
-         ORDER BY id'
+        "SELECT h.id, h.name, h.type, h.phone, h.emoji, h.logo,
+                v.id AS vendor_id, v.name AS vendor_name
+         FROM hotels h
+         LEFT JOIN vendors v ON v.hotel_id = h.id AND v.scope = 'hotel' AND v.is_active = 1
+         ORDER BY h.id"
     )->fetchAll();
 
     $contacts = $pdo->query(
