@@ -1187,3 +1187,119 @@ function site_head_icons(): string {
     return '<link rel="icon" type="' . $favType . '" href="' . $fav . '">'
         . "\n" . '<link rel="apple-touch-icon" href="' . $apple . '">';
 }
+
+/**
+ * Idempotent KYC/profile schema: adds profile + verification columns to `users`
+ * and creates the `user_documents` table for uploaded ID documents.
+ */
+function lyaideu_ensure_kyc_tables(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        lyaideu_ensure_column($pdo, 'users', 'avatar', "VARCHAR(500) NOT NULL DEFAULT ''");
+        lyaideu_ensure_column($pdo, 'users', 'address', "VARCHAR(500) NOT NULL DEFAULT ''");
+        lyaideu_ensure_column($pdo, 'users', 'kyc_status', "ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none'");
+        lyaideu_ensure_column($pdo, 'users', 'kyc_reason', "VARCHAR(500) NOT NULL DEFAULT ''");
+        lyaideu_ensure_column($pdo, 'users', 'kyc_submitted_at', 'DATETIME NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'users', 'kyc_reviewed_at', 'DATETIME NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'users', 'kyc_reviewer', "VARCHAR(150) NOT NULL DEFAULT ''");
+
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS user_documents (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                user_id INT UNSIGNED NOT NULL,
+                doc_type VARCHAR(50) NOT NULL DEFAULT \'\',
+                file VARCHAR(500) NOT NULL DEFAULT \'\',
+                uploaded_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_udocs_user (user_id),
+                CONSTRAINT fk_udocs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Returns a user's full profile including KYC fields, or null when missing.
+ */
+function lyaideu_user_profile(int $userId): ?array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $userId <= 0) {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, name, email, phone, dob, avatar, address,
+                    kyc_status, kyc_reason, kyc_submitted_at, kyc_reviewed_at, kyc_reviewer
+             FROM users WHERE id = ? LIMIT 1'
+        );
+        $st->execute([$userId]);
+        $row = $st->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
+ * Uploads a KYC identity document (image or PDF) into uploads/kyc.
+ * Returns the stored path, or '' when no file was provided.
+ */
+function lyaideu_handle_kyc_document(string $existing, ?array $file, string $prefix): string {
+    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $existing;
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Document upload failed. Please try again.');
+    }
+    if ($file['size'] > 5 * 1024 * 1024) {
+        throw new RuntimeException('Document is too large (max 5 MB).');
+    }
+
+    $allowed = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'application/pdf' => 'pdf',
+    ];
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($file['tmp_name']);
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Documents must be PNG, JPG, WebP, GIF or PDF files.');
+    }
+
+    $uploadDir = __DIR__ . '/uploads/kyc';
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            throw new RuntimeException('Could not create the uploads folder.');
+        }
+    }
+
+    $ext = $allowed[$mime];
+    $filename = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('Could not save the uploaded document.');
+    }
+
+    if ($existing !== '' && str_starts_with($existing, 'uploads/kyc/')) {
+        @unlink(__DIR__ . '/' . $existing);
+    }
+
+    return 'uploads/kyc/' . $filename;
+}
+
+/**
+ * Deletes a stored KYC document file from disk (best effort).
+ */
+function lyaideu_delete_upload(string $path): void {
+    if ($path !== '' && str_starts_with($path, 'uploads/') && file_exists(__DIR__ . '/' . $path)) {
+        @unlink(__DIR__ . '/' . $path);
+    }
+}

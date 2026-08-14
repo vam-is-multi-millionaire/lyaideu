@@ -135,7 +135,7 @@ if ($action === 'signup') {
 
     unset($_SESSION['old']);
     session_regenerate_id(true);
-    $_SESSION['user'] = ['id' => $userId, 'name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob];
+    $_SESSION['user'] = ['id' => $userId, 'name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob, 'avatar' => '', 'address' => '', 'kyc_status' => 'none'];
     flash('success', 'Welcome to LyaiDeu, ' . htmlspecialchars($name) . '!');
     redirect(safe_next($_POST['next'] ?? ''));
 }
@@ -152,7 +152,7 @@ if ($action === 'login') {
 
     try {
         $stmt = $pdo->prepare(
-            'SELECT id, name, email, phone, dob, pass
+            'SELECT id, name, email, phone, dob, avatar, address, kyc_status, pass
              FROM users
              WHERE LOWER(name) = LOWER(:name_login)
                 OR phone = :phone_login
@@ -174,6 +174,9 @@ if ($action === 'login') {
                 'email' => $u['email'],
                 'phone' => $u['phone'],
                 'dob'   => $u['dob'],
+                'avatar' => (string)$u['avatar'],
+                'address' => (string)$u['address'],
+                'kyc_status' => (string)$u['kyc_status'],
             ];
             redirect(safe_next($_POST['next'] ?? ''));
         }

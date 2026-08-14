@@ -8,10 +8,26 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_delivery_tables();
+lyaideu_ensure_kyc_tables();
 
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
 function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg]; header('Location: checkout'); exit; }
+
+$kycUser = lyaideu_user_profile((int)$_SESSION['user']['id']);
+$kycStatus = $kycUser ? (string)$kycUser['kyc_status'] : 'none';
+if ($kycStatus !== 'approved') {
+    if ($kycStatus === 'pending') {
+        $msg = 'Your KYC documents are still under review. You can order once an admin verifies your identity.';
+    } elseif ($kycStatus === 'rejected') {
+        $msg = 'Your KYC was rejected. Please update your documents and resubmit from your profile.';
+    } else {
+        $msg = 'Please complete your profile and KYC verification before placing an order.';
+    }
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg];
+    header('Location: profile');
+    exit;
+}
 
 $cart = json_decode($_POST['cart_json'] ?? '[]', true);
 if (!is_array($cart) || empty($cart)) {

@@ -16,11 +16,13 @@ $unreadMessageCount = 0;
 $categoryCount = 0;
 $vendorCount = 0;
 $riderCount = 0;
+$pendingKycCount = 0;
 
 try {
     lyaideu_ensure_mart_table();
     lyaideu_ensure_categories_table();
     lyaideu_ensure_delivery_tables();
+    lyaideu_ensure_kyc_tables();
 
     $totalOrders = (int)$pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
     $totalSales = (float)$pdo->query("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status <> 'Cancelled'")->fetchColumn();
@@ -32,6 +34,7 @@ try {
     $categoryCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
     $vendorCount = (int)$pdo->query('SELECT COUNT(*) FROM vendors')->fetchColumn();
     $riderCount = (int)$pdo->query('SELECT COUNT(*) FROM riders')->fetchColumn();
+    $pendingKycCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE kyc_status = 'pending'")->fetchColumn();
 
     if (lyaideu_ensure_messages_table()) {
         $messageCount = (int)$pdo->query('SELECT COUNT(*) FROM messages')->fetchColumn();
@@ -57,6 +60,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
         <div><strong>Rs.&nbsp;<?= number_format($totalSales) ?></strong><span>Order Value</span></div>
         <div><strong><?= $orderCounts['Pending'] ?></strong><span>Pending</span></div>
         <div><strong><?= $userCount ?></strong><span>Registered Users</span></div>
+        <div><strong><?= $pendingKycCount ?></strong><span>Pending KYC</span></div>
         <div><strong><?= $dishCount ?></strong><span>Menu Items</span></div>
         <div><strong><?= $vendorCount ?></strong><span>Vendors</span></div>
         <div><strong><?= $riderCount ?></strong><span>Riders</span></div>
@@ -78,6 +82,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
                 'contacts' => ['count' => $contactCount, 'desc' => 'Update service team phone numbers'],
                 'messages' => ['count' => $unreadMessageCount, 'desc' => 'Read messages from the Contact page'],
                 'users' => ['count' => $userCount, 'desc' => 'View registered customer accounts'],
+                'kyc' => ['count' => $pendingKycCount, 'desc' => 'Verify customers before they can order'],
             ];
             foreach ($cards as $key => $card):
                 $item = $navItems[$key];

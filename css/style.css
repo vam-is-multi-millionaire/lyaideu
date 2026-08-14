@@ -884,3 +884,60 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .cart-shop:first-of-type{margin-top:0;}
 .checkout-shop{display:flex;gap:.4rem;align-items:center;font-size:.74rem;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--orange-700);margin:1rem 0 .3rem;padding-bottom:.25rem;border-bottom:2px solid var(--orange-100);}
 .checkout-shop:first-of-type{margin-top:0;}
+
+/* Profile & KYC */
+.avatar{background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;}
+.profile-page{padding:3rem 1.25rem 5rem;}
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;align-items:start;}
+.profile-card{background:#fff;border:1px solid var(--orange-100);border-radius:20px;padding:1.5rem;box-shadow:var(--shadow-sm);}
+.profile-card h2{font-family:var(--font-display);font-weight:400;margin-bottom:1rem;color:var(--orange-900);}
+.profile-card label{display:block;font-weight:800;margin-bottom:1rem;color:var(--ink);}
+.profile-card input,.profile-card select,.profile-card textarea{display:block;width:100%;margin-top:.4rem;border:2px solid var(--orange-200);border-radius:10px;padding:.75rem;font:inherit;background:#fff;}
+.profile-card input:focus,.profile-card select:focus,.profile-card textarea:focus{outline:none;border-color:var(--orange-500);box-shadow:0 0 0 3px rgba(231,102,8,.15);}
+.profile-card .btn{margin-top:.6rem;}
+.profile-card-wide{grid-column:1/-1;}
+.avatar-upload{display:flex;flex-direction:column;align-items:center;gap:.7rem;text-align:center;}
+.avatar-preview{width:108px;height:108px;border-radius:50%;background:var(--orange-600);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-size:2rem;background-size:cover;background-position:center;flex-shrink:0;overflow:hidden;border:3px solid var(--orange-200);}
+.kyc-gate-banner{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;background:#fff4e5;border:1px solid var(--orange-300);border-left:5px solid var(--orange-600);border-radius:14px;padding:.9rem 1.1rem;margin:0 0 1.5rem;font-weight:700;color:#6b3a00;font-size:.9rem;line-height:1.5;}
+.kyc-gate-banner i{color:var(--orange-600);font-size:1.2rem;}
+.kyc-gate-banner .btn{margin-left:auto;}
+.kyc-gate-banner.is-rejected{border-left-color:#c93a3a;background:#fdecec;color:#8a2020;}
+.kyc-gate-banner.is-rejected i{color:#c93a3a;}
+.kyc-status-row{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;margin-bottom:1rem;}
+.kyc-ok-note{color:#1e7d3c;font-weight:800;font-size:.86rem;display:flex;gap:.4rem;align-items:center;}
+.kyc-reject-note{color:#a02a2a;font-weight:800;font-size:.86rem;display:flex;gap:.4rem;align-items:flex-start;}
+.kyc-checks{display:grid;gap:.5rem;margin:0 0 1.2rem;}
+.kyc-check{display:flex;gap:.55rem;align-items:center;font-weight:800;color:var(--muted);font-size:.86rem;background:var(--orange-50);border:1px solid var(--orange-100);border-radius:10px;padding:.6rem .8rem;}
+.kyc-check i{color:var(--orange-500);}
+.kyc-check.done{color:#1e7d3c;border-color:#bfe8cd;background:#f0faf3;}
+.kyc-check.done i{color:#1e7d3c;}
+.kyc-sub{font-size:.95rem;margin:1.2rem 0 .6rem;color:var(--orange-900);}
+.kyc-doc-list{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:.55rem;}
+.kyc-doc-list li{display:flex;align-items:center;gap:.6rem;background:var(--orange-50);border:1px solid var(--orange-200);border-radius:12px;padding:.6rem .8rem;}
+.kyc-doc-ico{color:var(--orange-600);font-size:1.15rem;flex-shrink:0;}
+.kyc-doc-name{flex:1;font-weight:800;font-size:.86rem;color:var(--ink);min-width:0;}
+.kyc-doc-name small{display:block;color:var(--muted);font-size:.7rem;font-weight:700;}
+.kyc-doc-row{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;margin-bottom:.6rem;}
+.kyc-doc-row select,.kyc-doc-row input{width:100%;margin:0;}
+@media(max-width:520px){.kyc-doc-row{grid-template-columns:1fr;}}
+/* KYC status pills (reuse .order-status-pill) */
+.order-status-pill.kyc-none{background:#eef0f3;color:#5a6472;border-color:#dfe3ea;}
+.order-status-pill.kyc-pending{background:#fff4e0;color:#a15c00;border-color:#f5d791;}
+.order-status-pill.kyc-approved{background:#e4f6ea;color:#1e7d3c;border-color:#bfe8cd;}
+.order-status-pill.kyc-rejected{background:#fdecec;color:#a02a2a;border-color:#f4c7c7;}
+
+/* Admin KYC */
+.admin-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 1.4rem;}
+.admin-tab{padding:.5rem 1rem;border-radius:999px;border:2px solid var(--orange-200);background:#fff;color:var(--orange-800);font-weight:800;font-size:.8rem;text-decoration:none!important;transition:.2s;}
+.admin-tab:hover{border-color:var(--orange-400);}
+.admin-tab.active{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+.admin-kyc-card{display:flex;flex-direction:column;}
+.kyc-card-head{display:flex;gap:.9rem;align-items:center;margin-bottom:.9rem;}
+.kyc-card-head h3{margin:0 0 .25rem;}
+.kyc-card-head .avatar-preview{width:64px;height:64px;font-size:1.3rem;border-width:2px;}
+.kyc-meta{display:grid;gap:.35rem;margin-bottom:.8rem;}
+.kyc-meta p{font-size:.82rem;font-weight:700;color:var(--muted);display:flex;gap:.45rem;align-items:flex-start;word-break:break-word;}
+.kyc-meta p i{color:var(--orange-500);margin-top:.1rem;}
+.kyc-actions{margin-top:auto;display:grid;gap:.6rem;padding-top:.6rem;border-top:1px dashed var(--orange-200);}
+.kyc-actions textarea{width:100%;border:2px solid var(--orange-200);border-radius:10px;padding:.6rem;font:inherit;font-size:.85rem;resize:vertical;min-height:54px;background:#fff;}
+.kyc-actions .btn{margin:0;}

@@ -5,6 +5,12 @@ if (!isset($_SESSION['csrf_order'])) $_SESSION['csrf_order'] = bin2hex(random_by
 $user = $_SESSION['user'];
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 require_once __DIR__ . '/site_config.php';
+
+lyaideu_ensure_kyc_tables();
+$profile = lyaideu_user_profile((int)$user['id']);
+$kycStatus = $profile ? (string)$profile['kyc_status'] : 'none';
+$kycVerified = $kycStatus === 'approved';
+$profileAddress = $profile ? (string)$profile['address'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en"><head>
@@ -12,20 +18,27 @@ require_once __DIR__ . '/site_config.php';
 <?= lyaideu_base_tag() ?>
 <title>Checkout | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head><body class="checkout-body">
 <header class="topbar"><nav class="nav"><a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a><form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form><a class="btn btn-outline" href="menu"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
 <main class="checkout-page container">
   <div class="section-head"><p class="kicker"><i class="fa-solid fa-receipt"></i> Secure checkout</p><h1 class="display">Almost there, <?= htmlspecialchars($user['name']) ?>!</h1><p class="section-sub">Review your items, add delivery details, and place the order.</p></div>
   <?php if ($flash): ?><div class="flash-banner flash-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['msg'] ?></div><?php endif; ?>
+  <?php if (!$kycVerified): ?>
+  <div class="kyc-gate-banner <?= $kycStatus === 'rejected' ? 'is-rejected' : '' ?>">
+    <i class="fa-solid fa-shield-halved"></i> <b>Identity verification required.</b>
+    <?php if ($kycStatus === 'pending'): ?>Your KYC documents are under review — you'll be able to order once an admin verifies you.<?php elseif ($kycStatus === 'rejected'): ?>Your KYC was rejected. <?= htmlspecialchars((string)($profile['kyc_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Please fix the documents' ?> — update and resubmit from your profile.<?php else: ?>Complete your profile and upload your KYC documents before placing an order.<?php endif; ?>
+    <a class="btn btn-primary btn-sm" href="profile"><i class="fa-solid fa-id-card"></i> Go to Profile</a>
+  </div>
+  <?php endif; ?>
   <div id="checkoutEmpty" class="empty-state"><span class="big"><i class="fa-solid fa-cart-shopping"></i></span><p>Your cart is empty.</p><a class="btn btn-primary" href="menu">Browse Menu</a></div>
-  <form id="checkoutForm" action="order_save" method="POST" class="checkout-grid">
+  <form id="checkoutForm" action="order_save" method="POST" class="checkout-grid" data-kyc-ok="<?= $kycVerified ? '1' : '0' ?>">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_order']) ?>">
     <input type="hidden" name="cart_json" id="cartJson"><input type="hidden" name="promo" id="promoHidden">
     <section class="checkout-card"><h2><i class="fa-solid fa-location-dot"></i> Delivery details</h2>
       <label>Full Name<input name="customer_name" required value="<?= htmlspecialchars($user['name']) ?>"></label>
       <label>Phone<input name="phone" required value="<?= htmlspecialchars($user['phone']) ?>" inputmode="numeric"></label>
-      <label>Delivery Address<textarea name="address" required placeholder="House / street / area / landmark"></textarea></label>
+      <label>Delivery Address<textarea name="address" required placeholder="House / street / area / landmark"><?= htmlspecialchars($profileAddress, ENT_QUOTES, 'UTF-8') ?></textarea></label>
       <label>Order Note <span class="muted">(optional)</span><textarea name="note" placeholder="Less spicy, call on arrival, etc."></textarea></label>
       <label>Payment Method<select name="payment" required><option value="Cash on Delivery">Cash on Delivery</option><option value="eSewa / Khalti on delivery">eSewa / Khalti on delivery</option></select></label>
     </section>
@@ -37,8 +50,12 @@ require_once __DIR__ . '/site_config.php';
       <div class="promo-box"><input id="promoInput" type="text" placeholder="Promo code"><button type="button" class="btn btn-outline" id="promoBtn">Apply</button></div>
       <p id="promoMsg" class="small-note"></p>
       <div class="summary-row total"><span>Total</span><strong id="coTotal">Rs. 0</strong></div>
+      <?php if ($kycVerified): ?>
       <button class="btn btn-primary btn-block" type="submit" id="placeOrderBtn"><i class="fa-solid fa-rocket"></i> Place Order</button>
+      <?php else: ?>
+      <a class="btn btn-primary btn-block" href="profile"><i class="fa-solid fa-shield-halved"></i> Complete KYC to Order</a>
+      <?php endif; ?>
       <p class="small-note">Demo payment flow: no real payment is processed.</p>
     </section>
   </form>
-</main><script src="js/script.js?v=9"></script></body></html>
+</main><script src="js/script.js?v=10"></script></body></html>

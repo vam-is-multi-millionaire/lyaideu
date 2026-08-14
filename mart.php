@@ -36,7 +36,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
 
@@ -55,7 +55,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
             <li>
                 <div class="profile-wrap">
                     <button class="profile-chip" id="profileChip" type="button">
-                        <span class="avatar"><?= htmlspecialchars($initials) ?></span>
+                        <span class="avatar"<?= !empty($user['avatar']) ? ' style="background-image:url(\'' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '\')"' : '' ?>><?= empty($user['avatar']) ? htmlspecialchars($initials) : '' ?></span>
                         <span class="chip-name"><?= htmlspecialchars($firstName) ?></span>
                         <span class="caret"><i class="fa-solid fa-chevron-down"></i></span>
                     </button>
@@ -67,6 +67,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                         <?php if (!empty($_SESSION['is_admin'])): ?>
                             <a class="btn btn-outline btn-block" href="admin"><i class="fa-solid fa-gear"></i> Admin Panel</a>
                         <?php endif; ?>
+                        <a class="btn btn-outline btn-block" href="profile" style="margin-top:.5rem;"><i class="fa-solid fa-user-gear"></i> My Profile</a>
                         <a class="btn btn-outline btn-block" href="orders" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
                         <a class="btn btn-primary btn-block" href="logout" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
                     </div>
@@ -127,6 +128,6 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=9"></script>
+<script src="js/script.js?v=10"></script>
 </body>
 </html>
