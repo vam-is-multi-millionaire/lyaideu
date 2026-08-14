@@ -859,6 +859,7 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .delivery-items{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0;}
 .delivery-items span{background:var(--orange-50);border:1px solid var(--orange-200);border-radius:999px;padding:.4rem .7rem;font-size:.78rem;font-weight:800;}
 .delivery-actions form{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem;}
+.delivery-waiting{margin:.8rem 0 0;padding:.6rem .8rem;background:var(--orange-50);border:1px dashed var(--orange-300);border-radius:12px;font-size:.82rem;font-weight:800;color:var(--muted);display:flex;gap:.5rem;align-items:center;}
 .admin-assign-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin:.9rem 0;}
 .assign-form{display:flex;align-items:flex-end;gap:.5rem;flex-wrap:wrap;background:var(--orange-50);border:1px dashed var(--orange-200);border-radius:12px;padding:.6rem .7rem;}
 .assign-form label{font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}

@@ -20,7 +20,6 @@ $featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
-        lyaideu_seed_catalog();
         $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
         $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items')->fetchAll();
         $featured['hotels'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo FROM hotels')->fetchAll();
@@ -72,7 +71,7 @@ $FEATURED_MART_ICONS = [
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
 

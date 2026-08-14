@@ -7,7 +7,6 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 try {
-    lyaideu_seed_catalog();
     lyaideu_ensure_categories_table();
 
     $dishes = $pdo->query(

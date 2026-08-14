@@ -48,8 +48,8 @@ if ($user) {
                     o.created_at, o.rider_id, o.delivery_lat, o.delivery_lng, v.name AS vendor_name, v.phone AS vendor_phone
              FROM orders o
              LEFT JOIN vendors v ON v.id = o.vendor_id
-             WHERE o.rider_id = :rid AND o.status IN ("Ready for pickup", "Out for delivery")
-             ORDER BY FIELD(o.status, "Ready for pickup", "Out for delivery"), o.created_at ASC'
+             WHERE o.rider_id = :rid AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery")
+             ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery"), o.created_at ASC'
         );
         $rows->execute([':rid' => $riderId]);
         $orders = $rows->fetchAll();
@@ -68,8 +68,10 @@ if ($user) {
 
     echo '<div id="deliveryQueue">';
     echo '<div class="delivery-stats">';
+    $new = count(array_filter($queue, fn($q) => $q['status'] === 'Pending'));
     $ready = count(array_filter($queue, fn($q) => $q['status'] === 'Ready for pickup'));
     $out = count(array_filter($queue, fn($q) => $q['status'] === 'Out for delivery'));
+    echo '<div><strong>' . $new . '</strong><span>New</span></div>';
     echo '<div><strong>' . $ready . '</strong><span>Ready to pick up</span></div>';
     echo '<div><strong>' . $out . '</strong><span>On the way</span></div>';
     echo '</div>';
@@ -79,7 +81,13 @@ if ($user) {
     } else {
         echo '<div class="delivery-list">';
         foreach ($queue as $o):
-            $pill = $o['status'] === 'Ready for pickup' ? 'ready' : 'delivery';
+            $pill = match ($o['status']) {
+                'Pending' => 'pending',
+                'Accepted' => 'confirmed',
+                'Preparing' => 'preparing',
+                'Ready for pickup' => 'ready',
+                default => 'delivery',
+            };
             ?>
             <article class="delivery-card status-<?= $pill ?>" data-order-id="<?= (int)$o['id'] ?>">
                 <div class="delivery-card-head">
@@ -104,6 +112,9 @@ if ($user) {
                     <?php endforeach; ?>
                 </div>
                 <div class="delivery-actions">
+                    <?php if ($o['status'] === 'Pending' || $o['status'] === 'Accepted' || $o['status'] === 'Preparing'): ?>
+                    <p class="delivery-waiting"><i class="fa-solid fa-hourglass-half"></i> Waiting for the vendor to prepare this order — you'll pick it up when it's ready.</p>
+                    <?php else: ?>
                     <form method="POST">
                         <input type="hidden" name="csrf_token" value="<?= delivery_esc(delivery_csrf_token()) ?>">
                         <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
@@ -113,6 +124,7 @@ if ($user) {
                         <button type="submit" name="order_action" value="Delivered" class="btn btn-primary">Mark as delivered</button>
                         <?php endif; ?>
                     </form>
+                    <?php endif; ?>
                 </div>
             </article>
         <?php endforeach;

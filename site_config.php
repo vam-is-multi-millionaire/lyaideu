@@ -783,9 +783,58 @@ function lyaideu_ensure_delivery_tables(): bool {
         $dishColAdded = lyaideu_ensure_column($pdo, 'dishes', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
         $martColAdded = lyaideu_ensure_column($pdo, 'mart_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
 
-        if ($changed || $dishColAdded || $martColAdded) {
-            lyaideu_reindex_item_vendors();
+        // A mart-scope vendor is required for mart orders to route anywhere.
+        static $defaultVendorPass = null;
+        if ($defaultVendorPass === null) {
+            $defaultVendorPass = password_hash('vendor123', PASSWORD_DEFAULT);
         }
+        $martVendorId = (int)$pdo->query("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1")->fetchColumn();
+        if ($martVendorId > 0) {
+            $pdo->prepare("UPDATE vendors SET pass = ? WHERE id = ? AND pass = ''")->execute([$defaultVendorPass, $martVendorId]);
+        } else {
+            $pdo->prepare(
+                'INSERT INTO vendors (name, email, phone, pass, scope, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, 1, ?)'
+            )->execute(['LyaiDeu Mart', 'mart@lyaideu.local', '9000000000', $defaultVendorPass, 'mart', date('Y-m-d H:i:s')]);
+        }
+
+        // Every hotel gets a vendor account so its dishes always reach a vendor
+        // the moment a customer orders them.
+        $linkedHotelIds = [];
+        $vendorByName = [];
+        foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'hotel'") as $vr) {
+            if (!empty($vr['hotel_id'])) {
+                $linkedHotelIds[(int)$vr['hotel_id']] = (int)$vr['id'];
+            }
+            $vendorByName[lyaideu_normalize_name((string)$vr['name'])] = (int)$vr['id'];
+        }
+        $insHotelVendor = $pdo->prepare(
+            'INSERT INTO vendors (name, email, phone, pass, scope, hotel_id, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+        );
+        foreach ($pdo->query('SELECT id, name FROM hotels ORDER BY id') as $h) {
+            $hid = (int)$h['id'];
+            if (isset($linkedHotelIds[$hid])) {
+                continue;
+            }
+            $hn = lyaideu_normalize_name((string)$h['name']);
+            $existingVendorId = ($hn !== '' && isset($vendorByName[$hn])) ? (int)$vendorByName[$hn] : 0;
+            if ($existingVendorId > 0) {
+                $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ?')->execute([$hid, $existingVendorId]);
+                continue;
+            }
+            $insHotelVendor->execute([
+                (string)$h['name'],
+                'vendor' . $hid . '@lyaideu.local',
+                '9' . str_pad((string)$hid, 9, '0', STR_PAD_LEFT),
+                $defaultVendorPass,
+                'hotel',
+                $hid,
+                date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        lyaideu_reindex_item_vendors();
 
         return true;
     } catch (Throwable $e) {
@@ -821,25 +870,79 @@ function lyaideu_reindex_item_vendors(): void {
         return;
     }
     try {
+        // Link hotel-scope vendors to their hotel by matching name.
+        $vendors = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'hotel' AND hotel_id IS NULL")->fetchAll();
+        $hotels = $pdo->query('SELECT id, name FROM hotels')->fetchAll();
+        foreach ($vendors as $v) {
+            $vn = lyaideu_normalize_name((string)$v['name']);
+            if ($vn === '') {
+                continue;
+            }
+            $hit = 0;
+            $score = 0;
+            foreach ($hotels as $h) {
+                $hn = lyaideu_normalize_name((string)$h['name']);
+                if ($hn === '') {
+                    continue;
+                }
+                if ($hn === $vn) {
+                    $hit = (int)$h['id'];
+                    $score = 100;
+                    break;
+                }
+                if ($score < 10 && (strpos($hn, $vn) !== false || strpos($vn, $hn) !== false)) {
+                    $hit = (int)$h['id'];
+                    $score = 10;
+                }
+            }
+            if ($hit > 0) {
+                $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ?')->execute([$hit, (int)$v['id']]);
+            }
+        }
+
+        // Resolve each dish's vendor via its hotel (handles encoded names too).
+        $hotelVendors = [];
+        foreach ($pdo->query(
+            "SELECT h.name AS hname, v.id AS vid
+             FROM hotels h
+             JOIN vendors v ON v.hotel_id = h.id AND v.scope = 'hotel' AND v.is_active = 1"
+        ) as $row) {
+            $hotelVendors[lyaideu_normalize_name((string)$row['hname'])] = (int)$row['vid'];
+        }
+        $vendorNames = [];
+        foreach ($pdo->query("SELECT id, name FROM vendors WHERE scope = 'hotel' AND is_active = 1") as $v) {
+            $vendorNames[lyaideu_normalize_name((string)$v['name'])] = (int)$v['id'];
+        }
+        foreach ($pdo->query('SELECT id, hotel FROM dishes') as $d) {
+            $hn = lyaideu_normalize_name((string)$d['hotel']);
+            $vid = $hn !== '' ? (int)($hotelVendors[$hn] ?? 0) : 0;
+            if ($vid === 0 && $hn !== '') {
+                foreach ($vendorNames as $key => $mapVid) {
+                    if (strpos($key, $hn) !== false || strpos($hn, $key) !== false) {
+                        $vid = $mapVid;
+                        break;
+                    }
+                }
+            }
+            $pdo->prepare('UPDATE dishes SET vendor_id = ? WHERE id = ?')->execute([$vid > 0 ? $vid : null, (int)$d['id']]);
+        }
+
+        // Mart items belong to the mart-scope vendor.
+        $martVendor = (int)$pdo->query("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1")->fetchColumn();
+        if ($martVendor > 0) {
+            $pdo->exec('UPDATE mart_items SET vendor_id = ' . $martVendor);
+        }
+
+        // Backfill order items so pre-existing orders route to vendors too.
         $pdo->exec(
-            "UPDATE vendors v
-             JOIN hotels h ON h.name = v.name
-             SET v.hotel_id = h.id
-             WHERE v.scope = 'hotel' AND v.hotel_id IS NULL"
+            'UPDATE order_items oi
+             JOIN dishes d ON d.id = oi.dish_id
+             SET oi.vendor_id = d.vendor_id
+             WHERE oi.vendor_id IS NULL AND oi.dish_id IS NOT NULL'
         );
-        $pdo->exec(
-            "UPDATE dishes d
-             JOIN hotels h ON h.name = d.hotel
-             JOIN vendors v ON v.hotel_id = h.id AND v.scope = 'hotel' AND v.is_active = 1
-             SET d.vendor_id = v.id
-             WHERE d.vendor_id IS NULL OR d.vendor_id <> v.id"
-        );
-        $pdo->exec(
-            "UPDATE mart_items m
-             JOIN vendors v ON v.scope = 'mart' AND v.is_active = 1
-             SET m.vendor_id = v.id
-             WHERE m.vendor_id IS NULL OR m.vendor_id <> v.id"
-        );
+        if ($martVendor > 0) {
+            $pdo->exec('UPDATE order_items SET vendor_id = ' . $martVendor . ' WHERE vendor_id IS NULL AND dish_id IS NULL');
+        }
     } catch (Throwable $e) {
         // Best-effort migration; never break the page because of it.
     }
@@ -849,6 +952,16 @@ function lyaideu_reindex_item_vendors(): void {
  * Sets a dish's owning vendor based on the hotel the dish belongs to.
  * Returns the resolved vendor id (0 when none).
  */
+/**
+ * Normalizes a hotel/vendor name for fuzzy matching: decodes HTML entities,
+ * lowercases and strips everything that is not a letter or digit.
+ */
+function lyaideu_normalize_name(string $s): string {
+    $s = html_entity_decode($s, ENT_QUOTES, 'UTF-8');
+    $s = mb_strtolower($s, 'UTF-8');
+    return (string)preg_replace('/[^a-z0-9]+/u', '', $s);
+}
+
 function lyaideu_resolve_dish_vendor(int $dishId): int {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO || $dishId <= 0) {
@@ -868,6 +981,30 @@ function lyaideu_resolve_dish_vendor(int $dishId): int {
             );
             $st->execute([':h' => $hotel]);
             $vendorId = (int)$st->fetchColumn();
+        }
+        if ($vendorId === 0) {
+            // Fallback: match a vendor whose name resembles the hotel name.
+            $norm = lyaideu_normalize_name($hotel);
+            if ($norm !== '') {
+                $rows = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'hotel' AND is_active = 1")->fetchAll();
+                $exact = 0;
+                foreach ($rows as $row) {
+                    if (lyaideu_normalize_name((string)$row['name']) === $norm) {
+                        $exact = (int)$row['id'];
+                        break;
+                    }
+                }
+                if ($exact === 0) {
+                    foreach ($rows as $row) {
+                        $vn = lyaideu_normalize_name((string)$row['name']);
+                        if ($vn !== '' && (strpos($vn, $norm) !== false || strpos($norm, $vn) !== false)) {
+                            $exact = (int)$row['id'];
+                            break;
+                        }
+                    }
+                }
+                $vendorId = $exact;
+            }
         }
         $upd = $pdo->prepare('UPDATE dishes SET vendor_id = ? WHERE id = ?');
         $upd->execute([$vendorId > 0 ? $vendorId : null, $dishId]);

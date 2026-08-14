@@ -205,6 +205,7 @@ try {
 }
 
 lyaideu_auto_assign_vendor($orderId);
+lyaideu_auto_assign_rider($orderId);
 
 $_SESSION['last_order_id'] = $orderId;
 header('Location: order_success?id=' . $orderId);

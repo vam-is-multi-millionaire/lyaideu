@@ -70,10 +70,10 @@ if ($user) {
              LEFT JOIN riders r ON r.id = o.rider_id
              LEFT JOIN order_items oi ON oi.order_id = o.id
              WHERE o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
-               AND (o.vendor_id = :vid OR oi.vendor_id = :vid)
+               AND (o.vendor_id = :vid1 OR oi.vendor_id = :vid2)
              ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup"), o.created_at ASC'
         );
-        $rows->execute([':vid' => $vendorId]);
+        $rows->execute([':vid1' => $vendorId, ':vid2' => $vendorId]);
         $orders = $rows->fetchAll();
 
         $itemStmt = $pdo->prepare('SELECT name, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
@@ -105,10 +105,10 @@ if ($user) {
              LEFT JOIN riders r ON r.id = o.rider_id
              LEFT JOIN order_items oi ON oi.order_id = o.id
              WHERE o.status IN ("Out for delivery", "Delivered", "Cancelled")
-               AND (o.vendor_id = :vid OR oi.vendor_id = :vid)
+               AND (o.vendor_id = :vid1 OR oi.vendor_id = :vid2)
              ORDER BY o.created_at DESC LIMIT 20'
         );
-        $rows->execute([':vid' => $vendorId]);
+        $rows->execute([':vid1' => $vendorId, ':vid2' => $vendorId]);
         $completed = $rows->fetchAll();
     } catch (Throwable $e) {
         $completed = [];
