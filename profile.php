@@ -533,8 +533,8 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
         btn = document.getElementById('homeLocBtn');
     var startLat = parseFloat(latIn.value) || 28.5967,
         startLng = parseFloat(lngIn.value) || 81.6166;
-    var map = L.map('homeMap', { scrollWheelZoom: false }).setView([startLat, startLng], latIn.value ? 15 : 14);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    var map = L.map('homeMap', { scrollWheelZoom: false, attributionControl: false }).setView([startLat, startLng], latIn.value ? 15 : 14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     var marker = L.marker([startLat, startLng], { draggable: true }).addTo(map).bindPopup('Drop the pin to set your home');
     function setPos(lat, lng, reverse) {
         marker.setLatLng([lat, lng]);
