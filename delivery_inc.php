@@ -4,6 +4,11 @@
  */
 
 if (session_status() === PHP_SESSION_NONE) {
+    // Each dashboard role gets its own session cookie so logging into the
+    // vendor panel never logs out the rider panel (and vice versa), and the
+    // main site's PHPSESSID can never clobber delivery logins.
+    $deliveryPage = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
+    session_name($deliveryPage === 'rider.php' ? 'LYAIDEU_RIDER' : 'LYAIDEU_VENDOR');
     session_set_cookie_params([
         'httponly' => true,
         'samesite' => 'Lax',
