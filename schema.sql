@@ -65,11 +65,42 @@ CREATE TABLE IF NOT EXISTS orders (
   discount DECIMAL(10,2) NOT NULL DEFAULT 0,
   total DECIMAL(10,2) NOT NULL DEFAULT 0,
   status VARCHAR(50) NOT NULL DEFAULT 'Pending',
+  vendor_id INT UNSIGNED NULL,
+  rider_id INT UNSIGNED NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   PRIMARY KEY (id),
   KEY idx_orders_user (user_id),
+  KEY idx_orders_vendor (vendor_id),
+  KEY idx_orders_rider (rider_id),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS vendors (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(255) NOT NULL DEFAULT '',
+  phone VARCHAR(20) NOT NULL DEFAULT '',
+  pass VARCHAR(255) NOT NULL DEFAULT '',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_vendor_phone (phone),
+  UNIQUE KEY uq_vendor_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS riders (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(255) NOT NULL DEFAULT '',
+  phone VARCHAR(20) NOT NULL DEFAULT '',
+  pass VARCHAR(255) NOT NULL DEFAULT '',
+  vehicle VARCHAR(80) NOT NULL DEFAULT '',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_rider_phone (phone),
+  UNIQUE KEY uq_rider_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS order_items (

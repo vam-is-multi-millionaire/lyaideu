@@ -49,6 +49,7 @@ $statusClass = [
     'Pending' => 'pending',
     'Confirmed' => 'confirmed',
     'Preparing' => 'preparing',
+    'Ready for pickup' => 'ready',
     'Out for delivery' => 'delivery',
     'Delivered' => 'delivered',
     'Cancelled' => 'cancelled',

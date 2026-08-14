@@ -1,6 +1,10 @@
 <?php
 
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -35,6 +39,8 @@ function admin_nav_items(): array {
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
         'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
+        'vendors' => ['label' => 'Vendors', 'href' => 'admin_vendors', 'icon' => '<i class="fa-solid fa-store"></i>'],
+        'riders' => ['label' => 'Riders', 'href' => 'admin_riders', 'icon' => '<i class="fa-solid fa-motorcycle"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts', 'icon' => '<i class="fa-solid fa-phone"></i>'],
         'messages' => ['label' => 'Messages', 'href' => 'admin_messages', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
         'users' => ['label' => 'Users', 'href' => 'admin_users', 'icon' => '<i class="fa-solid fa-users"></i>'],

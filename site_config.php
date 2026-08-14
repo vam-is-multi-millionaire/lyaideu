@@ -645,6 +645,119 @@ function lyaideu_seed_catalog(): void {
     }
 }
 
+/**
+ * Ensures the delivery system tables exist (vendors, riders) and adds the
+ * vendor/rider assignment columns to the `orders` table.
+ */
+function lyaideu_ensure_delivery_tables(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS vendors (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(150) NOT NULL,
+                email VARCHAR(255) NOT NULL DEFAULT \'\',
+                phone VARCHAR(20) NOT NULL DEFAULT \'\',
+                pass VARCHAR(255) NOT NULL DEFAULT \'\',
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_vendor_phone (phone),
+                UNIQUE KEY uq_vendor_email (email)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS riders (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                name VARCHAR(150) NOT NULL,
+                email VARCHAR(255) NOT NULL DEFAULT \'\',
+                phone VARCHAR(20) NOT NULL DEFAULT \'\',
+                pass VARCHAR(255) NOT NULL DEFAULT \'\',
+                vehicle VARCHAR(80) NOT NULL DEFAULT \'\',
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_rider_phone (phone),
+                UNIQUE KEY uq_rider_email (email)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        $cols = array_column($pdo->query('SHOW COLUMNS FROM orders')->fetchAll(), 'Field');
+        foreach ([
+            'vendor_id INT UNSIGNED NULL DEFAULT NULL',
+            'rider_id INT UNSIGNED NULL DEFAULT NULL',
+        ] as $def) {
+            $field = substr($def, 0, strpos($def, ' '));
+            if (!in_array($field, $cols, true)) {
+                $pdo->exec("ALTER TABLE orders ADD COLUMN $def");
+            }
+        }
+
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Auto-assigns a vendor to an order. Prefers a vendor whose name matches the
+ * first non-mart hotel on the order; falls back to any active vendor.
+ */
+function lyaideu_auto_assign_vendor(int $orderId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return 0;
+    }
+    try {
+        $hotels = $pdo->query('SELECT hotel FROM order_items WHERE order_id = ' . (int)$orderId)->fetchAll(PDO::FETCH_COLUMN);
+
+        $vendorId = 0;
+        foreach ($hotels as $h) {
+            if ($h === '' || $h === 'LyaiDeu Mart') {
+                continue;
+            }
+            $st = $pdo->prepare('SELECT id FROM vendors WHERE is_active = 1 AND (name LIKE :n1 OR name LIKE :n2) ORDER BY id LIMIT 1');
+            $st->execute([':n1' => '%' . $h . '%', ':n2' => '%' . mb_substr($h, 0, 8) . '%']);
+            $vendorId = (int)$st->fetchColumn();
+            if ($vendorId > 0) {
+                break;
+            }
+        }
+        if ($vendorId <= 0) {
+            $vendorId = (int)$pdo->query('SELECT id FROM vendors WHERE is_active = 1 ORDER BY id LIMIT 1')->fetchColumn();
+        }
+        if ($vendorId > 0) {
+            $pdo->prepare('UPDATE orders SET vendor_id = ? WHERE id = ?')->execute([$vendorId, $orderId]);
+        }
+        return $vendorId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Auto-assigns the first available rider to an order (after a vendor marks it ready).
+ */
+function lyaideu_auto_assign_rider(int $orderId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return 0;
+    }
+    try {
+        $riderId = (int)$pdo->query('SELECT id FROM riders WHERE is_active = 1 ORDER BY id LIMIT 1')->fetchColumn();
+        if ($riderId > 0) {
+            $pdo->prepare('UPDATE orders SET rider_id = ? WHERE id = ?')->execute([$riderId, $orderId]);
+        }
+        return $riderId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
 function lyaideu_ensure_messages_table(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {

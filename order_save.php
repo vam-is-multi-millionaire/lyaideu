@@ -5,6 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: checkout'); exit;
 if (!hash_equals($_SESSION['csrf_order'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid checkout token.'); }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
 
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
@@ -148,6 +149,9 @@ try {
     http_response_code(500);
     exit('Could not save order.');
 }
+
+lyaideu_ensure_delivery_tables();
+lyaideu_auto_assign_vendor($orderId);
 
 $_SESSION['last_order_id'] = $orderId;
 header('Location: order_success?id=' . $orderId);
