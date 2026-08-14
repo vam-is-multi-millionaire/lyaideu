@@ -65,6 +65,7 @@ if ($user) {
 
     $queue = [];
     $pool = [];
+    $incoming = [];
     try {
         $rows = $pdo->prepare(
             'SELECT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
@@ -72,7 +73,7 @@ if ($user) {
              FROM orders o
              LEFT JOIN vendors v ON v.id = o.vendor_id
              WHERE (o.rider_id = :rid AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery"))
-                OR (o.rider_id IS NULL AND o.status = "Ready for pickup")
+                OR (o.rider_id IS NULL AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup"))
              ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery"), o.created_at ASC'
         );
         $rows->execute([':rid' => $riderId]);
@@ -82,10 +83,15 @@ if ($user) {
         foreach ($orders as $row) {
             $itemStmt->execute([(int)$row['id']]);
             $row['items'] = $itemStmt->fetchAll();
-            $claimable = (int)$row['rider_id'] === 0 || $row['rider_id'] === null;
+            $unassigned = (int)$row['rider_id'] === 0 || $row['rider_id'] === null;
+            $claimable = $unassigned && $row['status'] === 'Ready for pickup';
             $row['claimable'] = $claimable;
-            if ($claimable) {
-                $pool[] = $row;
+            if ($unassigned) {
+                if ($claimable) {
+                    $pool[] = $row;
+                } else {
+                    $incoming[] = $row;
+                }
             } else {
                 $queue[] = $row;
             }
@@ -93,6 +99,7 @@ if ($user) {
     } catch (Throwable $e) {
         $queue = [];
         $pool = [];
+        $incoming = [];
     }
 
     delivery_header('Rider Dashboard', 'Your Delivery Queue', 'fa-motorcycle', $role);
@@ -157,19 +164,26 @@ if ($user) {
     echo '<div id="deliveryQueue">';
     echo '<div class="delivery-stats">';
     $available = count($pool);
-    $ready = count(array_filter($queue, fn($q) => $q['status'] === 'Ready for pickup'));
+    $incomingCount = count($incoming);
     $out = count(array_filter($queue, fn($q) => $q['status'] === 'Out for delivery'));
     echo '<div><strong>' . $available . '</strong><span>Available to pick up</span></div>';
-    echo '<div><strong>' . $ready . '</strong><span>Ready</span></div>';
+    echo '<div><strong>' . $incomingCount . '</strong><span>Incoming</span></div>';
     echo '<div><strong>' . $out . '</strong><span>On the way</span></div>';
     echo '</div>';
 
-    if (!$pool && !$queue) {
-        echo '<div class="empty-state"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>No orders available right now. When a vendor marks an order as ready, every rider gets notified and the first to accept picks it up.</p></div>';
+    if (!$pool && !$incoming && !$queue) {
+        echo '<div class="empty-state"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>No orders right now. As soon as a customer orders, every rider is notified instantly — and the first to accept a ready order picks it up.</p></div>';
     } else {
         if ($pool) {
             echo '<section class="delivery-section"><h2><i class="fa-solid fa-bullhorn"></i> Available to pick up <span class="small-note">— first rider to accept takes it</span></h2><div class="delivery-list">';
             foreach ($pool as $o) {
+                $card($o);
+            }
+            echo '</div></section>';
+        }
+        if ($incoming) {
+            echo '<section class="delivery-section"><h2><i class="fa-solid fa-clock"></i> Incoming orders <span class="small-note">— you can accept these once they are ready</span></h2><div class="delivery-list">';
+            foreach ($incoming as $o) {
                 $card($o);
             }
             echo '</div></section>';

@@ -233,8 +233,10 @@ function delivery_footer(): void {
     var box=document.querySelector("#deliveryQueue");if(!box)return;
     box.querySelectorAll(".delivery-card").forEach(function(c){
       var id=c.getAttribute("data-order-id");if(!id)return;
-      if(first){seen[id]=true;return;}
-      if(!seen[id]){seen[id]=true;beep();var claim=c.classList.contains("claimable");banner(claim);if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:claim?"A ready order is available to pick up.":"A new order appeared in your queue."})}catch(e){}}}
+      var claim=c.classList.contains("claimable");
+      var key=id+":"+(claim?1:0);
+      if(first){seen[key]=true;return;}
+      if(!seen[key]){seen[key]=true;beep();banner(claim);if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:claim?"A ready order is available to pick up.":"A new order appeared in your queue."})}catch(e){}}}
     });
   }
   if(window.Notification&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}
