@@ -136,4 +136,5 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     });
 })();
 </script>
-<script src="js/script.js?v=11"></script></body></html>
+<script src="js/script.js?v=11"></script>
+<script src="js/notify.js?v=1"></script></body></html>

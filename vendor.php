@@ -23,7 +23,7 @@ if ($user) {
             $orderId = (int)($_POST['order_id'] ?? 0);
             $newStatus = trim((string)($_POST['order_action']));
             try {
-                $st = $pdo->prepare('SELECT status, vendor_id FROM orders WHERE id = ? LIMIT 1');
+                $st = $pdo->prepare('SELECT status, vendor_id, user_id FROM orders WHERE id = ? LIMIT 1');
                 $st->execute([$orderId]);
                 $order = $st->fetch();
                 $owns = $order && (int)$order['vendor_id'] === $vendorId;
@@ -36,7 +36,20 @@ if ($user) {
                     if (in_array($newStatus, $allowedTransitions[$order['status']] ?? [], true)) {
                         $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                         $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
-                        if ($newStatus === 'Rejected') {
+                        $orderUserId = (int)($order['user_id'] ?? 0);
+                        $vendorName = (string)$user['name'];
+                        $link = 'orders?id=' . $orderId;
+                        if ($newStatus === 'Accepted') {
+                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' accepted your order #' . $orderId . '.', $link);
+                            lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' was accepted — it will be ready soon.', 'rider');
+                        } elseif ($newStatus === 'Preparing') {
+                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' started preparing your order #' . $orderId . '.', $link);
+                            lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' is being prepared.', 'rider');
+                        } elseif ($newStatus === 'Ready for pickup') {
+                            lyaideu_notify($orderId, 'user', $orderUserId, 'Your order #' . $orderId . ' is ready for pickup.', $link);
+                            lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' is ready — be the first to accept!', 'rider');
+                        } elseif ($newStatus === 'Rejected') {
+                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' declined your order #' . $orderId . '.', $link);
                             $upd = $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?');
                             $upd->execute([$orderId, $vendorId]);
                             $upd = $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ? AND vendor_id = ?');

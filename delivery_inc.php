@@ -218,31 +218,8 @@ function delivery_footer(): void {
   refresh();setInterval(refresh,6000);
 })();
 </script>
-<script>
-/* New-order notification: beep + banner when a fresh order card appears. */
-(function(){
-  var seen={},first=true;
-  function beep(){
-    try{var Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;var ctx=new Ctx();var o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o.start();o.stop(ctx.currentTime+0.5);}catch(e){}
-  }
-  function banner(claim){
-    var msg=claim?"<i class=\"fa-solid fa-bullhorn\"></i> New order ready — be the first to accept!":"<i class=\"fa-solid fa-bell\"></i> New order!";
-    var el=document.createElement("div");el.className="flash-banner flash-success delivery-flash";el.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.18)";el.innerHTML=msg;document.body.appendChild(el);setTimeout(function(){el.remove()},4200);
-  }
-  function scan(){
-    var box=document.querySelector("#deliveryQueue");if(!box)return;
-    box.querySelectorAll(".delivery-card").forEach(function(c){
-      var id=c.getAttribute("data-order-id");if(!id)return;
-      var claim=c.classList.contains("claimable");
-      var key=id+":"+(claim?1:0);
-      if(first){seen[key]=true;return;}
-      if(!seen[key]){seen[key]=true;beep();banner(claim);if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:claim?"A ready order is available to pick up.":"A new order appeared in your queue."})}catch(e){}}}
-    });
-  }
-  if(window.Notification&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}
-  scan();first=false;setInterval(scan,2500);
-})();
-</script>
+<script>window.LYAIDEU_NOTIFY_ROLE = ' . json_encode(delivery_role()) . ';</script>
+<script src="js/notify.js?v=1"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* Delivery-spot maps: initialised lazily so freshly refreshed order cards get a map too. */

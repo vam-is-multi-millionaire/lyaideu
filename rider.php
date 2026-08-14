@@ -26,6 +26,25 @@ if ($user) {
             ]);
             if ($upd->rowCount() > 0) {
                 $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Order #' . $claimId . ' is yours — go pick it up!'];
+                try {
+                    $st = $pdo->prepare('SELECT user_id, vendor_id FROM orders WHERE id = ? LIMIT 1');
+                    $st->execute([$claimId]);
+                    $o = $st->fetch();
+                } catch (Throwable $e) {
+                    $o = false;
+                }
+                if ($o) {
+                    $riderName = (string)$user['name'];
+                    $orderUserId = (int)$o['user_id'];
+                    $orderVendorId = (int)$o['vendor_id'];
+                    lyaideu_notify($claimId, 'user', $orderUserId, 'Rider ' . $riderName . ' will deliver your order #' . $claimId . '.', 'orders?id=' . $claimId);
+                    if ($orderVendorId > 0) {
+                        lyaideu_notify($claimId, 'vendor', $orderVendorId, 'Rider ' . $riderName . ' accepted order #' . $claimId . '.', 'vendor');
+                    }
+                    foreach ($pdo->query('SELECT id FROM riders WHERE is_active = 1 AND id <> ' . (int)$riderId) as $r) {
+                        lyaideu_notify($claimId, 'rider', (int)$r['id'], 'Order #' . $claimId . ' was taken by another rider.', 'rider');
+                    }
+                }
             } else {
                 $_SESSION['flash'] = ['type' => 'error', 'msg' => 'That order was just taken by another rider.'];
             }
@@ -39,16 +58,30 @@ if ($user) {
             $orderId = (int)($_POST['order_id'] ?? 0);
             $newStatus = trim((string)($_POST['order_action']));
             try {
-                $st = $pdo->prepare('SELECT status, rider_id FROM orders WHERE id = ? LIMIT 1');
+                $st = $pdo->prepare('SELECT status, rider_id, user_id, vendor_id FROM orders WHERE id = ? LIMIT 1');
                 $st->execute([$orderId]);
                 $order = $st->fetch();
                 $valid = $order && (int)$order['rider_id'] === $riderId;
                 if ($valid && $newStatus === 'Out for delivery' && $order['status'] === 'Ready for pickup') {
                     $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                     $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
+                    if ($upd->rowCount() > 0) {
+                        $riderName = (string)$user['name'];
+                        lyaideu_notify($orderId, 'user', (int)$order['user_id'], 'Rider ' . $riderName . ' picked up your order #' . $orderId . ' — it\'s on the way!', 'orders?id=' . $orderId);
+                        if ((int)$order['vendor_id'] > 0) {
+                            lyaideu_notify($orderId, 'vendor', (int)$order['vendor_id'], 'Order #' . $orderId . ' is out for delivery.', 'vendor');
+                        }
+                    }
                 } elseif ($valid && $newStatus === 'Delivered' && $order['status'] === 'Out for delivery') {
                     $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                     $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
+                    if ($upd->rowCount() > 0) {
+                        $riderName = (string)$user['name'];
+                        lyaideu_notify($orderId, 'user', (int)$order['user_id'], 'Your order #' . $orderId . ' was delivered by ' . $riderName . '. Enjoy!', 'orders?id=' . $orderId);
+                        if ((int)$order['vendor_id'] > 0) {
+                            lyaideu_notify($orderId, 'vendor', (int)$order['vendor_id'], 'Order #' . $orderId . ' was delivered.', 'vendor');
+                        }
+                    }
                 }
             } catch (Throwable $e) {
                 // Ignore transition errors.

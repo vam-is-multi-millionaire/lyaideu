@@ -1,5 +1,9 @@
 RewriteEngine On
 
+# /api must always hit api.php, even though a physical api/ dir exists
+# (holds api/notifications.php for the live notification feed).
+RewriteRule ^api/?$ api.php [QSA,L]
+
 # Existing real files/directories bypass all rewriting (menu.php, mart.php, css, js still work directly)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

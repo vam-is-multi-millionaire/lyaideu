@@ -206,6 +206,16 @@ try {
 
 lyaideu_auto_assign_vendor($orderId);
 
+$firstItem = $items[0] ?? null;
+$itemSummary = ($firstItem ? $firstItem['name'] . ' × ' . $firstItem['qty'] : 'items');
+if (count($items) > 1) {
+    $itemSummary .= ' +' . (count($items) - 1) . ' more';
+}
+foreach (lyaideu_order_vendor_ids($orderId) as $vid) {
+    lyaideu_notify($orderId, 'vendor', $vid, 'New order #' . $orderId . ' — ' . $itemSummary . ' · Rs. ' . $total, 'vendor');
+}
+lyaideu_notify_riders($orderId, 'New order #' . $orderId . ' — ' . $itemSummary . ' · Rs. ' . $total . '. Check your queue.', 'rider');
+
 $_SESSION['last_order_id'] = $orderId;
 header('Location: order_success?id=' . $orderId);
 exit;

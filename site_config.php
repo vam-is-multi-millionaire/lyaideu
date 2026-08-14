@@ -834,12 +834,101 @@ function lyaideu_ensure_delivery_tables(): bool {
             ]);
         }
 
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS notifications (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                order_id INT UNSIGNED NULL DEFAULT NULL,
+                recipient_type VARCHAR(10) NOT NULL,
+                recipient_id INT UNSIGNED NOT NULL DEFAULT 0,
+                message VARCHAR(255) NOT NULL,
+                link VARCHAR(255) NOT NULL DEFAULT \'\',
+                is_read TINYINT(1) NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_notif_target (recipient_type, recipient_id, is_read),
+                KEY idx_notif_target_time (recipient_type, recipient_id, created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
         lyaideu_reindex_item_vendors();
 
         return true;
     } catch (Throwable $e) {
         return false;
     }
+}
+
+/**
+ * Writes a notification row for one recipient. Failures are silently ignored so
+ * a notification problem never breaks the checkout/status flow.
+ */
+function lyaideu_notify(int $orderId, string $recipientType, int $recipientId, string $message, string $link = ''): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || !in_array($recipientType, ['user', 'vendor', 'rider'], true) || $recipientId <= 0) {
+        return;
+    }
+    try {
+        $pdo->prepare(
+            'INSERT INTO notifications (order_id, recipient_type, recipient_id, message, link, is_read, created_at)
+             VALUES (?, ?, ?, ?, ?, 0, ?)'
+        )->execute([
+            $orderId,
+            $recipientType,
+            $recipientId,
+            mb_substr($message, 0, 255),
+            $link,
+            date('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Notifies every active rider (broadcast). Used for new orders and ready-to-accept.
+ */
+function lyaideu_notify_riders(int $orderId, string $message, string $link = ''): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        foreach ($pdo->query('SELECT id FROM riders WHERE is_active = 1') as $r) {
+            lyaideu_notify($orderId, 'rider', (int)$r['id'], $message, $link);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Distinct vendor ids that own an order (via orders.vendor_id or order_items.vendor_id).
+ */
+function lyaideu_order_vendor_ids(int $orderId): array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return [];
+    }
+    $ids = [];
+    try {
+        $st = $pdo->prepare('SELECT vendor_id FROM orders WHERE id = ?');
+        $st->execute([$orderId]);
+        $vid = (int)$st->fetchColumn();
+        if ($vid > 0) {
+            $ids[$vid] = true;
+        }
+        $st = $pdo->prepare('SELECT vendor_id FROM order_items WHERE order_id = ?');
+        $st->execute([$orderId]);
+        foreach ($st->fetchAll() as $row) {
+            $iv = (int)$row['vendor_id'];
+            if ($iv > 0) {
+                $ids[$iv] = true;
+            }
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+    return array_keys($ids);
 }
 
 /**
