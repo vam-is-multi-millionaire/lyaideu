@@ -126,11 +126,36 @@ function initHeroSlider(){
   const wrap=$('#heroSlides');if(!wrap)return;
   const slides=$$('.hero-slide',wrap),dotsBox=$('#heroDots');
   if(slides.length<2)return;
-  let cur=0,timer=null;
+  const total=slides.length;
+  let cur=0,timer=null,dragging=false,startX=0,deltaX=0;
   slides.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Slide '+(i+1));b.addEventListener('click',()=>{go(i);restart()});if(i===0)b.classList.add('active');dotsBox?.appendChild(b)});
   const dots=$$('button',dotsBox);
-  function go(i){cur=(i+slides.length)%slides.length;wrap.style.transform='translateX(-'+(cur*100)+'%)';dots.forEach((d,k)=>d.classList.toggle('active',k===cur))}
+  function render(){
+    wrap.style.transition=dragging?'none':'';
+    wrap.style.transform='translateX('+(-cur*100)+'%)'+(deltaX?' translateX('+deltaX+'px)':'');
+  }
+  function go(i){cur=(i+total)%total;deltaX=0;render();dots.forEach((d,k)=>d.classList.toggle('active',k===cur))}
   function restart(){if(timer)clearInterval(timer);timer=setInterval(()=>go(cur+1),3000)}
+  wrap.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    dragging=true;startX=e.clientX;deltaX=0;render();
+    if(timer)clearInterval(timer);
+    try{wrap.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  wrap.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    deltaX=e.clientX-startX;render();
+  });
+  function endDrag(){
+    if(!dragging)return;
+    dragging=false;
+    const threshold=Math.min(60,wrap.offsetWidth*.15);
+    if(Math.abs(deltaX)>threshold){go(cur+(deltaX<0?1:-1));}
+    else{deltaX=0;render();}
+    restart();
+  }
+  wrap.addEventListener('pointerup',endDrag);
+  wrap.addEventListener('pointercancel',endDrag);
   $('#heroPrev')?.addEventListener('click',()=>{go(cur-1);restart()});
   $('#heroNext')?.addEventListener('click',()=>{go(cur+1);restart()});
   restart();
