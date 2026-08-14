@@ -127,6 +127,6 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=6"></script>
+<script src="js/script.js?v=9"></script>
 </body>
 </html>

@@ -39,4 +39,4 @@ require_once __DIR__ . '/site_config.php';
       <p class="small-note">Demo payment flow: no real payment is processed.</p>
     </section>
   </form>
-</main><script src="js/script.js?v=6"></script></body></html>
+</main><script src="js/script.js?v=9"></script></body></html>

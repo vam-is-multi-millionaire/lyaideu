@@ -171,7 +171,7 @@ require_once __DIR__ . '/site_config.php';
     <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
 </main>
 </div>
-<script src="js/script.js?v=7"></script>
+<script src="js/script.js?v=9"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)
 document.addEventListener('click', function (e) {
