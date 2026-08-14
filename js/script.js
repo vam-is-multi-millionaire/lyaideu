@@ -127,14 +127,31 @@ function initHeroSlider(){
   const slides=$$('.hero-slide',wrap),dotsBox=$('#heroDots');
   if(slides.length<2)return;
   const total=slides.length;
-  let cur=0,timer=null,dragging=false,startX=0,deltaX=0;
-  slides.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Slide '+(i+1));b.addEventListener('click',()=>{go(i);restart()});if(i===0)b.classList.add('active');dotsBox?.appendChild(b)});
+  const cloneLast=slides[total-1].cloneNode(true),cloneFirst=slides[0].cloneNode(true);
+  wrap.insertBefore(cloneLast,slides[0]);
+  wrap.appendChild(cloneFirst);
+  const count=slides.length+2;
+  let cur=1,timer=null,dragging=false,startX=0,deltaX=0;
+  slides.forEach((_,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Slide '+(i+1));b.addEventListener('click',()=>{go(i+1);restart()});if(i===0)b.classList.add('active');dotsBox?.appendChild(b)});
   const dots=$$('button',dotsBox);
-  function render(){
-    wrap.style.transition=dragging?'none':'';
-    wrap.style.transform='translateX('+(-cur*100)+'%)'+(deltaX?' translateX('+deltaX+'px)':'');
+  function render(){wrap.style.transition=dragging?'none':'';wrap.style.transform='translateX('+(-cur*100)+'%)'+(deltaX?' translateX('+deltaX+'px)':'')}
+  function snap(offset){
+    wrap.style.transition='none';
+    wrap.style.transform='translateX('+(-offset*100)+'%)';
+    void wrap.offsetWidth;
+    wrap.style.transition='';
   }
-  function go(i){cur=(i+total)%total;deltaX=0;render();dots.forEach((d,k)=>d.classList.toggle('active',k===cur))}
+  function go(i){
+    cur=i;deltaX=0;render();
+    const real=(cur-1+total)%total;
+    dots.forEach((d,k)=>d.classList.toggle('active',k===real));
+  }
+  snap(cur);
+  wrap.addEventListener('transitionend',()=>{
+    if(dragging)return;
+    if(cur===count-1){cur=1;snap(cur)}
+    else if(cur===0){cur=total;snap(cur)}
+  });
   function restart(){if(timer)clearInterval(timer);timer=setInterval(()=>go(cur+1),3000)}
   wrap.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse'&&e.button!==0)return;
