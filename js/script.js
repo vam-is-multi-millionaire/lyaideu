@@ -5,7 +5,7 @@ const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelect
 let currentCat='all',searchQuery='',allDishes=[],allMart=[]; const CART_KEY='fe_cart',FAV_KEY='fe_favorites';
 const getCart=()=>JSON.parse(localStorage.getItem(CART_KEY)||'[]'); const saveCart=c=>{localStorage.setItem(CART_KEY,JSON.stringify(c));renderCart();};
 const getFav=()=>JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); const saveFav=f=>localStorage.setItem(FAV_KEY,JSON.stringify(f));
-let DELIVERY_CFG={fee_schedule:[50,90,120,140,160,180],time_schedule:[30,45,60,75,90,105]};
+let DELIVERY_CFG={fee_schedule:[50,90,120,140,160,180],time_schedule:[45,50,55,60,60,60],mart_minutes:15,time_min:45,time_max:60};
 function esc(v){return String(v??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));}
 const FA_ICONS={'🛵':'fa-motorcycle','📦':'fa-box','🍽️':'fa-utensils','🍕':'fa-pizza-slice','🥟':'fa-drumstick-bite','🍜':'fa-bowl-rice','🍢':'fa-utensils','🥠':'fa-cookie','🍔':'fa-burger','🥤':'fa-mug-saucer','🥭':'fa-apple-whole','🍛':'fa-bowl-food','🥩':'fa-bacon','🍗':'fa-drumstick-bite','📞':'fa-phone','🤝':'fa-handshake','☎️':'fa-phone','🌶':'fa-pepper-hot','🏨':'fa-hotel','📍':'fa-location-dot','✉️':'fa-envelope','💳':'fa-credit-card','📝':'fa-note-sticky','🔥':'fa-fire','💚':'fa-heart','❤️':'fa-heart','✅':'fa-circle-check','❌':'fa-circle-xmark','🕐':'fa-clock','🎉':'fa-champagne-glasses','⚠️':'fa-triangle-exclamation','⚡':'fa-bolt','🌐':'fa-globe','📊':'fa-chart-simple','👥':'fa-users','👤':'fa-user','🔒':'fa-lock','🔐':'fa-key','🎂':'fa-cake-candles','⚙️':'fa-gear','🔍':'fa-magnifying-glass','🛒':'fa-cart-shopping','👋':'fa-hand','🎬':'fa-film','🧾':'fa-receipt','🚀':'fa-rocket','✨':'fa-arrows-rotate'};
 const FA_ICON_LOOKUP={};Object.keys(FA_ICONS).forEach(k=>{FA_ICON_LOOKUP[k.replace(/\uFE0F/g,'')]=FA_ICONS[k];});
@@ -107,8 +107,9 @@ function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
 function shopOfItem(d){if(!d)return'Other';if(d.type==='mart'||String(d.hotel)==='LyaiDeu Mart')return'LyaiDeu Mart';return String(d.hotel||'')||'Other'}
 function cartShops(c){c=c||[];return[...new Set(c.map(x=>x.shop||shopOfItem(findItem(x.id,x.type)||x)))].filter(Boolean)}
+function cartHasHotel(c){c=c||[];return c.some(r=>(r.type||'dish')==='dish')}
 function deliveryFeeFor(n){const f=DELIVERY_CFG.fee_schedule||[];n=Math.max(1,n|0);if(!f.length)return 50;if(n<=f.length)return f[n-1]|0;const last=f[f.length-1]|0,prev=f[f.length-2]|0,delta=last-prev;return Math.max(0,last+(n-f.length)*delta)}
-function deliveryEtaFor(n){const t=DELIVERY_CFG.time_schedule||[];n=Math.max(1,n|0);if(!t.length)return 30;if(n<=t.length)return t[n-1]|0;const last=t[t.length-1]|0,prev=t[t.length-2]|0,delta=last-prev;return Math.max(0,last+(n-t.length)*delta)}
+function deliveryEtaFor(n,hasHotel){if(hasHotel===false)return DELIVERY_CFG.mart_minutes||15;const t=DELIVERY_CFG.time_schedule||[];n=Math.max(1,n|0);let eta;if(!t.length)eta=30;else if(n<=t.length)eta=t[n-1]|0;else{const last=t[t.length-1]|0,prev=t[t.length-2]|0,delta=last-prev;eta=Math.max(0,last+(n-t.length)*delta)}const lo=DELIVERY_CFG.time_min||45,hi=DELIVERY_CFG.time_max||60;return Math.max(lo,Math.min(hi,eta))}
 function showVendorModal(n,fee,eta){
   let o=$('#vendorModalOverlay');
   if(!o){o=document.createElement('div');o.id='vendorModalOverlay';o.className='modal-overlay';o.innerHTML='<div class="modal-box"><h3 class="modal-title"><i class="fa-solid fa-store"></i> Multi-vendor order</h3><div class="modal-body"></div><div class="modal-actions"><button type="button" class="btn btn-primary" id="vendorModalOk"><i class="fa-solid fa-check"></i> Got it</button></div></div>';document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o||e.target.closest('#vendorModalOk'))hideVendorModal()});}
@@ -116,7 +117,7 @@ function showVendorModal(n,fee,eta){
   o.classList.add('show');
 }
 function hideVendorModal(){const o=$('#vendorModalOverlay');if(o)o.classList.remove('show')}
-function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||'',shop});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n)+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
+function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||'',shop});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n,cartHasHotel(c)));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n,cartHasHotel(c))+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.length;countEls.forEach(e=>e.textContent=count);if(!box)return;
@@ -125,7 +126,7 @@ function renderCart(){
     const shops=cartShops(c);
     const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
     let html='';
-    if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> — about <b>'+deliveryEtaFor(shops.length)+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
+    if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> — about <b>'+deliveryEtaFor(shops.length,cartHasHotel(c))+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
     Object.keys(groups).forEach(s=>{
       html+='<div class="cart-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>';
       html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
@@ -246,13 +247,14 @@ function initCheckout(){
     let html='';
     Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
     box.innerHTML=html;
+    const hasHotel=cartHasHotel(c);
     const delivery=deliveryFeeFor(shops.length),discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?delivery:0;
     $('#coSubtotal').textContent='Rs. '+sub;
     if($('#coDelivery'))$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);
     if($('#coTotal'))$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);
-    if($('#coEta'))$('#coEta').innerHTML=shops.length>1?'<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length)+' minutes</b> — '+shops.length+' vendors': '<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length)+' minutes</b>';
+    if($('#coEta'))$('#coEta').innerHTML=shops.length>1?'<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length,hasHotel)+' minutes</b> — '+shops.length+' vendors': '<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length,hasHotel)+' minutes</b>';
     const note=$('#coVendorNote');
-    if(note){if(shops.length>1){note.style.display='';note.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> <b>Ordering from '+shops.length+' vendors.</b> Delivery takes about '+deliveryEtaFor(shops.length)+' minutes and the delivery fee is Rs. '+delivery+'. Each vendor prepares your items separately.'}else{note.style.display='none'}}
+    if(note){if(shops.length>1){note.style.display='';note.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> <b>Ordering from '+shops.length+' vendors.</b> Delivery takes about '+deliveryEtaFor(shops.length,hasHotel)+' minutes and the delivery fee is Rs. '+delivery+'. Each vendor prepares your items separately.'}else{note.style.display='none'}}
     $('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
   }
   $('#promoBtn')?.addEventListener('click',()=>{promo=$('#promoInput').value.trim().toUpperCase();$('#promoMsg').innerHTML=(promo==='LYAIDEU'||promo==='FOODXPRESS')?'<i class="fa-solid fa-circle-check"></i> Free delivery applied!':'<i class="fa-solid fa-circle-xmark"></i> Invalid demo code. Try LYAIDEU.';update()});

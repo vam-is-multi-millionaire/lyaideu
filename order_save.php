@@ -81,12 +81,16 @@ if (!$items) {
 }
 
 $shopNames = [];
+$hasHotel = false;
 foreach ($items as $it) {
     $shopNames[$it['hotel']] = true;
+    if (!empty($it['dish_id'])) {
+        $hasHotel = true;
+    }
 }
 $shopCount = count($shopNames);
 $delivery = lyaideu_delivery_fee($shopCount);
-$eta = lyaideu_delivery_eta($shopCount);
+$eta = lyaideu_delivery_eta($shopCount, $hasHotel);
 
 $promo = strtoupper(trim(clean_text($_POST['promo'] ?? '')));
 $discount = ($promo === 'LYAIDEU' || $promo === 'FOODXPRESS') ? $delivery : 0;

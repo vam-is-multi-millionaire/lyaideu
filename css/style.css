@@ -405,6 +405,7 @@ section{scroll-margin-top:96px;}
 .admin-section { background: #fff; padding: 1.5rem; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 2rem; border: 1px solid var(--orange-100); }
 .admin-section h2 { font-family: var(--font-display); color: var(--orange-900); margin-bottom: 1.5rem; border-bottom: 2px solid var(--orange-100); padding-bottom: .5rem; }
 .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+.admin-grid-inline { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .8rem; margin-top: .4rem; }
 .admin-card { border: 1px solid var(--orange-200); border-radius: 12px; padding: 1.2rem; background: var(--orange-50); transition: .2s; }
 .admin-card:hover { border-color: var(--orange-400); box-shadow: var(--shadow-sm); }
 .admin-card h3 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--orange-700); border-bottom: 1px dashed var(--orange-200); padding-bottom: .5rem; }

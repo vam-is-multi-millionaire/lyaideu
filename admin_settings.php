@@ -172,6 +172,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return $v >= 0;
         }));
 
+        $martMinutes = max(1, (int)($_POST['delivery_mart_minutes'] ?? 15));
+        $timeMin = max(1, (int)($_POST['delivery_time_min'] ?? 45));
+        $timeMax = max(1, (int)($_POST['delivery_time_max'] ?? 60));
+        if ($timeMax < $timeMin) {
+            $timeMax = $timeMin;
+        }
+
         if (!$feeArr || !$timeArr) {
             settings_redirect(false, 'Enter at least one delivery fee and one delivery time.');
         }
@@ -183,6 +190,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $update->execute([':skey' => 'delivery_fee_schedule', ':sval' => json_encode($feeArr)]);
             $update->execute([':skey' => 'delivery_time_schedule', ':sval' => json_encode($timeArr)]);
+            $update->execute([':skey' => 'delivery_mart_minutes', ':sval' => (string)$martMinutes]);
+            $update->execute([':skey' => 'delivery_time_min', ':sval' => (string)$timeMin]);
+            $update->execute([':skey' => 'delivery_time_max', ':sval' => (string)$timeMax]);
         } catch (Throwable $e) {
             settings_redirect(false, 'Could not save the delivery settings.');
         }
@@ -202,6 +212,9 @@ $heroSlides = site_hero_slides();
 $deliveryCfg = lyaideu_delivery_config();
 $deliveryFeeStr = implode(', ', $deliveryCfg['fee_schedule']);
 $deliveryTimeStr = implode(', ', $deliveryCfg['time_schedule']);
+$deliveryMartMinutes = (int)$deliveryCfg['mart_minutes'];
+$deliveryTimeMin = (int)$deliveryCfg['time_min'];
+$deliveryTimeMax = (int)$deliveryCfg['time_max'];
 
 admin_page_start('Settings', 'settings', 'Settings');
 ?>
@@ -310,9 +323,15 @@ admin_page_start('Settings', 'settings', 'Settings');
                 </div>
                 <div class="admin-card">
                     <h3><i class="fa-solid fa-clock"></i> Estimated delivery (minutes)</h3>
-                    <label>Minutes per vendor count <small class="small-note">comma-separated</small></label>
-                    <input type="text" name="delivery_time_schedule" value="<?= htmlspecialchars($deliveryTimeStr, ENT_QUOTES, 'UTF-8') ?>" placeholder="30, 45, 60, 75, 90, 105">
-                    <small class="small-note">1 vendor = 30 min · 2 vendors = 45 min · 3 = 60 min. Past the last entry, the final increase repeats.</small>
+                    <label>Minutes per vendor count <small class="small-note">comma-separated, hotel orders only</small></label>
+                    <input type="text" name="delivery_time_schedule" value="<?= htmlspecialchars($deliveryTimeStr, ENT_QUOTES, 'UTF-8') ?>" placeholder="45, 50, 55, 60, 60, 60">
+                    <small class="small-note">Food/hotel orders: 1 vendor = 45 min · 2 = 50 min · 3 = 55 min · 4+ = 60 min. Past the last entry, the final increase repeats.</small>
+                    <div class="admin-grid-inline">
+                        <label>Mart-only delivery (min)<input type="number" name="delivery_mart_minutes" value="<?= (int)$deliveryMartMinutes ?>" min="1" step="1"></label>
+                        <label>Hotel minimum (min)<input type="number" name="delivery_time_min" value="<?= (int)$deliveryTimeMin ?>" min="1" step="1"></label>
+                        <label>Hotel maximum (min)<input type="number" name="delivery_time_max" value="<?= (int)$deliveryTimeMax ?>" min="1" step="1"></label>
+                    </div>
+                    <small class="small-note">Mart-only orders are ready-made and take the mart time. Orders with hotel/food items always take at least the minimum and never more than the maximum.</small>
                 </div>
             </div>
         </section>

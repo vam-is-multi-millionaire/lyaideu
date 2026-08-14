@@ -33,7 +33,7 @@ require_once __DIR__ . '/site_config.php';
       <div id="coVendorNote" class="vendor-note" style="display:none"></div>
       <div class="summary-row"><span>Subtotal</span><strong id="coSubtotal">Rs. 0</strong></div>
       <div class="summary-row"><span>Delivery</span><strong id="coDelivery">Rs. 50</strong></div>
-      <div class="summary-row"><span>Estimated delivery</span><strong id="coEta">about 30 minutes</strong></div>
+      <div class="summary-row"><span>Estimated delivery</span><strong id="coEta">about 45 minutes</strong></div>
       <div class="promo-box"><input id="promoInput" type="text" placeholder="Promo code"><button type="button" class="btn btn-outline" id="promoBtn">Apply</button></div>
       <p id="promoMsg" class="small-note"></p>
       <div class="summary-row total"><span>Total</span><strong id="coTotal">Rs. 0</strong></div>

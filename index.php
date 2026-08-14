@@ -132,7 +132,7 @@ $FEATURED_MART_ICONS = [
                     <a class="btn btn-outline" href="mart">Shop the Mart</a>
                 </div>
                 <div class="hero-badges">
-                    <span><i class="fa-solid fa-truck-fast"></i> 30 min delivery</span>
+                    <span><i class="fa-solid fa-truck-fast"></i> 15–60 min delivery</span>
                     <span><i class="fa-solid fa-wallet"></i> eSewa &middot; Khalti &middot; COD</span>
                     <span><i class="fa-solid fa-star"></i> Trusted hotels</span>
                 </div>
@@ -341,7 +341,7 @@ $FEATURED_MART_ICONS = [
                 </details>
                 <details class="faq-item">
                     <summary>How long does delivery take?</summary>
-                    <p>We aim for fast delivery across the Surkhet Valley, usually within 30 minutes. Exact time depends on distance, traffic and how busy the kitchen is.</p>
+                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45–60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How much is delivery?</summary>

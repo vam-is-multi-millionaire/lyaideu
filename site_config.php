@@ -658,7 +658,7 @@ function lyaideu_seed_catalog(): void {
  */
 function lyaideu_delivery_config(): array {
     $defaultFees = [50, 90, 120, 140, 160, 180];
-    $defaultTimes = [30, 45, 60, 75, 90, 105];
+    $defaultTimes = [45, 50, 55, 60, 60, 60];
 
     $fees = json_decode((string)site_setting('delivery_fee_schedule', ''), true);
     $times = json_decode((string)site_setting('delivery_time_schedule', ''), true);
@@ -670,9 +670,16 @@ function lyaideu_delivery_config(): array {
         $times = $defaultTimes;
     }
 
+    $martMinutes = (int)site_setting('delivery_mart_minutes', '15');
+    $timeMin = (int)site_setting('delivery_time_min', '45');
+    $timeMax = (int)site_setting('delivery_time_max', '60');
+
     return [
         'fee_schedule' => array_map('intval', array_values($fees)),
         'time_schedule' => array_map('intval', array_values($times)),
+        'mart_minutes' => max(1, $martMinutes),
+        'time_min' => max(1, $timeMin),
+        'time_max' => max(1, $timeMax),
     ];
 }
 
@@ -695,18 +702,26 @@ function lyaideu_delivery_fee(int $shops): int {
 
 /**
  * Returns the estimated delivery minutes for an order serving `$shops` vendors.
+ * Mart-only orders (no hotel/food items) use a shorter flat time (`mart_minutes`).
+ * Orders that include hotel/food items always take at least `time_min` minutes
+ * and never more than `time_max`, with extra vendors adding prep time via the schedule.
  */
-function lyaideu_delivery_eta(int $shops): int {
+function lyaideu_delivery_eta(int $shops, bool $hasHotel = true): int {
     $cfg = lyaideu_delivery_config();
+    if (!$hasHotel) {
+        return max(1, (int)$cfg['mart_minutes']);
+    }
     $time = $cfg['time_schedule'];
     $n = max(1, $shops);
     if ($n <= count($time)) {
-        return (int)$time[$n - 1];
+        $eta = (int)$time[$n - 1];
+    } else {
+        $last = (int)end($time);
+        $prev = (int)$time[count($time) - 2];
+        $delta = $last - $prev;
+        $eta = max(0, $last + ($n - count($time)) * $delta);
     }
-    $last = (int)end($time);
-    $prev = (int)$time[count($time) - 2];
-    $delta = $last - $prev;
-    return max(0, $last + ($n - count($time)) * $delta);
+    return max((int)$cfg['time_min'], min((int)$cfg['time_max'], $eta));
 }
 
 function lyaideu_ensure_delivery_tables(): bool {

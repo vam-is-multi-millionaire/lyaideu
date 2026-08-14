@@ -41,10 +41,10 @@ require_once __DIR__ . '/site_config.php';
     <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;"><i class="fa-solid fa-burger"></i></span>
     <div class="brand-mark"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></div>
     <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
-    <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in ~30 minutes.</p>
+    <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in as little as 15 minutes.</p>
     <ul class="brand-stats">
         <li><strong>25+</strong><span>partner hotels</span></li>
-        <li><strong>~30 min</strong><span>delivery</span></li>
+        <li><strong>15–60 min</strong><span>delivery</span></li>
         </ul>
 </aside>
 

@@ -96,7 +96,7 @@ require_once __DIR__ . '/site_config.php';
                 <p>Prices are listed in Nepali Rupees and may change without notice. We accept Cash on Delivery and digital wallets (eSewa / Khalti) where supported. Promo codes are subject to their stated rules and may be discontinued at any time.</p>
 
                 <h3>6. Delivery</h3>
-                <p>We aim to deliver fast across the Surkhet Valley, usually within 30 minutes, but delivery times are estimates and not guaranteed. A flat delivery fee may apply. Risk and responsibility for the food pass to you upon delivery.</p>
+                <p>We aim to deliver fast across the Surkhet Valley — Mart-only orders in as little as 15 minutes, and freshly cooked hotel orders in 45–60 minutes — but delivery times are estimates and not guaranteed. A delivery fee may apply and varies with how many vendors your order mixes in. Risk and responsibility for the food pass to you upon delivery.</p>
 
                 <h3>7. Refunds &amp; complaints</h3>
                 <p>If your order is late, wrong or unsatisfactory, contact our Delivery Support team as soon as possible. Depending on the situation we will offer a re-delivery, replacement or refund. Refunds are issued back the same way the payment was made.</p>
