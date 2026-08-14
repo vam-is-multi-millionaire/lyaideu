@@ -40,8 +40,8 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
     $searchResults = ['dishes' => [], 'mart' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
-        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR hotel LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
-        $st->execute([$qp, $qp, $qp, $qp]);
+        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st->execute([$qp, $qp, $qp]);
         $searchResults['dishes'] = $st->fetchAll();
         $st = $featuredPdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
