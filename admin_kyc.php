@@ -129,7 +129,7 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
         ?>
         <div class="admin-card admin-kyc-card">
             <div class="kyc-card-head">
-                <div class="avatar-preview"<?= $av !== '' ? ' style="background-image:url(\'' . $av . '\')"' : '' ?>><?= $av === '' ? htmlspecialchars($ini) : '' ?></div>
+                <div class="avatar-preview"<?= $av !== '' ? ' style="background-image:url(\'' . $av . '\')" data-lightbox="' . $av . '" data-lightbox-caption="' . htmlspecialchars($u['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $av === '' ? htmlspecialchars($ini) : '' ?></div>
                 <div>
                     <h3><?= htmlspecialchars($u['name']) ?></h3>
                     <span class="order-status-pill <?= $statusClasses[$st] ?? 'kyc-none' ?>"><?= htmlspecialchars($statusLabels[$st] ?? $st) ?></span>
@@ -153,11 +153,16 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
                 <?php foreach ($docs as $doc):
                     $f = htmlspecialchars((string)$doc['file'], ENT_QUOTES, 'UTF-8');
                     $isPdf = strtolower(pathinfo((string)$doc['file'], PATHINFO_EXTENSION)) === 'pdf';
+                    $caption = htmlspecialchars((string)$doc['doc_type'] . ' — ' . $u['name'], ENT_QUOTES, 'UTF-8');
                 ?>
                     <li>
                         <span class="kyc-doc-ico"><?= $isPdf ? '<i class="fa-solid fa-file-pdf"></i>' : '<i class="fa-solid fa-file-image"></i>' ?></span>
                         <span class="kyc-doc-name"><?= htmlspecialchars((string)$doc['doc_type']) ?></span>
+                        <?php if ($isPdf): ?>
                         <a class="btn btn-outline btn-sm" href="<?= $f ?>" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> View</a>
+                        <?php else: ?>
+                        <a class="btn btn-outline btn-sm" href="<?= $f ?>" data-lightbox="<?= $f ?>" data-lightbox-caption="<?= $caption ?>"><i class="fa-solid fa-expand"></i> View</a>
+                        <?php endif; ?>
                     </li>
                 <?php endforeach; ?>
                 </ul>
@@ -190,5 +195,6 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
         <?php endforeach; ?>
     </div>
 </section>
+<script src="js/lightbox.js?v=1"></script>
 <?php
 admin_page_end();

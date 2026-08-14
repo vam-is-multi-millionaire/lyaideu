@@ -18,7 +18,7 @@ $profileAddress = $profile ? (string)$profile['address'] : '';
 <?= lyaideu_base_tag() ?>
 <title>Checkout | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head><body class="checkout-body">
 <header class="topbar"><nav class="nav"><a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a><form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form><a class="btn btn-outline" href="menu"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
 <main class="checkout-page container">

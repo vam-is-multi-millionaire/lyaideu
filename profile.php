@@ -285,7 +285,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
 
@@ -346,7 +346,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <h2><i class="fa-solid fa-camera"></i> Profile photo</h2>
             <div class="avatar-upload">
-                <div class="avatar-preview" id="avatarPreview"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></div>
+                <div class="avatar-preview" id="avatarPreview"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')" data-lightbox="' . $avatarUrl . '" data-lightbox-caption="' . htmlspecialchars($profile['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></div>
                 <label class="btn btn-outline" for="avatarFile" style="cursor:pointer;"><i class="fa-solid fa-upload"></i> Upload photo</label>
                 <input type="file" id="avatarFile" name="avatar_file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
                 <p class="small-note">A clear photo of your face. Compulsory for KYC verification.</p>
@@ -398,7 +398,11 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                     <li>
                         <span class="kyc-doc-ico"><?= $isPdf ? '<i class="fa-solid fa-file-pdf"></i>' : '<i class="fa-solid fa-file-image"></i>' ?></span>
                         <span class="kyc-doc-name"><?= htmlspecialchars((string)$doc['doc_type'], ENT_QUOTES, 'UTF-8') ?> <small><?= htmlspecialchars((string)$doc['uploaded_at'], ENT_QUOTES, 'UTF-8') ?></small></span>
+                        <?php if ($isPdf): ?>
                         <a class="btn btn-outline btn-sm" href="<?= $docFile ?>" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> View</a>
+                        <?php else: ?>
+                        <a class="btn btn-outline btn-sm" href="<?= $docFile ?>" data-lightbox="<?= $docFile ?>" data-lightbox-caption="<?= htmlspecialchars((string)$doc['doc_type'], ENT_QUOTES, 'UTF-8') ?>"><i class="fa-solid fa-expand"></i> View</a>
+                        <?php endif; ?>
                         <?php if (!$kycLocked): ?>
                         <button type="submit" name="kyc_remove_doc" value="<?= (int)$doc['id'] ?>" class="btn btn-outline btn-sm"><i class="fa-solid fa-trash"></i> Remove</button>
                         <?php endif; ?>
@@ -461,6 +465,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     }
 })();
 </script>
+<script src="js/lightbox.js?v=1"></script>
 <script src="js/script.js?v=10"></script>
 </body>
 </html>

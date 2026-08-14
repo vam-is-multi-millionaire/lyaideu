@@ -34,7 +34,7 @@ admin_page_start('Users', 'users', 'Registered Users');
         ?>
         <div class="admin-card">
             <div class="kyc-card-head">
-                <div class="avatar-preview"<?= $av !== '' ? ' style="background-image:url(\'' . $av . '\')"' : '' ?>><?= $av === '' ? htmlspecialchars($ini) : '' ?></div>
+                <div class="avatar-preview"<?= $av !== '' ? ' style="background-image:url(\'' . $av . '\')" data-lightbox="' . $av . '" data-lightbox-caption="' . htmlspecialchars($u['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $av === '' ? htmlspecialchars($ini) : '' ?></div>
                 <div>
                     <h3><?= htmlspecialchars($u['name']) ?></h3>
                     <span class="order-status-pill <?= $statusClasses[$st] ?? 'kyc-none' ?>"><?= htmlspecialchars($statusLabels[$st] ?? $st) ?></span>
@@ -52,5 +52,6 @@ admin_page_start('Users', 'users', 'Registered Users');
         <?php endif; ?>
     </div>
 </section>
+<script src="js/lightbox.js?v=1"></script>
 <?php
 admin_page_end();
