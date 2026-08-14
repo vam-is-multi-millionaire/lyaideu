@@ -141,7 +141,7 @@ $FEATURED_MART_ICONS = [
                 <div class="hero-slider-viewport">
                     <div class="hero-slides" id="heroSlides">
                         <?php foreach (site_hero_slides() as $heroSlide): ?>
-                        <div class="hero-slide" style="--bg:url('<?= lyaideu_featured_e($heroSlide) ?>')"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
+                        <div class="hero-slide"><img src="<?= htmlspecialchars($heroSlide, ENT_QUOTES, 'UTF-8') ?>" alt="Hero slide"></div>
                         <?php endforeach; ?>
                     </div>
                 </div>
