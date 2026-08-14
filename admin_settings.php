@@ -164,6 +164,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         settings_redirect(true);
     }
 
+    if (isset($_POST['save_delivery'])) {
+        $feeArr = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($_POST['delivery_fee_schedule'] ?? ''))), function ($v) {
+            return $v >= 0;
+        }));
+        $timeArr = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($_POST['delivery_time_schedule'] ?? ''))), function ($v) {
+            return $v >= 0;
+        }));
+
+        if (!$feeArr || !$timeArr) {
+            settings_redirect(false, 'Enter at least one delivery fee and one delivery time.');
+        }
+
+        try {
+            $update = $pdo->prepare(
+                'INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                 ON DUPLICATE KEY UPDATE sval = VALUES(sval)'
+            );
+            $update->execute([':skey' => 'delivery_fee_schedule', ':sval' => json_encode($feeArr)]);
+            $update->execute([':skey' => 'delivery_time_schedule', ':sval' => json_encode($timeArr)]);
+        } catch (Throwable $e) {
+            settings_redirect(false, 'Could not save the delivery settings.');
+        }
+
+        lyaideu_settings_clear();
+        settings_redirect(true);
+    }
+
     settings_redirect(false, 'Unknown action.');
 }
 
@@ -172,6 +199,9 @@ $faviconUrl = site_favicon_url();
 $appleUrl = site_apple_icon_url();
 $currentUser = site_setting('admin_username', 'admin');
 $heroSlides = site_hero_slides();
+$deliveryCfg = lyaideu_delivery_config();
+$deliveryFeeStr = implode(', ', $deliveryCfg['fee_schedule']);
+$deliveryTimeStr = implode(', ', $deliveryCfg['time_schedule']);
 
 admin_page_start('Settings', 'settings', 'Settings');
 ?>
@@ -261,6 +291,33 @@ admin_page_start('Settings', 'settings', 'Settings');
         </section>
 
         <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-key"></i> Save Credentials</button>
+    </form>
+
+    <form action="admin_settings" method="POST">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="save_delivery" value="1">
+
+        <section class="admin-section">
+            <div class="admin-section-top">
+                <p class="section-sub">Delivery fee and estimated delivery time by vendor count. Entry #1 = 1 vendor, #2 = 2 vendors, and so on. When customers mix items from several hotels / the Mart, the fee and time scale up automatically and they are shown a notice before checkout.</p>
+            </div>
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3><i class="fa-solid fa-wallet"></i> Delivery fees (Rs.)</h3>
+                    <label>Fee per vendor count <small class="small-note">comma-separated</small></label>
+                    <input type="text" name="delivery_fee_schedule" value="<?= htmlspecialchars($deliveryFeeStr, ENT_QUOTES, 'UTF-8') ?>" placeholder="50, 90, 120, 140, 160, 180">
+                    <small class="small-note">1 vendor = Rs. 50 · 2 vendors = Rs. 90 · 3 = Rs. 120 · 4 = Rs. 140. Past the last entry, the final increase repeats.</small>
+                </div>
+                <div class="admin-card">
+                    <h3><i class="fa-solid fa-clock"></i> Estimated delivery (minutes)</h3>
+                    <label>Minutes per vendor count <small class="small-note">comma-separated</small></label>
+                    <input type="text" name="delivery_time_schedule" value="<?= htmlspecialchars($deliveryTimeStr, ENT_QUOTES, 'UTF-8') ?>" placeholder="30, 45, 60, 75, 90, 105">
+                    <small class="small-note">1 vendor = 30 min · 2 vendors = 45 min · 3 = 60 min. Past the last entry, the final increase repeats.</small>
+                </div>
+            </div>
+        </section>
+
+        <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-motorcycle"></i> Save Delivery Settings</button>
     </form>
 <?php
 admin_page_end();

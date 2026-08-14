@@ -5,6 +5,7 @@ const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelect
 let currentCat='all',searchQuery='',allDishes=[],allMart=[]; const CART_KEY='fe_cart',FAV_KEY='fe_favorites';
 const getCart=()=>JSON.parse(localStorage.getItem(CART_KEY)||'[]'); const saveCart=c=>{localStorage.setItem(CART_KEY,JSON.stringify(c));renderCart();};
 const getFav=()=>JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); const saveFav=f=>localStorage.setItem(FAV_KEY,JSON.stringify(f));
+let DELIVERY_CFG={fee_schedule:[50,90,120,140,160,180],time_schedule:[30,45,60,75,90,105]};
 function esc(v){return String(v??'').replace(/[&<>\"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));}
 const FA_ICONS={'🛵':'fa-motorcycle','📦':'fa-box','🍽️':'fa-utensils','🍕':'fa-pizza-slice','🥟':'fa-drumstick-bite','🍜':'fa-bowl-rice','🍢':'fa-utensils','🥠':'fa-cookie','🍔':'fa-burger','🥤':'fa-mug-saucer','🥭':'fa-apple-whole','🍛':'fa-bowl-food','🥩':'fa-bacon','🍗':'fa-drumstick-bite','📞':'fa-phone','🤝':'fa-handshake','☎️':'fa-phone','🌶':'fa-pepper-hot','🏨':'fa-hotel','📍':'fa-location-dot','✉️':'fa-envelope','💳':'fa-credit-card','📝':'fa-note-sticky','🔥':'fa-fire','💚':'fa-heart','❤️':'fa-heart','✅':'fa-circle-check','❌':'fa-circle-xmark','🕐':'fa-clock','🎉':'fa-champagne-glasses','⚠️':'fa-triangle-exclamation','⚡':'fa-bolt','🌐':'fa-globe','📊':'fa-chart-simple','👥':'fa-users','👤':'fa-user','🔒':'fa-lock','🔐':'fa-key','🎂':'fa-cake-candles','⚙️':'fa-gear','🔍':'fa-magnifying-glass','🛒':'fa-cart-shopping','👋':'fa-hand','🎬':'fa-film','🧾':'fa-receipt','🚀':'fa-rocket','✨':'fa-arrows-rotate'};
 const FA_ICON_LOOKUP={};Object.keys(FA_ICONS).forEach(k=>{FA_ICON_LOOKUP[k.replace(/\uFE0F/g,'')]=FA_ICONS[k];});
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if($('#menu-grid')||$('#mart-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];
+    if(d.delivery)DELIVERY_CFG=d.delivery;
     renderCart();
     if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
     if($('#mart-grid')){renderMart(allMart);initMartFilters();}
@@ -39,7 +41,7 @@ function renderDishes(dishes){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
-      <button class="btn-order add-cart" data-id="${id}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
@@ -103,19 +105,40 @@ function syncSubChips(scope){
 }
 function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;syncSubChips('mart');applyMartFilters()}));const s=$('#martSearch')||$('.nav-search input[name=q]');if(s){searchQuery=(s.value||'').trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters);const p=new URLSearchParams(location.search);const uq=(p.get('q')||'').trim().toLowerCase();if(uq)searchQuery=uq;const mc=p.get('mcat');if(mc){const t=document.querySelector('.chip[data-mcat="'+mc+'"]');if(t)t.click();else applyMartFilters()}else applyMartFilters()}
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
-function shopOfItem(d){return (d&&d.type==='mart')?'LyaiDeu Mart':(d&&d.hotel)?String(d.hotel):''}
-function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart();if(c.length){const shop=shopOfItem(d);const shops=[...new Set(c.map(x=>x.shop||shopOfItem(findItem(x.id,x.type)||x)))];if(shops.length>1||(shop&&shops[0]&&shops[0]!==shop)){toast('<i class="fa-solid fa-triangle-exclamation"></i> Your cart already has items from <b>'+esc(shops[0]||'another hotel')+'</b>. Clear the cart first to order from elsewhere.');if(openDrawer!==false)openCart();return;}}let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';i.shop=shopOfItem(d);}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||'',shop:shopOfItem(d)});saveCart(c);toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');if(openDrawer!==false)openCart();}
+function shopOfItem(d){if(!d)return'Other';if(d.type==='mart'||String(d.hotel)==='LyaiDeu Mart')return'LyaiDeu Mart';return String(d.hotel||'')||'Other'}
+function cartShops(c){c=c||[];return[...new Set(c.map(x=>x.shop||shopOfItem(findItem(x.id,x.type)||x)))].filter(Boolean)}
+function deliveryFeeFor(n){const f=DELIVERY_CFG.fee_schedule||[];n=Math.max(1,n|0);if(!f.length)return 50;if(n<=f.length)return f[n-1]|0;const last=f[f.length-1]|0,prev=f[f.length-2]|0,delta=last-prev;return Math.max(0,last+(n-f.length)*delta)}
+function deliveryEtaFor(n){const t=DELIVERY_CFG.time_schedule||[];n=Math.max(1,n|0);if(!t.length)return 30;if(n<=t.length)return t[n-1]|0;const last=t[t.length-1]|0,prev=t[t.length-2]|0,delta=last-prev;return Math.max(0,last+(n-t.length)*delta)}
+function showVendorModal(n,fee,eta){
+  let o=$('#vendorModalOverlay');
+  if(!o){o=document.createElement('div');o.id='vendorModalOverlay';o.className='modal-overlay';o.innerHTML='<div class="modal-box"><h3 class="modal-title"><i class="fa-solid fa-store"></i> Multi-vendor order</h3><div class="modal-body"></div><div class="modal-actions"><button type="button" class="btn btn-primary" id="vendorModalOk"><i class="fa-solid fa-check"></i> Got it</button></div></div>';document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o||e.target.closest('#vendorModalOk'))hideVendorModal()});}
+  o.querySelector('.modal-body').innerHTML='<p>Your cart now includes items from <b>'+esc(n)+' different vendors</b>. Each one needs its own prep time, so the whole delivery takes longer and costs a little more.</p><ul><li><i class="fa-solid fa-clock"></i> Estimated delivery: about <b>'+eta+' minutes</b></li><li><i class="fa-solid fa-wallet"></i> Delivery fee: <b>Rs. '+fee+'</b></li></ul><p class="small-note">You can keep adding from any hotel or the Mart — we deliver it all together. Remove items anytime from your cart.</p>';
+  o.classList.add('show');
+}
+function hideVendorModal(){const o=$('#vendorModalOverlay');if(o)o.classList.remove('show')}
+function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:allDishes).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||'',shop});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n)+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.length;countEls.forEach(e=>e.textContent=count);if(!box)return;
   if(!c.length){box.innerHTML='';empty?.classList.add('show');$('#checkoutBtn')?.classList.add('disabled')}
   else{empty?.classList.remove('show');
-    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
+    const shops=cartShops(c);
+    const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
+    let html='';
+    if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> — about <b>'+deliveryEtaFor(shops.length)+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
+    Object.keys(groups).forEach(s=>{
+      html+='<div class="cart-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>';
+      html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
+    });
+    box.innerHTML=html;
     $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q))));
     $('#checkoutBtn')?.classList.remove('disabled');
   }
   const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||r;return a+(d?Number(d.price)*r.qty:0)},0);
-  if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;if($('#cartTotal'))$('#cartTotal').textContent='Rs. '+(sub+(sub?50:0));
+  const fee=c.length?deliveryFeeFor(cartShops(c).length):0;
+  if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;
+  if($('#cartDelivery'))$('#cartDelivery').textContent='Rs. '+fee;
+  if($('#cartTotal'))$('#cartTotal').textContent='Rs. '+(sub+fee);
 }
 function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open')}}
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open')}
@@ -218,8 +241,19 @@ function initCheckout(){
     const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}
     $('#checkoutEmpty')?.classList.remove('show');
-    box.innerHTML=c.map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('');
-    const delivery=50,discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?50:0;$('#coSubtotal').textContent='Rs. '+sub;$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);$('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
+    const shops=cartShops(c);
+    const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
+    let html='';
+    Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
+    box.innerHTML=html;
+    const delivery=deliveryFeeFor(shops.length),discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?delivery:0;
+    $('#coSubtotal').textContent='Rs. '+sub;
+    if($('#coDelivery'))$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);
+    if($('#coTotal'))$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);
+    if($('#coEta'))$('#coEta').innerHTML=shops.length>1?'<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length)+' minutes</b> — '+shops.length+' vendors': '<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length)+' minutes</b>';
+    const note=$('#coVendorNote');
+    if(note){if(shops.length>1){note.style.display='';note.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> <b>Ordering from '+shops.length+' vendors.</b> Delivery takes about '+deliveryEtaFor(shops.length)+' minutes and the delivery fee is Rs. '+delivery+'. Each vendor prepares your items separately.'}else{note.style.display='none'}}
+    $('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
   }
   $('#promoBtn')?.addEventListener('click',()=>{promo=$('#promoInput').value.trim().toUpperCase();$('#promoMsg').innerHTML=(promo==='LYAIDEU'||promo==='FOODXPRESS')?'<i class="fa-solid fa-circle-check"></i> Free delivery applied!':'<i class="fa-solid fa-circle-xmark"></i> Invalid demo code. Try LYAIDEU.';update()});
   form.addEventListener('submit',e=>{if(!getCart().length){e.preventDefault();toast('Your cart is empty.')}$('#cartJson').value=JSON.stringify(getCart());if($('#promoHidden'))$('#promoHidden').value=promo});update();

@@ -91,7 +91,7 @@ require_once __DIR__ . '/site_config.php';
                 </details>
                 <details class="faq-item">
                     <summary>How much is delivery?</summary>
-                    <p>Delivery is a flat Rs. 50 to anywhere in the valley. Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
+                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What payment methods do you accept?</summary>
@@ -170,7 +170,7 @@ require_once __DIR__ . '/site_config.php';
   <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
-  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong>Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
+  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 <footer class="footer">
     <div class="footer-grid">

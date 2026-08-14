@@ -26,7 +26,13 @@ if ($user) {
                 $st = $pdo->prepare('SELECT status, vendor_id FROM orders WHERE id = ? LIMIT 1');
                 $st->execute([$orderId]);
                 $order = $st->fetch();
-                if ($order && (int)$order['vendor_id'] === $vendorId) {
+                $owns = $order && (int)$order['vendor_id'] === $vendorId;
+                if (!$owns && $order) {
+                    $chk = $pdo->prepare('SELECT 1 FROM order_items WHERE order_id = ? AND vendor_id = ? LIMIT 1');
+                    $chk->execute([$orderId, $vendorId]);
+                    $owns = (bool)$chk->fetchColumn();
+                }
+                if ($order && $owns) {
                     if (in_array($newStatus, $allowedTransitions[$order['status']] ?? [], true)) {
                         $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                         $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
@@ -34,8 +40,10 @@ if ($user) {
                             lyaideu_auto_assign_rider($orderId);
                         }
                         if ($newStatus === 'Rejected') {
-                            $upd = $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ?');
-                            $upd->execute([$orderId]);
+                            $upd = $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?');
+                            $upd->execute([$orderId, $vendorId]);
+                            $upd = $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ? AND vendor_id = ?');
+                            $upd->execute([$orderId, $vendorId]);
                         }
                     }
                 }
@@ -55,21 +63,31 @@ if ($user) {
     $queue = [];
     try {
         $rows = $pdo->prepare(
-            'SELECT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
+            'SELECT DISTINCT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
                     o.created_at, o.vendor_id, o.rider_id,
                     r.name AS rider_name, r.phone AS rider_phone
              FROM orders o
              LEFT JOIN riders r ON r.id = o.rider_id
-             WHERE o.vendor_id = :vid AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
+             LEFT JOIN order_items oi ON oi.order_id = o.id
+             WHERE o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
+               AND (o.vendor_id = :vid OR oi.vendor_id = :vid)
              ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup"), o.created_at ASC'
         );
         $rows->execute([':vid' => $vendorId]);
         $orders = $rows->fetchAll();
 
-        $itemStmt = $pdo->prepare('SELECT name, qty, line_total FROM order_items WHERE order_id = ? ORDER BY id');
+        $itemStmt = $pdo->prepare('SELECT name, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
         foreach ($orders as $row) {
             $itemStmt->execute([(int)$row['id']]);
-            $row['items'] = $itemStmt->fetchAll();
+            $items = $itemStmt->fetchAll();
+            $primary = (int)$row['vendor_id'] === $vendorId;
+            $row['items'] = array_values(array_filter($items, function ($it) use ($vendorId, $primary) {
+                $vid = (int)$it['vendor_id'];
+                if ($vid > 0) {
+                    return $vid === $vendorId;
+                }
+                return $primary;
+            }));
             $queue[] = $row;
         }
     } catch (Throwable $e) {
@@ -81,11 +99,13 @@ if ($user) {
     $completed = [];
     try {
         $rows = $pdo->prepare(
-            'SELECT o.id, o.customer_name, o.phone, o.address, o.status, o.total, o.created_at,
+            'SELECT DISTINCT o.id, o.customer_name, o.phone, o.address, o.status, o.total, o.created_at,
                     r.name AS rider_name
              FROM orders o
              LEFT JOIN riders r ON r.id = o.rider_id
-             WHERE o.vendor_id = :vid AND o.status IN ("Out for delivery", "Delivered", "Cancelled")
+             LEFT JOIN order_items oi ON oi.order_id = o.id
+             WHERE o.status IN ("Out for delivery", "Delivered", "Cancelled")
+               AND (o.vendor_id = :vid OR oi.vendor_id = :vid)
              ORDER BY o.created_at DESC LIMIT 20'
         );
         $rows->execute([':vid' => $vendorId]);

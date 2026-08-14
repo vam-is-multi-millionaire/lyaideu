@@ -79,9 +79,18 @@ try {
          ORDER BY id'
     );
 
+    $vendorStmt = $pdo->prepare(
+        'SELECT DISTINCT v.name
+         FROM order_items oi
+         JOIN vendors v ON v.id = oi.vendor_id
+         WHERE oi.order_id = :order_id'
+    );
+
     foreach ($rows as $row) {
         $itemStmt->execute([':order_id' => (int)$row['id']]);
         $row['items'] = $itemStmt->fetchAll();
+        $vendorStmt->execute([':order_id' => (int)$row['id']]);
+        $row['order_vendors'] = array_column($vendorStmt->fetchAll(), 'name');
         $row['created'] = $row['created_at'];
         $orders[] = $row;
         if (isset($counts[$row['status']])) {
@@ -163,7 +172,7 @@ admin_page_start('Orders', 'orders', 'Order Management');
                         </select>
                         <button type="submit" name="assign_rider" class="btn btn-outline">Assign</button>
                     </form>
-                    <span class="assign-current"><i class="fa-solid fa-store"></i> <?= htmlspecialchars($o['vendor_name'] ?? 'No vendor') ?> · <i class="fa-solid fa-motorcycle"></i> <?= htmlspecialchars($o['rider_name'] ?? 'No rider') ?></span>
+                    <span class="assign-current"><i class="fa-solid fa-store"></i> <?= !empty($o['order_vendors']) ? htmlspecialchars(implode(', ', $o['order_vendors'])) : htmlspecialchars($o['vendor_name'] ?? 'No vendor') ?> · <i class="fa-solid fa-motorcycle"></i> <?= htmlspecialchars($o['rider_name'] ?? 'No rider') ?></span>
                 </div>
                 <div class="summary-row total">
                     <span>Total · <?= htmlspecialchars($o['payment']) ?></span>

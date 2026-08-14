@@ -52,6 +52,7 @@ try {
         'contacts' => $contacts,
         'mart' => $mart,
         'categories' => lyaideu_categories(),
+        'delivery' => lyaideu_delivery_config(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

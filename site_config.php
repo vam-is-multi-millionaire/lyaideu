@@ -651,6 +651,64 @@ function lyaideu_seed_catalog(): void {
  * vendor -> hotel / product ownership columns. Runs a one-time backfill so
  * existing vendors and products are linked on first upgrade.
  */
+/**
+ * Delivery pricing & time configuration, editable by the admin.
+ * Schedules are 1-based arrays: index 0 = cost/time for 1 vendor,
+ * index 1 = 2 vendors, and so on. Falls back to sensible defaults.
+ */
+function lyaideu_delivery_config(): array {
+    $defaultFees = [50, 90, 120, 140, 160, 180];
+    $defaultTimes = [30, 45, 60, 75, 90, 105];
+
+    $fees = json_decode((string)site_setting('delivery_fee_schedule', ''), true);
+    $times = json_decode((string)site_setting('delivery_time_schedule', ''), true);
+
+    if (!is_array($fees) || !$fees) {
+        $fees = $defaultFees;
+    }
+    if (!is_array($times) || !$times) {
+        $times = $defaultTimes;
+    }
+
+    return [
+        'fee_schedule' => array_map('intval', array_values($fees)),
+        'time_schedule' => array_map('intval', array_values($times)),
+    ];
+}
+
+/**
+ * Returns the delivery fee for an order serving `$shops` vendors.
+ * Uses the schedule when available, otherwise continues the last increment.
+ */
+function lyaideu_delivery_fee(int $shops): int {
+    $cfg = lyaideu_delivery_config();
+    $fee = $cfg['fee_schedule'];
+    $n = max(1, $shops);
+    if ($n <= count($fee)) {
+        return (int)$fee[$n - 1];
+    }
+    $last = (int)end($fee);
+    $prev = (int)$fee[count($fee) - 2];
+    $delta = $last - $prev;
+    return max(0, $last + ($n - count($fee)) * $delta);
+}
+
+/**
+ * Returns the estimated delivery minutes for an order serving `$shops` vendors.
+ */
+function lyaideu_delivery_eta(int $shops): int {
+    $cfg = lyaideu_delivery_config();
+    $time = $cfg['time_schedule'];
+    $n = max(1, $shops);
+    if ($n <= count($time)) {
+        return (int)$time[$n - 1];
+    }
+    $last = (int)end($time);
+    $prev = (int)$time[count($time) - 2];
+    $delta = $last - $prev;
+    return max(0, $last + ($n - count($time)) * $delta);
+}
+
 function lyaideu_ensure_delivery_tables(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
@@ -694,12 +752,15 @@ function lyaideu_ensure_delivery_tables(): bool {
         foreach ([
             'vendor_id INT UNSIGNED NULL DEFAULT NULL',
             'rider_id INT UNSIGNED NULL DEFAULT NULL',
+            'eta_minutes INT UNSIGNED NULL DEFAULT NULL',
         ] as $def) {
             $field = substr($def, 0, strpos($def, ' '));
             if (!in_array($field, $cols, true)) {
                 $pdo->exec("ALTER TABLE orders ADD COLUMN $def");
             }
         }
+
+        lyaideu_ensure_column($pdo, 'order_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
 
         $changed = false;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'scope', "VARCHAR(20) NOT NULL DEFAULT 'hotel'") || $changed;
@@ -928,34 +989,36 @@ function lyaideu_auto_assign_vendor(int $orderId): int {
         return 0;
     }
     try {
-        $itemStmt = $pdo->prepare('SELECT dish_id, hotel FROM order_items WHERE order_id = ?');
+        $itemStmt = $pdo->prepare('SELECT dish_id, vendor_id FROM order_items WHERE order_id = ?');
         $itemStmt->execute([$orderId]);
         $rows = $itemStmt->fetchAll();
 
-        $vendorId = 0;
+        $vendorIds = [];
         $hasFood = false;
         $hasMart = false;
 
         foreach ($rows as $row) {
             if ((int)$row['dish_id'] > 0) {
                 $hasFood = true;
-                $st = $pdo->prepare('SELECT vendor_id FROM dishes WHERE id = ?');
-                $st->execute([(int)$row['dish_id']]);
-                $vid = (int)$st->fetchColumn();
-                if ($vid > 0) {
-                    if ($vendorId > 0 && $vendorId !== $vid) {
-                        return 0;
-                    }
-                    $vendorId = $vid;
-                }
             } else {
                 $hasMart = true;
             }
+            $vid = (int)$row['vendor_id'];
+            if ($vid > 0) {
+                $vendorIds[$vid] = true;
+            }
         }
 
-        if ($vendorId > 0) {
+        if (count($vendorIds) === 1) {
+            $vendorId = (int)array_keys($vendorIds)[0];
             $pdo->prepare('UPDATE orders SET vendor_id = ? WHERE id = ?')->execute([$vendorId, $orderId]);
             return $vendorId;
+        }
+
+        if (count($vendorIds) > 1) {
+            // Multi-vendor order: route per item via order_items.vendor_id.
+            $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ?')->execute([$orderId]);
+            return 0;
         }
 
         if (!$hasFood && $hasMart) {

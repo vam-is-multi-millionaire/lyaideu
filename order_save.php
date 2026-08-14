@@ -7,6 +7,8 @@ if (!hash_equals($_SESSION['csrf_order'] ?? '', $_POST['csrf_token'] ?? '')) { h
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
+lyaideu_ensure_delivery_tables();
+
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
 function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg]; header('Location: checkout'); exit; }
@@ -18,7 +20,7 @@ if (!is_array($cart) || empty($cart)) {
 
 $items = [];
 $subtotal = 0;
-$dishStmt = $pdo->prepare('SELECT id, name, hotel, price FROM dishes WHERE id = ? LIMIT 1');
+$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, vendor_id FROM dishes WHERE id = ? LIMIT 1');
 $martStmt = $pdo->prepare('SELECT id, name, price FROM mart_items WHERE id = ? LIMIT 1');
 
 foreach ($cart as $row) {
@@ -40,6 +42,7 @@ foreach ($cart as $row) {
             'name' => $d['name'],
             'hotel' => 'LyaiDeu Mart',
             'price' => (int)$d['price'],
+            'vendor_id' => lyaideu_resolve_mart_vendor($id),
         ];
     } else {
         $dishStmt->execute([$id]);
@@ -47,11 +50,16 @@ foreach ($cart as $row) {
         if (!$d) {
             continue;
         }
+        $vid = (int)($d['vendor_id'] ?? 0);
+        if ($vid <= 0) {
+            $vid = lyaideu_resolve_dish_vendor((int)$d['id']);
+        }
         $item = [
             'dish_id' => (int)$d['id'],
             'name' => $d['name'],
             'hotel' => $d['hotel'],
             'price' => (int)$d['price'],
+            'vendor_id' => $vid,
         ];
     }
 
@@ -64,6 +72,7 @@ foreach ($cart as $row) {
         'price' => $item['price'],
         'qty' => $qty,
         'line_total' => $line,
+        'vendor_id' => $item['vendor_id'] ?? 0,
     ];
 }
 
@@ -71,17 +80,16 @@ if (!$items) {
     flash_checkout('No valid items were found in your cart.');
 }
 
-$shops = [];
+$shopNames = [];
 foreach ($items as $it) {
-    $shops[$it['hotel']] = true;
+    $shopNames[$it['hotel']] = true;
 }
-if (count($shops) > 1) {
-    flash_checkout('Your cart can only contain items from one hotel (or only the Mart). Please remove items from the other place before checking out.');
-}
+$shopCount = count($shopNames);
+$delivery = lyaideu_delivery_fee($shopCount);
+$eta = lyaideu_delivery_eta($shopCount);
 
 $promo = strtoupper(trim(clean_text($_POST['promo'] ?? '')));
-$delivery = 50;
-$discount = ($promo === 'LYAIDEU' || $promo === 'FOODXPRESS') ? 50 : 0;
+$discount = ($promo === 'LYAIDEU' || $promo === 'FOODXPRESS') ? $delivery : 0;
 $total = max(0, $subtotal + $delivery - $discount);
 
 $order = [
@@ -94,6 +102,7 @@ $order = [
     'promo' => $promo,
     'subtotal' => $subtotal,
     'delivery_fee' => $delivery,
+    'eta_minutes' => $eta,
     'discount' => $discount,
     'total' => $total,
     'status' => 'Pending',
@@ -110,9 +119,9 @@ try {
 
     $orderStmt = $pdo->prepare(
         'INSERT INTO orders
-            (user_id, customer_name, phone, address, note, payment, promo, subtotal, delivery_fee, discount, total, status, created_at, updated_at)
+            (user_id, customer_name, phone, address, note, payment, promo, subtotal, delivery_fee, eta_minutes, discount, total, status, created_at, updated_at)
          VALUES
-            (:user_id, :customer_name, :phone, :address, :note, :payment, :promo, :subtotal, :delivery_fee, :discount, :total, :status, :created_at, :updated_at)'
+            (:user_id, :customer_name, :phone, :address, :note, :payment, :promo, :subtotal, :delivery_fee, :eta_minutes, :discount, :total, :status, :created_at, :updated_at)'
     );
     $orderStmt->execute([
         ':user_id' => $order['user_id'],
@@ -124,6 +133,7 @@ try {
         ':promo' => $order['promo'],
         ':subtotal' => $order['subtotal'],
         ':delivery_fee' => $order['delivery_fee'],
+        ':eta_minutes' => $order['eta_minutes'],
         ':discount' => $order['discount'],
         ':total' => $order['total'],
         ':status' => $order['status'],
@@ -133,8 +143,8 @@ try {
 
     $orderId = (int)$pdo->lastInsertId();
     $itemStmt = $pdo->prepare(
-        'INSERT INTO order_items (order_id, dish_id, name, hotel, price, qty, line_total)
-         VALUES (:order_id, :dish_id, :name, :hotel, :price, :qty, :line_total)'
+        'INSERT INTO order_items (order_id, dish_id, name, hotel, price, qty, line_total, vendor_id)
+         VALUES (:order_id, :dish_id, :name, :hotel, :price, :qty, :line_total, :vendor_id)'
     );
 
     foreach ($items as $item) {
@@ -146,6 +156,7 @@ try {
             ':price' => $item['price'],
             ':qty' => $item['qty'],
             ':line_total' => $item['line_total'],
+            ':vendor_id' => $item['vendor_id'] > 0 ? $item['vendor_id'] : null,
         ]);
     }
 
@@ -158,7 +169,6 @@ try {
     exit('Could not save order.');
 }
 
-lyaideu_ensure_delivery_tables();
 lyaideu_auto_assign_vendor($orderId);
 
 $_SESSION['last_order_id'] = $orderId;
