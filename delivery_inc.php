@@ -163,7 +163,7 @@ function delivery_show_login(string $role): void {
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=14"></head>
+<link rel="stylesheet" href="css/style.css?v=15"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div>
         <p class="kicker" style="text-align:center"><i class="fa-solid ' . $icon . '"></i> ' . $label . '</p>
@@ -192,7 +192,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
 <header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><span class="delivery-role-badge"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</span>
 <div class="delivery-user">
@@ -225,15 +225,16 @@ function delivery_footer(): void {
   function beep(){
     try{var Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;var ctx=new Ctx();var o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.15,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o.start();o.stop(ctx.currentTime+0.5);}catch(e){}
   }
-  function banner(){
-    var el=document.createElement("div");el.className="flash-banner flash-success delivery-flash";el.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.18)";el.innerHTML="<i class=\"fa-solid fa-motorcycle\"></i> New order assigned to you!";document.body.appendChild(el);setTimeout(function(){el.remove()},4200);
+  function banner(claim){
+    var msg=claim?"<i class=\"fa-solid fa-bullhorn\"></i> New order ready — be the first to accept!":"<i class=\"fa-solid fa-bell\"></i> New order!";
+    var el=document.createElement("div");el.className="flash-banner flash-success delivery-flash";el.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.18)";el.innerHTML=msg;document.body.appendChild(el);setTimeout(function(){el.remove()},4200);
   }
   function scan(){
     var box=document.querySelector("#deliveryQueue");if(!box)return;
     box.querySelectorAll(".delivery-card").forEach(function(c){
       var id=c.getAttribute("data-order-id");if(!id)return;
       if(first){seen[id]=true;return;}
-      if(!seen[id]){seen[id]=true;beep();banner();if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:"A new order appeared in your queue."})}catch(e){}}}
+      if(!seen[id]){seen[id]=true;beep();var claim=c.classList.contains("claimable");banner(claim);if(window.Notification&&Notification.permission==="granted"){try{new Notification("New order!",{body:claim?"A ready order is available to pick up.":"A new order appeared in your queue."})}catch(e){}}}
     });
   }
   if(window.Notification&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}

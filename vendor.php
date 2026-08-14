@@ -36,9 +36,6 @@ if ($user) {
                     if (in_array($newStatus, $allowedTransitions[$order['status']] ?? [], true)) {
                         $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                         $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
-                        if ($newStatus === 'Ready for pickup') {
-                            lyaideu_auto_assign_rider($orderId);
-                        }
                         if ($newStatus === 'Rejected') {
                             $upd = $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?');
                             $upd->execute([$orderId, $vendorId]);
