@@ -147,16 +147,14 @@ function initHeroSlider(){
     dots.forEach((d,k)=>d.classList.toggle('active',k===real));
   }
   snap(cur);
-  wrap.addEventListener('transitionend',()=>{
-    if(dragging)return;
-    if(cur===count-1){cur=1;snap(cur)}
-    else if(cur===0){cur=total;snap(cur)}
-  });
-  function restart(){if(timer)clearInterval(timer);timer=setInterval(()=>go(cur+1),3000)}
+  function wrapAround(){if(dragging)return;if(cur===count-1){cur=1;snap(cur)}else if(cur===0){cur=total;snap(cur)}}
+  function autoStep(){go(cur+1);setTimeout(wrapAround,700)}
+  function restart(){if(timer)clearTimeout(timer);(function tick(){timer=setTimeout(()=>{autoStep();tick()},3000)})()}
+  wrap.addEventListener('transitionend',wrapAround);
   wrap.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse'&&e.button!==0)return;
     dragging=true;startX=e.clientX;deltaX=0;render();
-    if(timer)clearInterval(timer);
+    if(timer)clearTimeout(timer);
     try{wrap.setPointerCapture(e.pointerId)}catch(_){}
   });
   wrap.addEventListener('pointermove',e=>{
