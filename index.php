@@ -8,6 +8,7 @@ if (!isset($_SESSION['csrf_contact'])) $_SESSION['csrf_contact'] = bin2hex(rando
 $user = $_SESSION['user'] ?? null;
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+$q = trim((string)($_GET['q'] ?? ''));
 $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
@@ -34,6 +35,26 @@ if ($featuredPdo instanceof PDO) {
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
 }
 
+$searchResults = null;
+if ($q !== '' && $featuredPdo instanceof PDO) {
+    $searchResults = ['dishes' => [], 'mart' => [], 'hotels' => []];
+    try {
+        $qp = '%' . $q . '%';
+        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR hotel LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st->execute([$qp, $qp, $qp, $qp]);
+        $searchResults['dishes'] = $st->fetchAll();
+        $st = $featuredPdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st->execute([$qp, $qp, $qp]);
+        $searchResults['mart'] = $st->fetchAll();
+        $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
+        $st->execute([$qp, $qp]);
+        $searchResults['hotels'] = $st->fetchAll();
+    } catch (Throwable $e) {
+        $searchResults = null;
+    }
+}
+$totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['hotels']) : 0;
+
 $FEATURED_MART_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
     'staples'    => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie',
@@ -58,7 +79,7 @@ $FEATURED_MART_ICONS = [
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="#home"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
+        <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search dishes, mart &amp; hotels" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search LyaiDeu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
@@ -107,8 +128,99 @@ $FEATURED_MART_ICONS = [
             <?php endforeach; ?>
         </div>
 </div>
-        <div class="hero-slider-dots" id="heroDots"></div>
+<div class="hero-slider-dots" id="heroDots"></div>
     </section>
+
+    <?php if ($q !== '' && $searchResults): ?>
+    <section id="search" class="section">
+        <div class="container">
+            <div class="section-head">
+                <p class="kicker"><i class="fa-solid fa-magnifying-glass"></i> Search results</p>
+                <h2 class="display">Results for &ldquo;<?= lyaideu_featured_e($q) ?>&rdquo;</h2>
+                <p class="section-sub"><?= $totalResults > 0 ? $totalResults . ' match' . ($totalResults === 1 ? '' : 'es') . ' found across the menu, mart and partner hotels.' : 'No matches found. Try a different word or browse the sections below.' ?></p>
+            </div>
+
+            <?php if ($searchResults['dishes']): ?>
+            <div class="feat-block">
+                <div class="feat-ribbon">
+                    <h3><i class="fa-solid fa-utensils"></i> From the Menu</h3>
+                    <a class="see-all" href="menu">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="grid dish-grid home-grid">
+                    <?php foreach ($searchResults['dishes'] as $sDish): ?>
+                    <article class="dish-card reveal visible" data-id="<?= (int)$sDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($sDish['name']) ?>" data-slug="<?= lyaideu_featured_e($sDish['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($sDish['category_id'] ?? 0), (string)$sDish['cat']))) ?>">
+                        <div class="dish-art">
+                            <?php if ($sDish['img'] !== ''): ?>
+                                <img src="<?= lyaideu_featured_e($sDish['img']) ?>" alt="<?= lyaideu_featured_e($sDish['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sDish['name']) ?></h3></div>
+                        <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sDish['price'] ?></span>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($sDish['name']) ?>" data-price="<?= (int)$sDish['price'] ?>" data-unit="" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($searchResults['mart']): ?>
+            <div class="feat-block">
+                <div class="feat-ribbon">
+                    <h3><i class="fa-solid fa-basket-shopping"></i> From the Mart</h3>
+                    <a class="see-all" href="mart">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="grid dish-grid home-grid">
+                    <?php foreach ($searchResults['mart'] as $sMart): ?>
+                    <article class="dish-card reveal visible" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-slug="<?= lyaideu_featured_e($sMart['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($sMart['category_id'] ?? 0), (string)$sMart['cat']))) ?>">
+                        <div class="dish-art mart-art">
+                            <?php if ($sMart['img'] !== ''): ?>
+                                <img src="<?= lyaideu_featured_e($sMart['img']) ?>" alt="<?= lyaideu_featured_e($sMart['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <i class="fa-solid <?= $FEATURED_MART_ICONS[$sMart['cat']] ?? 'fa-basket-shopping' ?>"></i>
+                            <?php endif; ?>
+                            <?php if ($sMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sMart['tag']) ?></span><?php endif; ?>
+                        </div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div>
+                        <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sMart['price'] ?><?= $sMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sMart['unit']) . '</span>' : '' ?></span>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= (int)$sMart['price'] ?>" data-unit="<?= lyaideu_featured_e($sMart['unit']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($searchResults['hotels']): ?>
+            <div class="feat-block">
+                <div class="feat-ribbon">
+                    <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
+                    <a class="see-all" href="hotels">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="grid hotels-grid home-grid">
+                    <?php foreach ($searchResults['hotels'] as $sHotel): ?>
+                    <div class="hotel-card reveal visible">
+                        <div class="hotel-avatar">
+                            <?php if ($sHotel['logo'] !== ''): ?>
+                                <img class="hotel-logo" src="<?= lyaideu_featured_e($sHotel['logo']) ?>" alt="<?= lyaideu_featured_e($sHotel['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <i class="fa-solid <?= lyaideu_featured_e($sHotel['emoji'] !== '' ? $sHotel['emoji'] : 'fa-hotel') ?>"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="hotel-info"><h3><?= lyaideu_featured_e($sHotel['name']) ?></h3><p><?= lyaideu_featured_e($sHotel['type']) ?></p></div>
+                        <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($sHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> <?= lyaideu_featured_e($sHotel['phone']) ?></a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($totalResults === 0): ?>
+            <div class="empty-state" style="display:block"><span class="big"><i class="fa-solid fa-magnifying-glass"></i></span><p>No results found for &ldquo;<?= lyaideu_featured_e($q) ?>&rdquo;. Try a different word.</p></div>
+            <?php endif; ?>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <section id="featured" class="section">
         <div class="container">
