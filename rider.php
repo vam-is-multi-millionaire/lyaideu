@@ -45,7 +45,7 @@ if ($user) {
     try {
         $rows = $pdo->prepare(
             'SELECT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
-                    o.created_at, o.rider_id, v.name AS vendor_name, v.phone AS vendor_phone
+                    o.created_at, o.rider_id, o.delivery_lat, o.delivery_lng, v.name AS vendor_name, v.phone AS vendor_phone
              FROM orders o
              LEFT JOIN vendors v ON v.id = o.vendor_id
              WHERE o.rider_id = :rid AND o.status IN ("Ready for pickup", "Out for delivery")
@@ -94,6 +94,10 @@ if ($user) {
                 <?php endif; ?>
                 <p class="delivery-customer"><i class="fa-solid fa-user"></i> <?= delivery_esc($o['customer_name']) ?> · <a href="tel:+977<?= delivery_esc($o['phone']) ?>">+977 <?= delivery_esc($o['phone']) ?></a></p>
                 <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= delivery_esc($o['note']) ?><?php endif; ?></p>
+                <?php if ($o['delivery_lat'] !== null && $o['delivery_lat'] !== '' && $o['delivery_lng'] !== null && $o['delivery_lng'] !== ''): ?>
+                <div class="rider-map" data-lat="<?= delivery_esc($o['delivery_lat']) ?>" data-lng="<?= delivery_esc($o['delivery_lng']) ?>"></div>
+                <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= delivery_esc($o['delivery_lat']) ?>,<?= delivery_esc($o['delivery_lng']) ?>" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>
+                <?php endif; ?>
                 <div class="delivery-items">
                     <?php foreach ($o['items'] as $it): ?>
                     <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
@@ -119,7 +123,7 @@ if ($user) {
     $completed = [];
     try {
         $rows = $pdo->prepare(
-            'SELECT o.id, o.customer_name, o.address, o.status, o.total, o.created_at
+            'SELECT o.id, o.customer_name, o.address, o.status, o.total, o.created_at, o.delivery_lat, o.delivery_lng
              FROM orders o
              WHERE o.rider_id = :rid AND o.status = "Delivered"
              ORDER BY o.created_at DESC LIMIT 20'
@@ -140,6 +144,9 @@ if ($user) {
                     <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
                 </div>
                 <p class="delivery-customer"><i class="fa-solid fa-user"></i> <?= delivery_esc($o['customer_name']) ?> · <i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?></p>
+                <?php if ($o['delivery_lat'] !== null && $o['delivery_lat'] !== '' && $o['delivery_lng'] !== null && $o['delivery_lng'] !== ''): ?>
+                <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= delivery_esc($o['delivery_lat']) ?>,<?= delivery_esc($o['delivery_lng']) ?>" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>
+                <?php endif; ?>
             </article>
         <?php endforeach;
         echo '</div></section>';

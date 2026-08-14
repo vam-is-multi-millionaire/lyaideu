@@ -35,7 +35,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 
@@ -124,6 +124,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=10"></script>
+<script src="js/script.js?v=11"></script>
 </body>
 </html>

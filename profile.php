@@ -16,6 +16,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_kyc_tables();
+lyaideu_ensure_location_columns();
 
 $uid = (int)$user['id'];
 $profile = lyaideu_user_profile($uid);
@@ -23,7 +24,8 @@ if ($profile === null) {
     $profile = array_merge([
         'id' => $uid, 'name' => $user['name'] ?? '', 'email' => $user['email'] ?? '',
         'phone' => $user['phone'] ?? '', 'dob' => $user['dob'] ?? '', 'avatar' => '',
-        'address' => '', 'kyc_status' => 'none', 'kyc_reason' => '',
+        'address' => '', 'home_lat' => null, 'home_lng' => null, 'home_address' => '',
+        'kyc_status' => 'none', 'kyc_reason' => '',
         'kyc_submitted_at' => null, 'kyc_reviewed_at' => null, 'kyc_reviewer' => '',
     ], $user);
 }
@@ -158,6 +160,44 @@ if ($post && isset($_POST['remove_avatar'])) {
     }
 }
 
+if ($post && isset($_POST['save_home'])) {
+    $rawLat = trim((string)($_POST['home_lat'] ?? ''));
+    $rawLng = trim((string)($_POST['home_lng'] ?? ''));
+    $homeAddress = trim(strip_tags((string)($_POST['home_address'] ?? '')));
+    $errors = [];
+
+    if ($rawLat === '' && $rawLng === '') {
+        try {
+            $pdo->prepare('UPDATE users SET home_lat = NULL, home_lng = NULL, home_address = ? WHERE id = ?')
+                ->execute([mb_substr($homeAddress, 0, 500), $uid]);
+            profile_flash('success', 'Home location cleared.');
+        } catch (Throwable $e) {
+            profile_flash('error', 'Could not save your home location. Please try again.');
+        }
+    } else {
+        if (!lyaideu_valid_coord($rawLat, true) || !lyaideu_valid_coord($rawLng, false)) {
+            $errors[] = 'The map pin is outside a valid range. Drop the pin again and save.';
+        }
+        if (empty($errors)) {
+            try {
+                $upd = $pdo->prepare('UPDATE users SET home_lat = :lat, home_lng = :lng, home_address = :addr WHERE id = :id');
+                $upd->execute([
+                    ':lat' => (float)$rawLat,
+                    ':lng' => (float)$rawLng,
+                    ':addr' => mb_substr($homeAddress, 0, 500),
+                    ':id' => $uid,
+                ]);
+                profile_flash('success', 'Home location saved. It will be pre-filled at checkout.');
+            } catch (Throwable $e) {
+                $errors[] = 'Could not save your home location. Please try again.';
+            }
+        }
+        if (!empty($errors)) {
+            profile_flash('error', implode('<br>', $errors));
+        }
+    }
+}
+
 if ($post && isset($_POST['kyc_remove_doc'])) {
     $docId = (int)($_POST['kyc_remove_doc'] ?? 0);
     $locked = ($profile['kyc_status'] === 'approved' || $profile['kyc_status'] === 'pending');
@@ -285,7 +325,8 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
@@ -355,6 +396,21 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 <?php endif; ?>
                 <button type="submit" name="save_avatar" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save photo</button>
             </div>
+        </form>
+
+        <form class="profile-card" method="POST" action="profile">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+            <h2><i class="fa-solid fa-house-chimney"></i> Home location</h2>
+            <p class="small-note">Drop a pin on the map for your home — or tap <b>Use my current location</b>. We'll pre-fill it at checkout and your rider will see it.</p>
+            <div id="homeMap" class="loc-map"></div>
+            <input type="hidden" name="home_lat" id="homeLat" value="<?= htmlspecialchars((string)($profile['home_lat'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="home_lng" id="homeLng" value="<?= htmlspecialchars((string)($profile['home_lng'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+            <label>Home address<input name="home_address" id="homeAddr" value="<?= htmlspecialchars((string)$profile['home_address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="House / street / area / landmark"></label>
+            <div class="map-actions">
+                <button type="button" class="btn btn-outline" id="homeLocBtn"><i class="fa-solid fa-crosshairs"></i> Use my current location</button>
+            </div>
+            <p class="small-note" id="homeLocMsg"></p>
+            <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
         </form>
 
         <form class="profile-card" method="POST" action="profile">
@@ -465,7 +521,58 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     }
 })();
 </script>
-<script src="js/lightbox.js?v=1"></script>
-<script src="js/script.js?v=10"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    var mapEl = document.getElementById('homeMap');
+    if (!mapEl || typeof L === 'undefined') return;
+    var latIn = document.getElementById('homeLat'),
+        lngIn = document.getElementById('homeLng'),
+        addrIn = document.getElementById('homeAddr'),
+        msg = document.getElementById('homeLocMsg'),
+        btn = document.getElementById('homeLocBtn');
+    var startLat = parseFloat(latIn.value) || 27.7172,
+        startLng = parseFloat(lngIn.value) || 85.3240;
+    var map = L.map('homeMap', { scrollWheelZoom: false }).setView([startLat, startLng], latIn.value ? 15 : 12);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    var marker = L.marker([startLat, startLng], { draggable: true }).addTo(map).bindPopup('Drop the pin to set your home');
+    function setPos(lat, lng, reverse) {
+        marker.setLatLng([lat, lng]);
+        map.panTo([lat, lng]);
+        latIn.value = lat.toFixed(7);
+        lngIn.value = lng.toFixed(7);
+        if (reverse && window.fetch && addrIn) {
+            fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng, { headers: { 'Accept-Language': 'en' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    var a = d && d.display_name;
+                    if (a && !addrIn.value.trim()) addrIn.value = a.split(',').slice(0, 3).join(',');
+                })
+                .catch(function () {});
+        }
+    }
+    marker.on('dragend', function () {
+        var ll = marker.getLatLng();
+        setPos(ll.lat, ll.lng, true);
+    });
+    if (btn) btn.addEventListener('click', function () {
+        var b = this;
+        b.disabled = true;
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locating…';
+        window.LYAIDEU_LOC.request(function (err, pos) {
+            b.disabled = false;
+            b.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Use my current location';
+            if (err) {
+                if (msg) msg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Could not get your location. Check the browser permission and try again.';
+                return;
+            }
+            if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Current location set — drag the pin to fine-tune.';
+            setPos(pos.lat, pos.lng, true);
+        });
+    });
+})();
+</script>
+<script src="js/lightbox.js?v=2"></script>
+<script src="js/script.js?v=11"></script>
 </body>
 </html>

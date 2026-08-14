@@ -1225,7 +1225,43 @@ function lyaideu_ensure_kyc_tables(): bool {
 }
 
 /**
- * Returns a user's full profile including KYC fields, or null when missing.
+ * Ensures the location columns used for home pins and order delivery pins.
+ */
+function lyaideu_ensure_location_columns(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        lyaideu_ensure_column($pdo, 'users', 'home_lat', 'DECIMAL(10,7) NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'users', 'home_lng', 'DECIMAL(10,7) NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'users', 'home_address', "VARCHAR(500) NOT NULL DEFAULT ''");
+        lyaideu_ensure_column($pdo, 'orders', 'delivery_lat', 'DECIMAL(10,7) NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'orders', 'delivery_lng', 'DECIMAL(10,7) NULL DEFAULT NULL');
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Validates a latitude/longitude value. Returns true when the value is a
+ * finite number within the expected geographic range.
+ */
+function lyaideu_valid_coord($v, bool $isLat): bool {
+    if ($v === null || $v === '') {
+        return false;
+    }
+    $n = (float)$v;
+    if (!is_finite($n)) {
+        return false;
+    }
+    return $isLat ? ($n >= -90 && $n <= 90) : ($n >= -180 && $n <= 180);
+}
+
+/**
+ * Returns a user's full profile including KYC and home-location fields, or
+ * null when missing.
  */
 function lyaideu_user_profile(int $userId): ?array {
     $pdo = lyaideu_load_pdo();
@@ -1235,6 +1271,7 @@ function lyaideu_user_profile(int $userId): ?array {
     try {
         $st = $pdo->prepare(
             'SELECT id, name, email, phone, dob, avatar, address,
+                    home_lat, home_lng, home_address,
                     kyc_status, kyc_reason, kyc_submitted_at, kyc_reviewed_at, kyc_reviewer
              FROM users WHERE id = ? LIMIT 1'
         );

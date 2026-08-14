@@ -294,3 +294,64 @@ function footerYear(){const y=$('#year');if(y)y.textContent=new Date().getFullYe
  }catch(e){}}
  refresh();setInterval(refresh,5000);
 })();
+
+/* Shared geolocation helper: caches the user's last-known coordinates. */
+window.LYAIDEU_LOC=(function(){
+  var KEY='fe_loc';
+  function getSaved(){try{var r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&typeof r.lat==='number'&&typeof r.lng==='number')return r;}catch(e){}return null;}
+  function save(lat,lng){try{localStorage.setItem(KEY,JSON.stringify({lat:Number(lat),lng:Number(lng),at:Date.now()}));}catch(e){}}
+  function request(cb){
+    if(!('geolocation' in navigator)){if(cb)cb(new Error('Geolocation not supported'));return;}
+    navigator.geolocation.getCurrentPosition(function(p){
+      save(p.coords.latitude,p.coords.longitude);
+      if(cb)cb(null,{lat:p.coords.latitude,lng:p.coords.longitude});
+    },function(err){
+      if(cb)cb(err||new Error('Location unavailable'));
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:300000});
+  }
+  return {getSaved:getSaved,save:save,request:request};
+})();
+
+/* "Use my current location" banner shown on first visits. */
+(function(){
+  var HIDE_KEY='fe_loc_banner_hidden';
+  function isBannerPage(){
+    var p=(location.pathname||'').replace(/\/+$/,'').toLowerCase();
+    if(/\/profile$/.test(p)||/\/checkout$/.test(p)||/\/login$/.test(p))return false;
+    if(/admin|rider|vendor/i.test(p))return false;
+    return true;
+  }
+  function hidden(){try{return localStorage.getItem(HIDE_KEY)==='1';}catch(e){return true;}}
+  function dismiss(){try{localStorage.setItem(HIDE_KEY,'1');}catch(e){}var b=document.getElementById('locBanner');if(b)b.remove();}
+  function build(){
+    if(window.LYAIDEU_LOC.getSaved()||hidden()||document.getElementById('locBanner'))return;
+    var b=document.createElement('div');
+    b.id='locBanner';
+    b.className='loc-banner';
+    b.innerHTML='<div class="loc-banner-ico"><i class="fa-solid fa-location-crosshairs"></i></div>'+
+      '<div class="loc-banner-body"><strong>Find you faster</strong><span>Allow your current location so we can set your delivery spot automatically.</span></div>'+
+      '<button type="button" class="btn btn-primary btn-sm" id="locBannerAllow"><i class="fa-solid fa-location-dot"></i> Use my location</button>'+
+      '<button type="button" class="loc-banner-close" aria-label="Dismiss"><i class="fa-solid fa-xmark"></i></button>';
+    document.body.appendChild(b);
+    b.querySelector('#locBannerAllow').addEventListener('click',function(){
+      var btn=b.querySelector('#locBannerAllow');
+      btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Locating…';
+      window.LYAIDEU_LOC.request(function(err,pos){
+        btn.disabled=false;
+        var strong=b.querySelector('.loc-banner-body strong'),span=b.querySelector('.loc-banner-body span');
+        if(err){
+          btn.innerHTML='<i class="fa-solid fa-location-dot"></i> Try again';
+          span.textContent='We couldn\u2019t get your location. You can still type it at checkout.';
+          return;
+        }
+        strong.textContent='Location set ✓';
+        span.innerHTML='Lat '+pos.lat.toFixed(4)+', Lng '+pos.lng.toFixed(4)+' — <a href="profile">Save it as your home address.</a>';
+        btn.remove();
+        setTimeout(dismiss,8000);
+      });
+    });
+    b.querySelector('.loc-banner-close').addEventListener('click',dismiss);
+  }
+  function boot(){if(isBannerPage())build();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();

@@ -5,6 +5,7 @@ admin_require_login();
 require_once __DIR__ . '/db.php';
 
 lyaideu_ensure_delivery_tables();
+lyaideu_ensure_location_columns();
 
 $allowed = ['Pending', 'Confirmed', 'Preparing', 'Ready for pickup', 'Out for delivery', 'Delivered', 'Cancelled'];
 
@@ -65,7 +66,7 @@ try {
     $rows = $pdo->query(
         'SELECT o.id, o.user_id, o.customer_name, o.phone, o.address, o.note, o.payment, o.promo,
                 o.subtotal, o.delivery_fee, o.discount, o.total, o.status, o.created_at, o.updated_at,
-                o.vendor_id, o.rider_id, v.name AS vendor_name, r.name AS rider_name
+                o.vendor_id, o.rider_id, o.delivery_lat, o.delivery_lng, v.name AS vendor_name, r.name AS rider_name
          FROM orders o
          LEFT JOIN vendors v ON v.id = o.vendor_id
          LEFT JOIN riders r ON r.id = o.rider_id
@@ -103,7 +104,7 @@ try {
 }
 
 admin_page_start('Orders', 'orders', 'Order Management');
-?>
+?><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <div class="admin-stats">
         <div><strong><?= count($orders) ?></strong><span>Total Orders</span></div>
         <?php foreach ($counts as $k => $v): ?>
@@ -142,6 +143,10 @@ admin_page_start('Orders', 'orders', 'Order Management');
                     </form>
                 </div>
                 <p><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= htmlspecialchars($o['note']) ?><?php endif; ?></p>
+                <?php if ($o['delivery_lat'] !== null && $o['delivery_lat'] !== '' && $o['delivery_lng'] !== null && $o['delivery_lng'] !== ''): ?>
+                <div class="rider-map" data-lat="<?= htmlspecialchars((string)$o['delivery_lat'], ENT_QUOTES, 'UTF-8') ?>" data-lng="<?= htmlspecialchars((string)$o['delivery_lng'], ENT_QUOTES, 'UTF-8') ?>"></div>
+                <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= htmlspecialchars((string)$o['delivery_lat'], ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars((string)$o['delivery_lng'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>
+                <?php endif; ?>
                 <div class="admin-order-items">
                     <?php foreach ($o['items'] as $it): ?>
                     <span><?= htmlspecialchars($it['name']) ?> × <?= (int)$it['qty'] ?> — Rs. <?= (int)$it['line_total'] ?></span>
@@ -182,5 +187,19 @@ admin_page_start('Orders', 'orders', 'Order Management');
             <?php endforeach; ?>
         </div>
     </section>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+    if (typeof L === 'undefined') return;
+    document.querySelectorAll('.rider-map').forEach(function (el) {
+        var lat = parseFloat(el.getAttribute('data-lat')), lng = parseFloat(el.getAttribute('data-lng'));
+        if (isNaN(lat) || isNaN(lng)) return;
+        var map = L.map(el, { scrollWheelZoom: false, attributionControl: false }).setView([lat, lng], 15);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.marker([lat, lng]).addTo(map);
+        setTimeout(function () { map.invalidateSize(); }, 60);
+    });
+})();
+</script>
 <?php
 admin_page_end();

@@ -163,7 +163,7 @@ function delivery_show_login(string $role): void {
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=12"></head>
+<link rel="stylesheet" href="css/style.css?v=13"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div>
         <p class="kicker" style="text-align:center"><i class="fa-solid ' . $icon . '"></i> ' . $label . '</p>
@@ -192,7 +192,8 @@ function delivery_header(string $title, string $heading, string $icon, string $r
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=12"></head><body class="delivery-body">
+<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
 <header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><span class="delivery-role-badge"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</span>
 <div class="delivery-user">
   <span class="avatar">' . delivery_esc(substr($user['name'] ?? '', 0, 1)) . '</span>
@@ -237,6 +238,26 @@ function delivery_footer(): void {
   }
   if(window.Notification&&Notification.permission==="default"){try{Notification.requestPermission()}catch(e){}}
   scan();first=false;setInterval(scan,2500);
+})();
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* Delivery-spot maps: initialised lazily so freshly refreshed order cards get a map too. */
+(function(){
+  if(typeof L==="undefined")return;
+  function initMaps(){
+    document.querySelectorAll(".rider-map").forEach(function(el){
+      if(el.getAttribute("data-map-ready")==="1")return;
+      var lat=parseFloat(el.getAttribute("data-lat")),lng=parseFloat(el.getAttribute("data-lng"));
+      if(isNaN(lat)||isNaN(lng))return;
+      var map=L.map(el,{scrollWheelZoom:false,attributionControl:false}).setView([lat,lng],15);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+      L.marker([lat,lng]).addTo(map);
+      el.setAttribute("data-map-ready","1");
+      setTimeout(function(){map.invalidateSize()},60);
+    });
+  }
+  initMaps();setInterval(initMaps,2000);
 })();
 </script>
 </body></html>';

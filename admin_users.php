@@ -52,6 +52,6 @@ admin_page_start('Users', 'users', 'Registered Users');
         <?php endif; ?>
     </div>
 </section>
-<script src="js/lightbox.js?v=1"></script>
+<script src="js/lightbox.js?v=2"></script>
 <?php
 admin_page_end();

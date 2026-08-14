@@ -9,6 +9,7 @@ require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_delivery_tables();
 lyaideu_ensure_kyc_tables();
+lyaideu_ensure_location_columns();
 
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
@@ -134,14 +135,26 @@ if ($order['address'] === '') {
     flash_checkout('Please enter your delivery address.');
 }
 
+$deliveryLat = null;
+$deliveryLng = null;
+$rawLat = trim((string)($_POST['delivery_lat'] ?? ''));
+$rawLng = trim((string)($_POST['delivery_lng'] ?? ''));
+if ($rawLat !== '' || $rawLng !== '') {
+    if (!lyaideu_valid_coord($rawLat, true) || !lyaideu_valid_coord($rawLng, false)) {
+        flash_checkout('The delivery location on the map is invalid. Please set it again on the checkout map.');
+    }
+    $deliveryLat = (float)$rawLat;
+    $deliveryLng = (float)$rawLng;
+}
+
 try {
     $pdo->beginTransaction();
 
     $orderStmt = $pdo->prepare(
         'INSERT INTO orders
-            (user_id, customer_name, phone, address, note, payment, promo, subtotal, delivery_fee, eta_minutes, discount, total, status, created_at, updated_at)
+            (user_id, customer_name, phone, address, note, payment, promo, subtotal, delivery_fee, eta_minutes, discount, total, delivery_lat, delivery_lng, status, created_at, updated_at)
          VALUES
-            (:user_id, :customer_name, :phone, :address, :note, :payment, :promo, :subtotal, :delivery_fee, :eta_minutes, :discount, :total, :status, :created_at, :updated_at)'
+            (:user_id, :customer_name, :phone, :address, :note, :payment, :promo, :subtotal, :delivery_fee, :eta_minutes, :discount, :total, :delivery_lat, :delivery_lng, :status, :created_at, :updated_at)'
     );
     $orderStmt->execute([
         ':user_id' => $order['user_id'],
@@ -156,6 +169,8 @@ try {
         ':eta_minutes' => $order['eta_minutes'],
         ':discount' => $order['discount'],
         ':total' => $order['total'],
+        ':delivery_lat' => $deliveryLat,
+        ':delivery_lng' => $deliveryLng,
         ':status' => $order['status'],
         ':created_at' => $order['created_at'],
         ':updated_at' => $order['updated_at'],

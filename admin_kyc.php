@@ -195,6 +195,6 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
         <?php endforeach; ?>
     </div>
 </section>
-<script src="js/lightbox.js?v=1"></script>
+<script src="js/lightbox.js?v=2"></script>
 <?php
 admin_page_end();
