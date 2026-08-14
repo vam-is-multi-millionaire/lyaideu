@@ -3,6 +3,7 @@ require_once __DIR__ . '/delivery_inc.php';
 
 $pdo = lyaideu_load_pdo();
 $role = 'rider';
+delivery_require_login($role);
 $user = delivery_user();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -147,5 +148,3 @@ if ($user) {
     delivery_footer();
     exit;
 }
-
-delivery_require_login($role);

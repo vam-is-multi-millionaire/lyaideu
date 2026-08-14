@@ -704,6 +704,41 @@ function lyaideu_ensure_delivery_tables(): bool {
 }
 
 /**
+ * Returns an error message if a phone/email is already registered to an account
+ * in the other delivery role (a vendor vs a rider), so a single set of login
+ * credentials can never open both dashboards. Returns null when the value is free.
+ */
+function lyaideu_delivery_credential_conflict(string $role, string $phone, string $email, int $excludeId = 0): ?string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return null;
+    }
+    $other = $role === 'vendor' ? 'rider' : 'vendor';
+    $table = $other === 'vendor' ? 'vendors' : 'riders';
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT name FROM `$table`
+             WHERE (phone = :p OR (email <> '' AND email = :e)) AND id <> :id
+             LIMIT 1"
+        );
+        $stmt->execute([
+            ':p' => $phone,
+            ':e' => strtolower($email),
+            ':id' => $excludeId,
+        ]);
+        $found = $stmt->fetch();
+    } catch (Throwable $e) {
+        return null;
+    }
+    if ($found) {
+        $label = $other === 'vendor' ? 'vendor' : 'rider';
+        return 'This phone or email is already used by the ' . $label . ' account "' . $found['name'] . '". '
+             . 'A vendor and a rider cannot share the same login. Please use a different phone/email.';
+    }
+    return null;
+}
+
+/**
  * Auto-assigns a vendor to an order. Prefers a vendor whose name matches the
  * first non-mart hotel on the order; falls back to any active vendor.
  */

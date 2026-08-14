@@ -86,6 +86,20 @@ function delivery_login_attempt(string $role): void {
         header('Location: ' . $role);
         exit;
     }
+
+    $otherTable = $role === 'vendor' ? 'riders' : 'vendors';
+    try {
+        $dup = $pdo->prepare("SELECT id FROM `$otherTable` WHERE phone = :p OR (email <> '' AND email = :e) LIMIT 1");
+        $dup->execute([':p' => (string)$u['phone'], ':e' => (string)$u['email']]);
+        if ($dup->fetch()) {
+            $_SESSION['delivery_login_error'] = 'This phone or email is registered to both a vendor and a rider. Contact the administrator to fix your account.';
+            header('Location: ' . $role);
+            exit;
+        }
+    } catch (Throwable $e) {
+        // Ignore lookup errors.
+    }
+
     if (!(int)$u['is_active']) {
         $_SESSION['delivery_login_error'] = 'Your account has been deactivated. Please contact the administrator.';
         header('Location: ' . $role);

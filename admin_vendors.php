@@ -34,6 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$errors) {
+            $conflict = lyaideu_delivery_credential_conflict('vendor', $phone, $email, $id);
+            if ($conflict) {
+                $errors[] = $conflict;
+            }
+        }
+
+        if (!$errors) {
             try {
                 if ($id > 0) {
                     if ($pass !== '') {
