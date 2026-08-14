@@ -205,6 +205,7 @@ try {
 }
 
 lyaideu_auto_assign_vendor($orderId);
+lyaideu_seed_order_vendor_status($orderId);
 
 $firstItem = $items[0] ?? null;
 $itemSummary = ($firstItem ? $firstItem['name'] . ' × ' . $firstItem['qty'] : 'items');

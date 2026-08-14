@@ -23,37 +23,42 @@ if ($user) {
             $orderId = (int)($_POST['order_id'] ?? 0);
             $newStatus = trim((string)($_POST['order_action']));
             try {
-                $st = $pdo->prepare('SELECT status, vendor_id, user_id FROM orders WHERE id = ? LIMIT 1');
-                $st->execute([$orderId]);
-                $order = $st->fetch();
-                $owns = $order && (int)$order['vendor_id'] === $vendorId;
-                if (!$owns && $order) {
-                    $chk = $pdo->prepare('SELECT 1 FROM order_items WHERE order_id = ? AND vendor_id = ? LIMIT 1');
-                    $chk->execute([$orderId, $vendorId]);
-                    $owns = (bool)$chk->fetchColumn();
-                }
-                if ($order && $owns) {
-                    if (in_array($newStatus, $allowedTransitions[$order['status']] ?? [], true)) {
-                        $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
-                        $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
-                        $orderUserId = (int)($order['user_id'] ?? 0);
-                        $vendorName = (string)$user['name'];
-                        $link = 'orders?id=' . $orderId;
-                        if ($newStatus === 'Accepted') {
-                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' accepted your order #' . $orderId . '.', $link);
-                            lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' was accepted — it will be ready soon.', 'rider');
-                        } elseif ($newStatus === 'Preparing') {
-                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' started preparing your order #' . $orderId . '.', $link);
-                            lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' is being prepared.', 'rider');
-                        } elseif ($newStatus === 'Ready for pickup') {
+                $st = $pdo->prepare('SELECT status FROM order_vendor_status WHERE order_id = ? AND vendor_id = ? LIMIT 1');
+                $st->execute([$orderId, $vendorId]);
+                $perVendor = (string)$st->fetchColumn();
+                if ($perVendor !== '' && in_array($newStatus, $allowedTransitions[$perVendor] ?? [], true)) {
+                    $pdo->prepare(
+                        'UPDATE order_vendor_status SET status = ?, updated_at = ? WHERE order_id = ? AND vendor_id = ?'
+                    )->execute([$newStatus, date('Y-m-d H:i:s'), $orderId, $vendorId]);
+                    if ($newStatus === 'Rejected') {
+                        $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?')
+                            ->execute([$orderId, $vendorId]);
+                        $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ? AND vendor_id = ?')
+                            ->execute([$orderId, $vendorId]);
+                    }
+                    $aggregate = lyaideu_recompute_order_status($orderId);
+                    $st = $pdo->prepare('SELECT user_id FROM orders WHERE id = ? LIMIT 1');
+                    $st->execute([$orderId]);
+                    $orderUserId = (int)$st->fetchColumn();
+                    $vendorName = (string)$user['name'];
+                    $link = 'orders?id=' . $orderId;
+                    if ($newStatus === 'Accepted') {
+                        lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' accepted your order #' . $orderId . '.', $link);
+                        lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' was accepted — it will be ready soon.', 'rider');
+                    } elseif ($newStatus === 'Preparing') {
+                        lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' started preparing your order #' . $orderId . '.', $link);
+                        lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' is being prepared.', 'rider');
+                    } elseif ($newStatus === 'Ready for pickup') {
+                        if ($aggregate === 'Ready for pickup') {
                             lyaideu_notify($orderId, 'user', $orderUserId, 'Your order #' . $orderId . ' is ready for pickup.', $link);
                             lyaideu_notify_riders($orderId, 'Order #' . $orderId . ' is ready — be the first to accept!', 'rider');
-                        } elseif ($newStatus === 'Rejected') {
-                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' declined your order #' . $orderId . '.', $link);
-                            $upd = $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?');
-                            $upd->execute([$orderId, $vendorId]);
-                            $upd = $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ? AND vendor_id = ?');
-                            $upd->execute([$orderId, $vendorId]);
+                        } else {
+                            lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' marked part of your order #' . $orderId . ' ready for pickup.', $link);
+                        }
+                    } elseif ($newStatus === 'Rejected') {
+                        lyaideu_notify($orderId, 'user', $orderUserId, $vendorName . ' declined your order #' . $orderId . '.', $link);
+                        if ($aggregate === 'Cancelled') {
+                            lyaideu_notify($orderId, 'user', $orderUserId, 'Your order #' . $orderId . ' was cancelled because all vendors declined it.', $link);
                         }
                     }
                 }
@@ -74,16 +79,15 @@ if ($user) {
     try {
         $rows = $pdo->prepare(
             'SELECT DISTINCT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
-                    o.created_at, o.vendor_id, o.rider_id,
+                    o.created_at, o.vendor_id, o.rider_id, ovs.status AS vendor_status,
                     r.name AS rider_name, r.phone AS rider_phone
              FROM orders o
+             JOIN order_vendor_status ovs ON ovs.order_id = o.id AND ovs.vendor_id = :vid
              LEFT JOIN riders r ON r.id = o.rider_id
-             LEFT JOIN order_items oi ON oi.order_id = o.id
-             WHERE o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
-               AND (o.vendor_id = :vid1 OR oi.vendor_id = :vid2)
-             ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup"), o.created_at ASC'
+             WHERE ovs.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
+             ORDER BY FIELD(ovs.status, "Pending", "Accepted", "Preparing", "Ready for pickup"), o.created_at ASC'
         );
-        $rows->execute([':vid1' => $vendorId, ':vid2' => $vendorId]);
+        $rows->execute([':vid' => $vendorId]);
         $orders = $rows->fetchAll();
 
         $itemStmt = $pdo->prepare('SELECT name, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
@@ -128,7 +132,7 @@ if ($user) {
     echo '<div class="delivery-stats">';
     $stats = ['Pending' => 0, 'Accepted' => 0, 'Preparing' => 0, 'Ready for pickup' => 0];
     foreach ($queue as $q) {
-        $stats[$q['status']] = ($stats[$q['status']] ?? 0) + 1;
+        $stats[$q['vendor_status']] = ($stats[$q['vendor_status']] ?? 0) + 1;
     }
     echo '<div><strong>' . $stats['Pending'] . '</strong><span>New</span></div>';
     echo '<div><strong>' . $stats['Accepted'] + $stats['Preparing'] . '</strong><span>In progress</span></div>';
@@ -140,7 +144,7 @@ if ($user) {
     } else {
         echo '<div class="delivery-list">';
         foreach ($queue as $o):
-            $pill = match ($o['status']) {
+            $pill = match ($o['vendor_status']) {
                 'Accepted' => 'confirmed',
                 'Preparing' => 'preparing',
                 'Ready for pickup' => 'ready',
@@ -150,7 +154,7 @@ if ($user) {
             <article class="delivery-card status-<?= $pill ?>" data-order-id="<?= (int)$o['id'] ?>">
                 <div class="delivery-card-head">
                     <div>
-                        <h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-<?= $pill ?>"><?= delivery_esc($o['status']) ?></span></h2>
+<h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-<?= $pill ?>"><?= delivery_esc($o['vendor_status']) ?></span></h2>
                         <p><?= delivery_esc($o['created_at']) ?></p>
                     </div>
                     <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
@@ -169,12 +173,12 @@ if ($user) {
                     <form method="POST">
                         <input type="hidden" name="csrf_token" value="<?= delivery_esc(delivery_csrf_token()) ?>">
                         <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
-                        <?php if ($o['status'] === 'Pending'): ?>
+                        <?php if ($o['vendor_status'] === 'Pending'): ?>
                         <button type="submit" name="order_action" value="Accepted" class="btn btn-primary">Accept order</button>
                         <button type="submit" name="order_action" value="Rejected" class="btn btn-outline">Reject</button>
-                        <?php elseif ($o['status'] === 'Accepted'): ?>
+                        <?php elseif ($o['vendor_status'] === 'Accepted'): ?>
                         <button type="submit" name="order_action" value="Preparing" class="btn btn-primary">Start preparing</button>
-                        <?php elseif ($o['status'] === 'Preparing'): ?>
+                        <?php elseif ($o['vendor_status'] === 'Preparing'): ?>
                         <button type="submit" name="order_action" value="Ready for pickup" class="btn btn-primary">Mark ready for pickup</button>
                         <?php endif; ?>
                     </form>

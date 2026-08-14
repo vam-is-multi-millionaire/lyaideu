@@ -850,6 +850,42 @@ function lyaideu_ensure_delivery_tables(): bool {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
 
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS order_vendor_status (
+                order_id INT UNSIGNED NOT NULL,
+                vendor_id INT UNSIGNED NOT NULL,
+                status VARCHAR(40) NOT NULL DEFAULT \'Pending\',
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (order_id, vendor_id),
+                KEY idx_ovs_vendor (vendor_id, status),
+                KEY idx_ovs_vendor_time (vendor_id, status, updated_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        // Backfill per-vendor status rows for active orders that predate this table.
+        $activeOrders = $pdo->query('SELECT id FROM orders WHERE status IN ("Pending","Accepted","Preparing","Ready for pickup")')->fetchAll(PDO::FETCH_COLUMN);
+        $getVendors = $pdo->prepare('SELECT vendor_id FROM order_vendor_status WHERE order_id = ?');
+        $getStatus = $pdo->prepare('SELECT status FROM orders WHERE id = ?');
+        $insOv = $pdo->prepare('INSERT IGNORE INTO order_vendor_status (order_id, vendor_id, status, updated_at) VALUES (?, ?, ?, ?)');
+        foreach ($activeOrders as $oid) {
+            $oid = (int)$oid;
+            if ($oid <= 0) {
+                continue;
+            }
+            $getVendors->execute([$oid]);
+            $have = array_map('intval', array_column($getVendors->fetchAll(), 'vendor_id'));
+            $getStatus->execute([$oid]);
+            $cur = (string)$getStatus->fetchColumn();
+            if (!in_array($cur, ['Pending', 'Accepted', 'Preparing', 'Ready for pickup'], true)) {
+                $cur = 'Pending';
+            }
+            foreach (lyaideu_order_vendor_ids($oid) as $vid) {
+                if (!in_array($vid, $have, true)) {
+                    $insOv->execute([$oid, $vid, $cur, date('Y-m-d H:i:s')]);
+                }
+            }
+        }
+
         lyaideu_reindex_item_vendors();
 
         return true;
@@ -929,6 +965,69 @@ function lyaideu_order_vendor_ids(int $orderId): array {
         // ignore
     }
     return array_keys($ids);
+}
+
+/**
+ * Seeds one 'Pending' status row per owning vendor for a new order. Safe to
+ * call more than once (existing rows are left untouched).
+ */
+function lyaideu_seed_order_vendor_status(int $orderId): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return;
+    }
+    try {
+        $ins = $pdo->prepare(
+            'INSERT IGNORE INTO order_vendor_status (order_id, vendor_id, status, updated_at)
+             VALUES (?, ?, ?, ?)'
+        );
+        foreach (lyaideu_order_vendor_ids($orderId) as $vid) {
+            $ins->execute([$orderId, $vid, 'Pending', date('Y-m-d H:i:s')]);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Recomputes the aggregate orders.status from every vendor's per-vendor
+ * status row. A vendor who rejected is excluded; if none remain the order is
+ * cancelled. Returns the new status, or the current value when the order has
+ * already moved past the vendor stage.
+ */
+function lyaideu_recompute_order_status(int $orderId): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return 'Pending';
+    }
+    try {
+        $st = $pdo->prepare('SELECT status FROM orders WHERE id = ? LIMIT 1');
+        $st->execute([$orderId]);
+        $current = (string)$st->fetchColumn();
+        if (!in_array($current, ['Pending', 'Accepted', 'Preparing', 'Ready for pickup'], true)) {
+            return $current;
+        }
+        $st = $pdo->prepare('SELECT status FROM order_vendor_status WHERE order_id = ?');
+        $st->execute([$orderId]);
+        $rank = ['Pending' => 0, 'Accepted' => 1, 'Preparing' => 2, 'Ready for pickup' => 3];
+        $active = [];
+        foreach ($st->fetchAll() as $row) {
+            $s = (string)$row['status'];
+            if (isset($rank[$s])) {
+                $active[] = $rank[$s];
+            }
+        }
+        if (!$active) {
+            $new = 'Cancelled';
+        } else {
+            $new = array_search(min($active), $rank, true);
+        }
+        $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+            ->execute([$new, date('Y-m-d H:i:s'), $orderId]);
+        return $new;
+    } catch (Throwable $e) {
+        return 'Pending';
+    }
 }
 
 /**
