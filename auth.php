@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') redirect('login');
 $action = trim($_POST['action'] ?? '');
 $next   = safe_next($_POST['next'] ?? '');
 $nextQS = ($next !== 'index') ? '&next=' . urlencode($next) : '';
+$loginQS = ($next !== 'index') ? '?next=' . urlencode($next) : '';
 
 /* ===================== SIGN UP ===================== */
 if ($action === 'signup') {
@@ -147,7 +148,7 @@ if ($action === 'login') {
 
     if ($username === '' || $pass === '') {
         flash('error', 'Please enter your username and password.');
-        redirect('login' . $nextQS);
+        redirect('login' . $loginQS);
     }
 
     try {
@@ -182,11 +183,11 @@ if ($action === 'login') {
         }
     } catch (Throwable $e) {
         flash('error', 'Could not log you in right now. Please try again.');
-        redirect('login' . $nextQS);
+        redirect('login' . $loginQS);
     }
 
     flash('error', 'Invalid username or password. Please try again or sign up.');
-    redirect('login' . $nextQS);
+    redirect('login' . $loginQS);
 }
 
-redirect('login' . $nextQS);
+redirect('login' . $loginQS);
