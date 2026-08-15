@@ -22,9 +22,7 @@ $uid = (int)$_SESSION['user']['id'];
 $orders = [];
 
 $orderStmt = $pdo->prepare(
-    'SELECT id, customer_name, phone, address, note, payment, promo,
-            subtotal, delivery_fee, eta_minutes, discount, total, status, created_at, updated_at,
-            delivery_lat, delivery_lng
+    'SELECT id, created_at
      FROM orders
      WHERE user_id = :user_id
      ORDER BY created_at DESC'
@@ -32,30 +30,15 @@ $orderStmt = $pdo->prepare(
 $orderStmt->execute([':user_id' => $uid]);
 $rows = $orderStmt->fetchAll();
 
-$itemStmt = $pdo->prepare(
-    'SELECT name, hotel, price, qty, line_total
-     FROM order_items
-     WHERE order_id = :order_id
-     ORDER BY id'
-);
-
 foreach ($rows as $row) {
-    $itemStmt->execute([':order_id' => (int)$row['id']]);
-    $row['items'] = $itemStmt->fetchAll();
-    $row['vendor_count'] = count(array_unique(array_column($row['items'], 'hotel')));
-    $row['created'] = $row['created_at'];
-    $orders[] = $row;
+    $track = lyaideu_order_tracking((int)$row['id']);
+    if (!$track) {
+        continue;
+    }
+    $track['created'] = $row['created_at'];
+    $orders[] = $track;
 }
 
-$statusClass = [
-    'Pending' => 'pending',
-    'Confirmed' => 'confirmed',
-    'Preparing' => 'preparing',
-    'Ready for pickup' => 'ready',
-    'Out for delivery' => 'delivery',
-    'Delivered' => 'delivered',
-    'Cancelled' => 'cancelled',
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,7 +52,7 @@ $statusClass = [
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
 
@@ -116,5 +99,36 @@ $statusClass = [
 <?php if ($flash): ?>
     <div class="flash-banner flash-<?= $flash['type'] ?>"><?= $flash['msg'] ?></div>
 <?php endif; ?>
-<main class="orders-page container"><span data-live-indicator class="live-indicator" title="Checks for updates automatically">● Live updates</span><div class="section-head"><p class="kicker"><i class="fa-solid fa-box"></i> Your activity</p><h1 class="display">My Orders</h1><p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">● Live updates</span></p></div><?php if (!$orders): ?><div class="empty-state" style="display:block"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>You haven't placed an order yet.</p><a class="btn btn-primary" href="menu">Start Ordering</a></div><?php endif; ?><div class="orders-list"><?php foreach ($orders as $o): $cls = $statusClass[$o['status']] ?? 'pending'; ?><article class="order-card"><div class="order-card-head"><div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars($o['created']) ?></p></div><span class="order-status-pill status-<?= $cls ?>"><?= htmlspecialchars($o['status']) ?></span></div><div class="order-items"><?php foreach ($o['items'] as $it): ?><div class="summary-row"><span><?= htmlspecialchars($it['name']) ?> × <?= (int)$it['qty'] ?></span><strong>Rs. <?= (int)$it['line_total'] ?></strong></div><?php endforeach; ?></div><?php if (!empty($o['eta_minutes'])): ?><div class="summary-row"><span>Estimated delivery</span><strong>about <?= (int)$o['eta_minutes'] ?> min<?= ($o['vendor_count'] ?? 1) > 1 ? ' · ' . (int)$o['vendor_count'] . ' vendors' : '' ?></strong></div><?php endif; ?><div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$o['total'] ?></strong></div><p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?> · <i class="fa-solid fa-credit-card"></i> <?= htmlspecialchars($o['payment']) ?><?php if (!empty($o['delivery_lat']) && !empty($o['delivery_lng'])): ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars((string)$o['delivery_lat'], ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars((string)$o['delivery_lng'], ENT_QUOTES, 'UTF-8') ?>"><i class="fa-solid fa-map-location-dot"></i> View on map</a><?php endif; ?></p></article><?php endforeach; ?></div></main><script>setInterval(()=>{if(document.visibilityState==='visible'){fetch('orders?live=1',{cache:'no-store'}).then(r=>r.text()).then(html=>{const doc=new DOMParser().parseFromString(html,'text/html');const next=doc.querySelector('.orders-list');const current=document.querySelector('.orders-list');if(next&&current&&next.innerHTML!==current.innerHTML){current.replaceWith(next);}}).catch(()=>{});}},5000);</script><script src="js/script.js?v=12"></script>
-<script src="js/notify.js?v=4"></script></body></html>
+<main class="orders-page container" data-live-orders>
+<span data-live-indicator class="live-indicator" title="Checks for updates automatically">● Live updates</span>
+<div class="section-head">
+    <p class="kicker"><i class="fa-solid fa-box"></i> Your activity</p>
+    <h1 class="display">My Orders</h1>
+    <p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">● Live updates</span></p>
+</div>
+<?php if (!$orders): ?>
+<div class="empty-state" style="display:block"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>You haven't placed an order yet.</p><a class="btn btn-primary" href="menu">Start Ordering</a></div>
+<?php endif; ?>
+<div class="orders-list">
+<?php foreach ($orders as $o): $cls = lyaideu_order_pill_class($o['status']); ?>
+<article class="order-card" data-order-id="<?= (int)$o['id'] ?>">
+    <div class="order-card-head">
+        <div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars($o['created']) ?></p></div>
+        <span class="order-status-pill status-<?= $cls ?>"><?= htmlspecialchars($o['status']) ?></span>
+    </div>
+    <?= lyaideu_order_track_html($o['status']) ?>
+    <?php foreach ($o['vendors'] as $v): ?><?= lyaideu_order_vendor_html($v) ?><?php endforeach; ?>
+    <?php if (!empty($o['other_items'])): ?><?= lyaideu_order_other_html($o['other_items']) ?><?php endif; ?>
+    <?= lyaideu_order_delivery_html($o) ?>
+    <div class="summary-row"><span>Subtotal</span><strong>Rs. <?= (int)$o['subtotal'] ?></strong></div>
+    <div class="summary-row"><span>Delivery</span><strong>Rs. <?= max(0, (int)$o['delivery_fee'] - (int)$o['discount']) ?></strong></div>
+    <?php if (!empty($o['eta_minutes'])): ?>
+    <div class="summary-row"><span>Estimated delivery</span><strong>about <?= (int)$o['eta_minutes'] ?> min<?= (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) > 1 ? ' · ' . (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) . ' vendors' : '' ?></strong></div>
+    <?php endif; ?>
+    <div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$o['total'] ?></strong></div>
+    <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?> · <i class="fa-solid fa-credit-card"></i> <?= htmlspecialchars($o['payment']) ?></p>
+</article>
+<?php endforeach; ?>
+</div>
+</main>
+<script src="js/script.js?v=13"></script><script src="js/notify.js?v=4"></script></body></html>

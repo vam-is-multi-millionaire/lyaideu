@@ -355,3 +355,220 @@ window.LYAIDEU_LOC=(function(){
   function boot(){if(isBannerPage())build();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
+
+/* Per-vendor live order tracking: polls api/orders.php and re-renders order
+   cards so every product shows its owning vendor and that vendor's
+   progression (accept -> preparing -> ready -> on the way -> delivered). */
+(function(){
+'use strict';
+if(window.LYAIDEU_ORDER_LIVE)return;
+window.LYAIDEU_ORDER_LIVE={};
+var POLL_MS=5000,FULL_MS=60000;
+
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function reltime(dt){
+  if(!dt)return '';
+  var ts=Date.parse(String(dt).replace(' ','T'));
+  if(isNaN(ts))return dt;
+  var diff=(Date.now()-ts)/1000;
+  if(diff<60)return 'just now';
+  if(diff<3600)return Math.max(1,Math.round(diff/60))+' min ago';
+  if(diff<86400)return Math.round(diff/3600)+' hr ago';
+  var d=new Date(ts);
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
+}
+function pillClass(status){
+  return ({'Pending':'pending','Confirmed':'confirmed','Accepted':'confirmed','Preparing':'preparing','Ready for pickup':'ready','Out for delivery':'delivery','Delivered':'delivered','Cancelled':'cancelled'}[status]||'pending');
+}
+function vendorIcon(name){
+  return /mart|store/i.test(name||'')?'fa-basket-shopping':'fa-store';
+}
+function vpProgress(status){
+  var steps=['Waiting','Accepted','Preparing','Ready'];
+  var cur={'Pending':0,'Accepted':1,'Preparing':2,'Ready for pickup':3}[status];
+  if(cur===undefined)cur=-1;
+  var rejected=status==='Rejected';
+  var h='<div class="vp-progress">';
+  for(var i=0;i<steps.length;i++){
+    var cls=rejected?'cancelled':(i<cur?'done':(i===cur?'active':''));
+    h+='<span class="vp-step '+cls+'">'+steps[i]+'</span>';
+  }
+  return h+'</div>';
+}
+function trackHtml(status){
+  if(status==='Cancelled'){
+    return '<div class="order-track cancelled"><div class="track-step cancelled"><i class="fa-solid fa-ban"></i><span>Order cancelled</span></div></div>';
+  }
+  var cur={'Pending':0,'Accepted':1,'Preparing':1,'Ready for pickup':2,'Out for delivery':3,'Delivered':4}[status]||0;
+  var steps=[['Placed','fa-circle-check'],['Preparing','fa-utensils'],['Ready','fa-box-open'],['On the way','fa-motorcycle'],['Delivered','fa-house-circle-check']];
+  var h='<div class="order-track">';
+  steps.forEach(function(s,i){
+    var cls=i<cur?'done':(i===cur?'active':'');
+    h+='<div class="track-step '+cls+'"><i class="fa-solid '+s[1]+'"></i><span>'+s[0]+'</span></div>';
+  });
+  return h+'</div>';
+}
+function vendorHtml(v){
+  var ico=vendorIcon(v.name);
+  var status=v.status||'Pending';
+  var h='<div class="order-vendor-row">'
+    +'<div class="vendor-row-head">'
+    +'<span class="vendor-ico"><i class="fa-solid '+ico+'"></i></span>'
+    +'<strong class="vendor-name">'+esc(v.name)+'</strong>'
+    +'<span class="order-status-pill status-'+pillClass(status)+'">'+esc(status)+'</span>'
+    +'<span class="vendor-updated">updated '+reltime(v.updated_at)+'</span>'
+    +'</div><div class="vendor-products">';
+  (v.items||[]).forEach(function(it){
+    h+='<div class="vendor-product"><div class="vp-main">'
+      +'<span class="vp-vendor"><i class="fa-solid '+ico+'"></i> '+esc(v.name)+'</span>'
+      +'<span class="vp-name">'+esc(it.name)+' × '+(it.qty||0)+'</span>'
+      +'<span class="vp-line">Rs. '+(it.line_total||0)+'</span>'
+      +'</div>'+vpProgress(status)+'</div>';
+  });
+  return h+'</div></div>';
+}
+function otherHtml(items){
+  var h='<div class="order-vendor-row other"><div class="vendor-row-head"><strong class="vendor-name">Other items</strong><span class="order-status-pill status-cancelled">Not fulfilled</span></div><div class="vendor-products">';
+  items.forEach(function(it){
+    h+='<div class="vendor-product"><div class="vp-main"><span class="vp-name">'+esc(it.name)+' × '+(it.qty||0)+'</span><span class="vp-line">Rs. '+(it.line_total||0)+'</span></div></div>';
+  });
+  return h+'</div></div>';
+}
+function deliveryHtml(o){
+  var s=o.status;
+  if(s==='Cancelled')return '<div class="order-delivery cancelled"><i class="fa-solid fa-circle-xmark"></i> This order was cancelled.</div>';
+  if(s==='Delivered')return '<div class="order-delivery done"><i class="fa-solid fa-circle-check"></i> Delivered'+(o.rider&&o.rider.name?' by '+esc(o.rider.name):'')+'.</div>';
+  if(s==='Out for delivery')return '<div class="order-delivery onway"><i class="fa-solid fa-motorcycle"></i> '+(o.rider&&o.rider.name?esc(o.rider.name):'Your rider')+' is delivering your order — it\'s on the way!</div>';
+  if(s==='Ready for pickup')return '<div class="order-delivery waiting"><span class="pulse-dot"></span> Waiting for a delivery partner… a rider will pick up your order soon.</div>';
+  return '<div class="order-delivery"><i class="fa-solid fa-hourglass-half"></i> Vendors are preparing your order.</div>';
+}
+function cardHeadHtml(o,vendorCount){
+  return '<div class="order-card-head"><div><h2>Order #'+(o.id||0)+'</h2><p>'+esc(o.created_at||'')+'</p></div>'
+    +'<span class="order-status-pill status-'+pillClass(o.status)+'">'+esc(o.status)+'</span></div>';
+}
+function bodyHtml(o,vendorCount){
+  var h=trackHtml(o.status);
+  (o.vendors||[]).forEach(function(v){h+=vendorHtml(v);});
+  if(o.other_items&&o.other_items.length)h+=otherHtml(o.other_items);
+  h+=deliveryHtml(o);
+  h+='<div class="summary-row"><span>Subtotal</span><strong>Rs. '+(o.subtotal||0)+'</strong></div>';
+  h+='<div class="summary-row"><span>Delivery</span><strong>Rs. '+Math.max(0,(o.delivery_fee||0)-(o.discount||0))+'</strong></div>';
+  if(o.eta_minutes)h+='<div class="summary-row"><span>Estimated delivery</span><strong>about '+(o.eta_minutes||0)+' min'+(vendorCount>1?' · '+vendorCount+' vendors':'')+'</strong></div>';
+  h+='<div class="summary-row total"><span>Total</span><strong>Rs. '+(o.total||0)+'</strong></div>';
+  h+='<p class="small-note"><i class="fa-solid fa-location-dot"></i> '+esc(o.address||'')+' · <i class="fa-solid fa-credit-card"></i> '+esc(o.payment||'')+'</p>';
+  return h;
+}
+function cardHtml(o){
+  var vc=(o.vendors||[]).length+(o.other_items&&o.other_items.length?1:0);
+  return '<article class="order-card" data-order-id="'+(o.id||0)+'">'+cardHeadHtml(o,vc)+bodyHtml(o,vc)+'</article>';
+}
+function singleCardHtml(o){
+  var vc=(o.vendors||[]).length+(o.other_items&&o.other_items.length?1:0);
+  var h=cardHeadHtml(o,vc)+bodyHtml(o,vc);
+  if(o.delivery_lat&&o.delivery_lng){
+    h=h.replace('</p>',' · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(o.delivery_lat)+','+encodeURIComponent(o.delivery_lng)+'">Open in Maps</a></p>');
+  }
+  h+='<div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>';
+  return h;
+}
+function sig(o){
+  return (o.id||0)+':'+o.status+':'+(o.updated_at||'')+':'+((o.rider&&o.rider.name)||'')+':'+(o.vendors||[]).map(function(v){return v.vendor_id+':'+v.status+':'+(v.updated_at||'');}).join(';');
+}
+function flashCard(card){
+  if(!card)return;
+  card.classList.remove('track-flash');
+  void card.offsetWidth;
+  card.classList.add('track-flash');
+}
+function highlightFromUrl(){
+  var id=new URLSearchParams(location.search).get('id');
+  if(!id)return;
+  var card=document.querySelector('.order-card[data-order-id="'+Number(id)+'"]');
+  if(card){card.scrollIntoView({behavior:'smooth',block:'center'});flashCard(card);}
+}
+
+function init(){
+  var listWrap=document.querySelector('[data-live-orders] .orders-list');
+  var single=document.querySelector('[data-live-order]');
+  if(!listWrap&&!single)return;
+  var liveEl=document.querySelector('[data-live-indicator]');
+  var lastList='',lastSingle='',listSeeded=false,singleSeeded=false,listRender=0,singleRender=0;
+
+  function renderList(orders,forceAll){
+    var wrap=listWrap;if(!wrap)return false;
+    var map={};orders.forEach(function(o){map[o.id]=o;});
+    var changed=false;
+    wrap.querySelectorAll(':scope > .order-card').forEach(function(card){
+      var o=map[Number(card.getAttribute('data-order-id'))];
+      if(o&&(forceAll||sig(o)!==card._sig)){card.outerHTML=cardHtml(o);changed=true;}
+    });
+    var existing={};wrap.querySelectorAll(':scope > .order-card').forEach(function(c){existing[Number(c.getAttribute('data-order-id'))]=true;});
+    var fresh=orders.filter(function(o){return !existing[o.id];});
+    if(fresh.length){
+      fresh.forEach(function(o){
+        var tmp=document.createElement('div');tmp.innerHTML=cardHtml(o);
+        var card=tmp.firstElementChild;card._sig=sig(o);
+        wrap.insertBefore(card,wrap.firstChild);
+      });
+      changed=true;
+    }
+    wrap.querySelectorAll(':scope > .order-card').forEach(function(c){
+      var o=map[Number(c.getAttribute('data-order-id'))];
+      if(o)c._sig=sig(o);
+    });
+    return changed;
+  }
+
+  function refresh(){
+    if(document.visibilityState==='hidden')return;
+    fetch('api/orders.php',{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        var orders=d.orders||[];
+        var now=Date.now();
+        if(listWrap){
+          var ls=orders.map(sig).join('|');
+          if(!listSeeded){
+            listSeeded=true;lastList=ls;listRender=now;
+            renderList(orders,false);
+            highlightFromUrl();
+          }else if(ls!==lastList||(now-listRender)>FULL_MS){
+            var forceAll=(now-listRender)>FULL_MS;
+            var prev={};lastList.split('|').forEach(function(s){var p=s.split(':');prev[p[0]]=p[1];});
+            lastList=ls;listRender=now;
+            var changed=renderList(orders,forceAll);
+            if(changed){
+              orders.forEach(function(o){
+                if(prev[o.id]&&prev[o.id]!==o.status)flashCard(document.querySelector('.order-card[data-order-id="'+o.id+'"]'));
+              });
+            }
+          }
+        }
+        if(single){
+          var sid=Number(single.getAttribute('data-live-order'));
+          var o=null;
+          orders.forEach(function(x){if(Number(x.id)===sid)o=x;});
+          if(o){
+            var s=sig(o);
+            var prevStatus=singleSeeded?lastSingle.split(':')[1]:null;
+            if(!singleSeeded){
+              singleSeeded=true;lastSingle=s;singleRender=now;
+            }else if(s!==lastSingle||(now-singleRender)>FULL_MS){
+              single.innerHTML=singleCardHtml(o);
+              if(prevStatus&&prevStatus!==o.status)flashCard(single);
+              lastSingle=s;singleRender=now;
+            }
+          }
+        }
+        if(liveEl)liveEl.classList.add('live-on');
+      })
+      .catch(function(){});
+  }
+
+  refresh();
+  setInterval(refresh,POLL_MS);
+  highlightFromUrl();
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();

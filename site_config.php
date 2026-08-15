@@ -1031,6 +1031,204 @@ function lyaideu_recompute_order_status(int $orderId): string {
 }
 
 /**
+ * Relative human time for the order tracker ("just now", "2 min ago", ...).
+ */
+function lyaideu_reltime(string $datetime): string {
+    $ts = strtotime($datetime);
+    if (!$ts) {
+        return '';
+    }
+    $diff = time() - $ts;
+    if ($diff < 60) {
+        return 'just now';
+    }
+    if ($diff < 3600) {
+        return (int)round($diff / 60) . ' min ago';
+    }
+    if ($diff < 86400) {
+        return (int)round($diff / 3600) . ' hr ago';
+    }
+    return date('M j', $ts);
+}
+
+/**
+ * Full order-tracking view for one order: per-vendor statuses and their items
+ * (each product shows its owning vendor and that vendor's progression), rider
+ * info and delivery details. Used by orders.php, order_success.php and
+ * api/orders.php so every surface renders the same data.
+ */
+function lyaideu_order_tracking(int $orderId): array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return [];
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT o.id, o.status, o.created_at, o.updated_at, o.total, o.subtotal, o.delivery_fee,
+                    o.discount, o.eta_minutes, o.payment, o.address, o.delivery_lat, o.delivery_lng,
+                    o.rider_id, r.name AS rider_name, r.phone AS rider_phone
+             FROM orders o
+             LEFT JOIN riders r ON r.id = o.rider_id
+             WHERE o.id = ? LIMIT 1'
+        );
+        $st->execute([$orderId]);
+        $o = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$o) {
+            return [];
+        }
+        $o['id'] = (int)$o['id'];
+        $o['total'] = (int)$o['total'];
+        $o['subtotal'] = (int)$o['subtotal'];
+        $o['delivery_fee'] = (int)$o['delivery_fee'];
+        $o['discount'] = (int)$o['discount'];
+        $o['eta_minutes'] = (int)$o['eta_minutes'];
+        $o['rider'] = ($o['rider_id'] !== null && $o['rider_id'] !== '')
+            ? ['name' => (string)$o['rider_name'], 'phone' => (string)$o['rider_phone']]
+            : null;
+        unset($o['rider_id'], $o['rider_name'], $o['rider_phone']);
+
+        $vendors = [];
+        $vs = $pdo->prepare(
+            'SELECT ovs.vendor_id, ovs.status, ovs.updated_at, v.name
+             FROM order_vendor_status ovs
+             LEFT JOIN vendors v ON v.id = ovs.vendor_id
+             WHERE ovs.order_id = ?'
+        );
+        $vs->execute([$orderId]);
+        foreach ($vs->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $vid = (int)$row['vendor_id'];
+            $vendors[$vid] = [
+                'vendor_id' => $vid,
+                'name' => (string)$row['name'],
+                'status' => (string)$row['status'],
+                'updated_at' => (string)$row['updated_at'],
+                'items' => [],
+            ];
+        }
+
+        $items = $pdo->prepare('SELECT name, price, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
+        $items->execute([$orderId]);
+        $other = [];
+        foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $it) {
+            $it['price'] = (int)$it['price'];
+            $it['qty'] = (int)$it['qty'];
+            $it['line_total'] = (int)$it['line_total'];
+            $vid = (int)$it['vendor_id'];
+            if ($vid > 0 && isset($vendors[$vid])) {
+                $vendors[$vid]['items'][] = $it;
+            } else {
+                $other[] = $it;
+            }
+        }
+
+        $rank = ['Pending' => 0, 'Accepted' => 1, 'Preparing' => 2, 'Ready for pickup' => 3, 'Rejected' => 4];
+        uasort($vendors, static function (array $a, array $b) use ($rank): int {
+            $ra = $rank[$a['status']] ?? 9;
+            $rb = $rank[$b['status']] ?? 9;
+            return ($ra !== $rb) ? ($ra <=> $rb) : ($a['vendor_id'] <=> $b['vendor_id']);
+        });
+
+        $o['vendors'] = array_values($vendors);
+        $o['other_items'] = $other;
+        return $o;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function lyaideu_order_pill_class(string $status): string {
+    return [
+        'Pending' => 'pending',
+        'Confirmed' => 'confirmed',
+        'Accepted' => 'confirmed',
+        'Preparing' => 'preparing',
+        'Ready for pickup' => 'ready',
+        'Out for delivery' => 'delivery',
+        'Delivered' => 'delivered',
+        'Cancelled' => 'cancelled',
+    ][$status] ?? 'pending';
+}
+
+function lyaideu_order_track_html(string $status): string {
+    if ($status === 'Cancelled') {
+        return '<div class="order-track cancelled"><div class="track-step cancelled"><i class="fa-solid fa-ban"></i><span>Order cancelled</span></div></div>';
+    }
+    $cur = ['Pending' => 0, 'Accepted' => 1, 'Preparing' => 1, 'Ready for pickup' => 2, 'Out for delivery' => 3, 'Delivered' => 4][$status] ?? 0;
+    $steps = [
+        ['Placed', 'fa-circle-check'],
+        ['Preparing', 'fa-utensils'],
+        ['Ready', 'fa-box-open'],
+        ['On the way', 'fa-motorcycle'],
+        ['Delivered', 'fa-house-circle-check'],
+    ];
+    $h = '<div class="order-track">';
+    foreach ($steps as $i => $s) {
+        $cls = $i < $cur ? 'done' : ($i === $cur ? 'active' : '');
+        $h .= '<div class="track-step ' . $cls . '"><i class="fa-solid ' . $s[1] . '"></i><span>' . $s[0] . '</span></div>';
+    }
+    return $h . '</div>';
+}
+
+function lyaideu_order_vendor_icon(string $name): string {
+    return (stripos($name, 'mart') !== false || stripos($name, 'store') !== false) ? 'fa-basket-shopping' : 'fa-store';
+}
+
+function lyaideu_order_vendor_progress_html(string $status): string {
+    $steps = ['Waiting', 'Accepted', 'Preparing', 'Ready'];
+    $cur = ['Pending' => 0, 'Accepted' => 1, 'Preparing' => 2, 'Ready for pickup' => 3][$status] ?? -1;
+    $h = '<div class="vp-progress">';
+    foreach ($steps as $i => $s) {
+        $cls = $status === 'Rejected' ? 'cancelled' : ($i < $cur ? 'done' : ($i === $cur ? 'active' : ''));
+        $h .= '<span class="vp-step ' . $cls . '">' . $s . '</span>';
+    }
+    return $h . '</div>';
+}
+
+function lyaideu_order_vendor_html(array $v): string {
+    $ico = lyaideu_order_vendor_icon($v['name']);
+    $h = '<div class="order-vendor-row">'
+        . '<div class="vendor-row-head">'
+        . '<span class="vendor-ico"><i class="fa-solid ' . $ico . '"></i></span>'
+        . '<strong class="vendor-name">' . htmlspecialchars($v['name'], ENT_QUOTES, 'UTF-8') . '</strong>'
+        . '<span class="order-status-pill status-' . lyaideu_order_pill_class($v['status']) . '">' . htmlspecialchars($v['status'], ENT_QUOTES, 'UTF-8') . '</span>'
+        . '<span class="vendor-updated">updated ' . lyaideu_reltime($v['updated_at']) . '</span>'
+        . '</div><div class="vendor-products">';
+    foreach ($v['items'] as $it) {
+        $h .= '<div class="vendor-product"><div class="vp-main">'
+            . '<span class="vp-vendor"><i class="fa-solid ' . $ico . '"></i> ' . htmlspecialchars($v['name'], ENT_QUOTES, 'UTF-8') . '</span>'
+            . '<span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ' × ' . (int)$it['qty'] . '</span>'
+            . '<span class="vp-line">Rs. ' . (int)$it['line_total'] . '</span>'
+            . '</div>' . lyaideu_order_vendor_progress_html($v['status']) . '</div>';
+    }
+    return $h . '</div></div>';
+}
+
+function lyaideu_order_other_html(array $items): string {
+    $h = '<div class="order-vendor-row other"><div class="vendor-row-head"><strong class="vendor-name">Other items</strong><span class="order-status-pill status-cancelled">Not fulfilled</span></div><div class="vendor-products">';
+    foreach ($items as $it) {
+        $h .= '<div class="vendor-product"><div class="vp-main"><span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ' × ' . (int)$it['qty'] . '</span><span class="vp-line">Rs. ' . (int)$it['line_total'] . '</span></div></div>';
+    }
+    return $h . '</div></div>';
+}
+
+function lyaideu_order_delivery_html(array $o): string {
+    $status = $o['status'];
+    if ($status === 'Cancelled') {
+        return '<div class="order-delivery cancelled"><i class="fa-solid fa-circle-xmark"></i> This order was cancelled.</div>';
+    }
+    if ($status === 'Delivered') {
+        return '<div class="order-delivery done"><i class="fa-solid fa-circle-check"></i> Delivered' . (!empty($o['rider']['name']) ? ' by ' . htmlspecialchars($o['rider']['name'], ENT_QUOTES, 'UTF-8') : '') . '.</div>';
+    }
+    if ($status === 'Out for delivery') {
+        return '<div class="order-delivery onway"><i class="fa-solid fa-motorcycle"></i> ' . (!empty($o['rider']['name']) ? htmlspecialchars($o['rider']['name'], ENT_QUOTES, 'UTF-8') : 'Your rider') . ' is delivering your order — it\'s on the way!</div>';
+    }
+    if ($status === 'Ready for pickup') {
+        return '<div class="order-delivery waiting"><span class="pulse-dot"></span> Waiting for a delivery partner… a rider will pick up your order soon.</div>';
+    }
+    return '<div class="order-delivery"><i class="fa-solid fa-hourglass-half"></i> Vendors are preparing your order.</div>';
+}
+
+/**
  * Adds a column to a table if it does not already exist.
  * Returns true when the column was newly added.
  */

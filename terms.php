@@ -24,7 +24,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
 
@@ -131,7 +131,7 @@ require_once __DIR__ . '/site_config.php';
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=12"></script>
+<script src="js/script.js?v=13"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>
