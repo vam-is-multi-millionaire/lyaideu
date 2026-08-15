@@ -404,7 +404,7 @@ function trackHtml(status){
   var h='<div class="order-track">';
   steps.forEach(function(s,i){
     var cls=i<cur?'done':(i===cur?'active':'');
-    h+='<div class="track-step '+cls+'"><i class="fa-solid '+s[1]+'"></i><span>'+s[0]+'</span></div>';
+    h+='<div class="track-step '+cls+(s[0]==='On the way'?'" data-short="OTW':'')+'"><i class="fa-solid '+s[1]+'"></i><span>'+s[0]+'</span></div>';
   });
   return h+'</div>';
 }

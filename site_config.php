@@ -1164,7 +1164,8 @@ function lyaideu_order_track_html(string $status): string {
     $h = '<div class="order-track">';
     foreach ($steps as $i => $s) {
         $cls = $i < $cur ? 'done' : ($i === $cur ? 'active' : '');
-        $h .= '<div class="track-step ' . $cls . '"><i class="fa-solid ' . $s[1] . '"></i><span>' . $s[0] . '</span></div>';
+        $short = ($s[0] === 'On the way') ? ' data-short="OTW"' : '';
+        $h .= '<div class="track-step ' . $cls . '"' . $short . '><i class="fa-solid ' . $s[1] . '"></i><span>' . $s[0] . '</span></div>';
     }
     return $h . '</div>';
 }
