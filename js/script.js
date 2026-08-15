@@ -76,7 +76,7 @@ function renderMart(items){
 }
 function catMatch(card){const s=card.dataset.cats;return s?s.split(',').includes(currentCat):card.dataset.cat===currentCat}
 function slugify(s){return (s||'').toString().replace(/&amp;/g,'&').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'item'}
-function productUrl(type,slug,cats){type=type||'dish';const p=(cats&&cats.length)?cats.map(x=>encodeURIComponent(String(x))).join('/')+'/':'';return (type==='mart'?'mart':'menu')+'/'+p+(slug||slugify('item'))}
+function productUrl(type,slug,cats){type=type||'dish';cats=(cats||[]).map(x=>String(x).trim()).filter(Boolean);const p=cats.length?cats.map(x=>encodeURIComponent(x)).join('/')+'/':'';return (type==='mart'?'mart':'menu')+'/'+p+(slug||slugify('item'))}
 function applyMartFilters(){
   const cards=$$('#mart-grid .dish-card'),sort=$('#sortMart')?.value||'default';
   let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));

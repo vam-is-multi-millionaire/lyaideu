@@ -215,7 +215,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <div class="related-grid">
                     <?php foreach ($related as $rItem): ?>
                         <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
-                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= e($relPath) ?>/<?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
+                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
                             <div class="related-img">
                                 <?php if ($rItem['img'] !== ''): ?>
                                     <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">
@@ -256,7 +256,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=11"></script>
+<script src="js/script.js?v=12"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

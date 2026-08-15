@@ -11,8 +11,9 @@ $martCatsFlat = lyaideu_categories_flat('mart');
 
 try {
     $items = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id FROM mart_items ORDER BY id'
+        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, vendor_id FROM mart_items ORDER BY id'
     )->fetchAll();
+    $martVendors = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id")->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
     exit('Could not load mart items.');
@@ -36,6 +37,12 @@ admin_page_start('Mart', 'mart', 'Mart');
                 <input type="hidden" name="mart[<?= $i ?>][id]" value="<?= (int)$m['id'] ?>">
                 <label>Item Name</label>
                 <input type="text" name="mart[<?= $i ?>][name]" value="<?= htmlspecialchars($m['name']) ?>" required>
+                <label>Vendor</label>
+                <select name="mart[<?= $i ?>][vendor_id]">
+                    <?php foreach ($martVendors as $v): ?>
+                    <option value="<?= (int)$v['id'] ?>" <?= (int)$m['vendor_id'] === (int)$v['id'] ? 'selected' : '' ?>><?= htmlspecialchars($v['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <div class="admin-field-row">
                     <div><label>Category</label>
                         <select name="mart[<?= $i ?>][category_id]">
@@ -73,6 +80,12 @@ admin_page_start('Mart', 'mart', 'Mart');
             <div class="admin-card admin-add-card">
                 <h3><i class="fa-solid fa-plus"></i> Add New Item</h3>
                 <label>Item Name</label><input type="text" name="new_mart[name]" placeholder="e.g. Garlic">
+                <label>Vendor</label>
+                <select name="new_mart[vendor_id]">
+                    <?php foreach ($martVendors as $v): ?>
+                    <option value="<?= (int)$v['id'] ?>"><?= htmlspecialchars($v['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
                 <div class="admin-field-row">
                     <div><label>Category</label>
                         <select name="new_mart[category_id]">

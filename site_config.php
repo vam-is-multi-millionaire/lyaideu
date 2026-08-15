@@ -1115,10 +1115,11 @@ function lyaideu_reindex_item_vendors(): void {
             $pdo->prepare('UPDATE dishes SET vendor_id = ? WHERE id = ?')->execute([$vid > 0 ? $vid : null, (int)$d['id']]);
         }
 
-        // Mart items belong to the mart-scope vendor.
+        // Mart items belong to the mart-scope vendor. Only assign items that
+        // have no owner yet so per-vendor ownership is never overwritten.
         $martVendor = (int)$pdo->query("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1")->fetchColumn();
         if ($martVendor > 0) {
-            $pdo->exec('UPDATE mart_items SET vendor_id = ' . $martVendor);
+            $pdo->exec('UPDATE mart_items SET vendor_id = ' . $martVendor . ' WHERE vendor_id IS NULL');
         }
 
         // Backfill order items so pre-existing orders route to vendors too.
@@ -1203,8 +1204,9 @@ function lyaideu_resolve_dish_vendor(int $dishId): int {
 }
 
 /**
- * Sets a mart item's owning vendor to the mart-scope vendor.
- * Returns the resolved vendor id (0 when none).
+ * Sets a mart item's owning vendor. Prefers the item's current vendor; when
+ * the item has no owner yet it falls back to the first mart-scope vendor.
+ * Returns the effective vendor id (0 when none).
  */
 function lyaideu_resolve_mart_vendor(int $itemId): int {
     $pdo = lyaideu_load_pdo();
@@ -1212,6 +1214,12 @@ function lyaideu_resolve_mart_vendor(int $itemId): int {
         return 0;
     }
     try {
+        $st = $pdo->prepare('SELECT vendor_id FROM mart_items WHERE id = ?');
+        $st->execute([$itemId]);
+        $existing = (int)$st->fetchColumn();
+        if ($existing > 0) {
+            return $existing;
+        }
         $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1");
         $st->execute();
         $vendorId = (int)$st->fetchColumn();

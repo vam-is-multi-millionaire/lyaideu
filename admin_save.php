@@ -227,16 +227,28 @@ try {
     }
 
     if ($section === 'mart') {
+        $martVendorId = function ($value): int {
+            $vid = (int)($value ?? 0);
+            if ($vid > 0) {
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE id = :id AND scope = 'mart' AND is_active = 1");
+                $st->execute([':id' => $vid]);
+                if ($st->fetchColumn()) {
+                    return $vid;
+                }
+            }
+            return 0;
+        };
+
         $deleteItem = $pdo->prepare('DELETE FROM mart_items WHERE id = ?');
         $updateItem = $pdo->prepare(
             'UPDATE mart_items
              SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
-                 `desc` = :descr, img = :img
+                 `desc` = :descr, img = :img, vendor_id = :vendor_id
              WHERE id = :id'
         );
         $insertItem = $pdo->prepare(
-            'INSERT INTO mart_items (name, cat, category_id, unit, price, tag, `desc`, img)
-             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img)'
+            'INSERT INTO mart_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
         );
 
         foreach (($_POST['mart'] ?? []) as $i => $m) {
@@ -255,6 +267,11 @@ try {
                 continue;
             }
 
+            $vid = $martVendorId($m['vendor_id'] ?? 0);
+            if ($vid <= 0) {
+                $vid = lyaideu_resolve_mart_vendor($id);
+            }
+
             $img = handle_item_image((string)($m['img'] ?? ''), $m, uploaded_file_field('mart', $i, 'img_file'), 'mart_img');
             $catRes = resolve_product_category((int)($m['category_id'] ?? 0), 'mart');
 
@@ -268,9 +285,9 @@ try {
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('mart_items', $id, $name);
-            lyaideu_resolve_mart_vendor($id);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
@@ -285,6 +302,7 @@ try {
                     'size' => $newFile['size']['img_file'] ?? 0,
                 ]
                 : null;
+            $vid = $martVendorId($newItem['vendor_id'] ?? 0);
             $img = handle_item_image('', $newItem, $newImgFile, 'mart_img');
             $catRes = resolve_product_category((int)($newItem['category_id'] ?? 0), 'mart');
 
@@ -297,9 +315,12 @@ try {
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('mart_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
-            lyaideu_resolve_mart_vendor((int)$pdo->lastInsertId());
+            if ($vid <= 0) {
+                lyaideu_resolve_mart_vendor((int)$pdo->lastInsertId());
+            }
         }
     }
 

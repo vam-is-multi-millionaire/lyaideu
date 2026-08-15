@@ -12,6 +12,7 @@ RewriteRule ^ - [L]
 # Pretty product URLs: menu/momo/steamed-momo/chicken-steam-momo  |  mart/vegetables/root-vegetables/fresh-potatoes
 # (a trailing numeric id still works: menu/5  |  mart/vegetables/12)
 RewriteRule ^(menu|mart)/([0-9]+)/?$                                             product.php?type=$1&id=$2 [QSA,L]
+RewriteRule ^(menu|mart)/([a-z0-9-]+)/?$                                         product.php?type=$1&slug=$2 [QSA,L]
 RewriteRule ^(menu|mart)/((?:[a-z0-9-]+/)*[a-z0-9-]+)/([a-z0-9-]+)/?$             product.php?type=$1&catpath=$2&slug=$3 [QSA,L]
 
 # Extensionless page URLs (internal rewrite): /menu -> menu.php, /login -> login.php, ...
