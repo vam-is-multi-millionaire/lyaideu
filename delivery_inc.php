@@ -134,8 +134,9 @@ function delivery_csrf_token(): string {
 function delivery_logout(): void {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delivery_logout'])) {
         if (hash_equals($_SESSION['csrf_delivery'] ?? '', $_POST['csrf_token'] ?? '')) {
+            $role = delivery_role();
             unset($_SESSION['delivery_role'], $_SESSION['delivery_user']);
-            header('Location: index');
+            header('Location: ' . ($role === 'rider' ? 'rider' : 'vendor'));
             exit;
         }
     }
