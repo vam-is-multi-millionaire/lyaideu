@@ -20,98 +20,220 @@ try {
     exit('Could not load other items.');
 }
 
+$catNameById = [];
+foreach ($otherCatsFlat as $mc) {
+    $catNameById[(int)$mc['id']] = $mc['name'];
+}
+
+$vendorNameById = [];
+foreach ($otherVendors as $v) {
+    $vendorNameById[(int)$v['id']] = $v['name'];
+}
+
+$ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+
+function other_category_options(array $flat, ?int $selected = null): string {
+    global $ce;
+    $html = '<option value="0">— No category —</option>';
+    foreach ($flat as $mc) {
+        $sel = $selected !== null && (int)$mc['id'] === (int)$selected ? ' selected' : '';
+        $html .= '<option value="' . (int)$mc['id'] . '"' . $sel . '>' . str_repeat('— ', (int)$mc['depth']) . $ce($mc['name']) . '</option>';
+    }
+    return $html;
+}
+
+function other_vendor_options(array $vendors, ?int $selected = null): string {
+    $html = '';
+    foreach ($vendors as $v) {
+        $sel = $selected !== null && (int)$v['id'] === (int)$selected ? ' selected' : '';
+        $html .= '<option value="' . (int)$v['id'] . '"' . $sel . '>' . htmlspecialchars((string)$v['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    return $html;
+}
+
+function other_thumb_html(string $img): string {
+    if ($img !== '') {
+        return '<span class="pm-thumb"><img src="' . htmlspecialchars($img, ENT_QUOTES, 'UTF-8') . '" alt="" loading="lazy"></span>';
+    }
+    return '<span class="pm-thumb pm-thumb-empty"><i class="fa-solid fa-gift"></i></span>';
+}
+
 admin_page_start('Others', 'others', 'Others');
 ?>
-<p class="section-sub" style="margin-bottom:1rem;">Bouquets, candles, achar, gifts and other non-food items sold from the Other store(s). Store cards and their vendor logins are managed under <strong>Stores &amp; Vendors</strong>.</p>
+<section class="admin-section">
+    <div class="admin-section-top">
+        <p class="section-sub">Manage your non-food items. Use <strong>Edit</strong> to change an item, <strong>Delete</strong> to remove one, and <strong>Add New Item</strong> to create one. Store cards &amp; vendor logins live under <strong>Stores &amp; Vendors</strong>.</p>
+        <span class="admin-count-badge"><?= count($items) ?> items</span>
+    </div>
+</section>
 
-<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
-    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="section" value="others">
+<div class="pm-toolbar">
+    <input type="search" class="wp-cat-search pm-search" id="otherSearch" placeholder="Search items by name, vendor, category or tag…" aria-label="Search other items">
+    <button type="button" class="btn btn-primary" id="addItemBtn"><i class="fa-solid fa-plus"></i> Add New Item</button>
+</div>
 
-    <section class="admin-section">
-        <div class="admin-section-top">
-            <p class="section-sub">Edit existing other items or add new ones. Changes appear live on the Others page.</p>
-            <span class="admin-count-badge"><?= count($items) ?> items</span>
+<div class="pm-add-panel" id="addItemPanel">
+    <h3 class="pm-add-title"><i class="fa-solid fa-plus"></i> Add New Item</h3>
+    <form action="admin_save" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
+        <input type="hidden" name="section" value="others">
+        <div class="admin-field-row">
+            <div><label>Item Name</label><input type="text" name="new_others[name]" placeholder="e.g. Rose Bouquet" required></div>
+            <div><label>Vendor</label><select name="new_others[vendor_id]"><?= other_vendor_options($otherVendors) ?></select></div>
         </div>
-        <div class="admin-grid">
-            <?php foreach ($items as $i => $m): ?>
-            <div class="admin-card">
-                <h3><?= htmlspecialchars($m['name']) ?></h3>
-                <input type="hidden" name="others[<?= $i ?>][id]" value="<?= (int)$m['id'] ?>">
-                <label>Item Name</label>
-                <input type="text" name="others[<?= $i ?>][name]" value="<?= htmlspecialchars($m['name']) ?>" required>
-                <label>Vendor</label>
-                <select name="others[<?= $i ?>][vendor_id]">
-                    <?php foreach ($otherVendors as $v): ?>
-                    <option value="<?= (int)$v['id'] ?>" <?= (int)$m['vendor_id'] === (int)$v['id'] ? 'selected' : '' ?>><?= htmlspecialchars($v['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+        <div class="admin-field-row">
+            <div><label>Category</label><select name="new_others[category_id]"><?= other_category_options($otherCatsFlat) ?></select></div>
+            <div><label>Unit</label><input type="text" name="new_others[unit]" placeholder="piece / set / bunch"></div>
+        </div>
+        <div class="admin-field-row">
+            <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="new_others[price]" placeholder="500"></div>
+            <div><label>Tag</label><input type="text" name="new_others[tag]" placeholder="e.g. New!"></div>
+        </div>
+        <label>Image <span style="text-transform:none;font-weight:700;">(optional — a category icon is shown if empty)</span></label>
+        <div class="pm-img-field">
+            <input type="file" name="new_others[img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+        </div>
+        <label>Description</label>
+        <textarea name="new_others[desc]" placeholder="Short description..."></textarea>
+        <div class="pm-add-actions">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Item</button>
+            <button type="button" class="btn btn-outline" id="addItemCancel">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<section class="admin-section">
+    <div class="pm-list" id="otherList">
+        <?php foreach ($items as $i => $m): $id = (int)$m['id']; ?>
+        <?php $catName = $catNameById[(int)$m['category_id']] ?? ''; $vendorName = $vendorNameById[(int)$m['vendor_id']] ?? ''; ?>
+        <div class="pm-row" data-search="<?= $ce(strtolower((string)$m['name'] . ' ' . $vendorName . ' ' . $catName . ' ' . $m['unit'] . ' ' . $m['tag'])) ?>">
+            <div class="pm-item">
+                <?= other_thumb_html((string)$m['img']) ?>
+                <span class="pm-body">
+                    <span class="pm-name"><?= $ce($m['name']) ?></span>
+                    <span class="pm-meta"><?= $vendorName !== '' ? $ce($vendorName) : '' ?><?= $vendorName !== '' && $catName !== '' ? ' · ' : '' ?><?= $ce($catName) ?></span>
+                </span>
+                <span class="pm-price">Rs. <?= (int)$m['price'] ?><?php if ($m['unit'] !== ''): ?><span class="pm-unit"> / <?= $ce($m['unit']) ?></span><?php endif; ?><?php if ($m['tag'] !== ''): ?><span class="pm-tag"><?= $ce($m['tag']) ?></span><?php endif; ?></span>
+                <span class="pm-actions">
+                    <button type="button" class="pm-act pm-edit" data-target="pm-edit-<?= $id ?>"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <form class="pm-del-inline" action="admin_save" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
+                        <input type="hidden" name="section" value="others">
+                        <input type="hidden" name="others[<?= $i ?>][id]" value="<?= $id ?>">
+                        <input type="hidden" name="others[<?= $i ?>][delete]" value="1">
+                        <button type="submit" class="pm-act pm-del-btn" data-confirm="<?= $ce('Delete "' . $m['name'] . '" from Others? This cannot be undone.') ?>"><i class="fa-solid fa-trash-can"></i> Delete</button>
+                    </form>
+                </span>
+            </div>
+
+            <form class="pm-quick-edit" id="pm-edit-<?= $id ?>" action="admin_save" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
+                <input type="hidden" name="section" value="others">
+                <input type="hidden" name="others[<?= $i ?>][id]" value="<?= $id ?>">
+                <input type="hidden" name="others[<?= $i ?>][img]" value="<?= $ce($m['img']) ?>">
                 <div class="admin-field-row">
-                    <div><label>Category</label>
-                        <select name="others[<?= $i ?>][category_id]">
-                            <option value="0">— No category —</option>
-                            <?php foreach ($otherCatsFlat as $mc): ?>
-                            <option value="<?= (int)$mc['id'] ?>" <?= (int)$m['category_id'] === (int)$mc['id'] ? 'selected' : '' ?>><?= str_repeat('— ', $mc['depth']) ?><?= htmlspecialchars($mc['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div><label>Unit</label>
-                        <input type="text" name="others[<?= $i ?>][unit]" value="<?= htmlspecialchars($m['unit']) ?>" placeholder="piece / set / bunch">
-                    </div>
+                    <div><label>Item Name</label><input type="text" name="others[<?= $i ?>][name]" value="<?= $ce($m['name']) ?>" required></div>
+                    <div><label>Vendor</label><select name="others[<?= $i ?>][vendor_id]"><?= other_vendor_options($otherVendors, (int)$m['vendor_id']) ?></select></div>
                 </div>
                 <div class="admin-field-row">
-                    <div><label>Price (Rs.)</label>
-                        <input type="number" min="0" step="1" name="others[<?= $i ?>][price]" value="<?= (int)$m['price'] ?>" required>
-                    </div>
-                    <div><label>Tag</label>
-                        <input type="text" name="others[<?= $i ?>][tag]" value="<?= htmlspecialchars($m['tag']) ?>">
-                    </div>
+                    <div><label>Category</label><select name="others[<?= $i ?>][category_id]"><?= other_category_options($otherCatsFlat, (int)$m['category_id']) ?></select></div>
+                    <div><label>Unit</label><input type="text" name="others[<?= $i ?>][unit]" value="<?= $ce($m['unit']) ?>" placeholder="piece / set / bunch"></div>
                 </div>
-                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional, a category icon is shown if empty)</span></label>
-                <input type="file" name="others[<?= $i ?>][img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-                <input type="hidden" name="others[<?= $i ?>][img]" value="<?= htmlspecialchars($m['img']) ?>">
-                <?php if (!empty($m['img'])): ?>
-                    <div class="img-preview"><img src="<?= htmlspecialchars($m['img'], ENT_QUOTES, 'UTF-8') ?>" alt="Current image"></div>
+                <div class="admin-field-row">
+                    <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="others[<?= $i ?>][price]" value="<?= (int)$m['price'] ?>" required></div>
+                    <div><label>Tag</label><input type="text" name="others[<?= $i ?>][tag]" value="<?= $ce($m['tag']) ?>"></div>
+                </div>
+                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
+                <div class="pm-img-field">
+                    <span class="pm-img-preview"<?= $m['img'] !== '' ? '' : ' style="display:none"' ?>><img src="<?= $ce($m['img']) ?>" alt=""></span>
+                    <input type="file" name="others[<?= $i ?>][img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                </div>
+                <?php if ($m['img'] !== ''): ?>
+                <label class="pm-remove-img"><input type="checkbox" name="others[<?= $i ?>][remove_img]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
                 <?php endif; ?>
-                <label class="delete-check"><input type="checkbox" name="others[<?= $i ?>][remove_img]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
                 <label>Description</label>
-                <textarea name="others[<?= $i ?>][desc]"><?= htmlspecialchars($m['desc']) ?></textarea>
-                <label class="delete-check"><input type="checkbox" name="others[<?= $i ?>][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this item</label>
-            </div>
-            <?php endforeach; ?>
-
-            <div class="admin-card admin-add-card">
-                <h3><i class="fa-solid fa-plus"></i> Add New Item</h3>
-                <label>Item Name</label><input type="text" name="new_others[name]" placeholder="e.g. Rose Bouquet">
-                <label>Vendor</label>
-                <select name="new_others[vendor_id]">
-                    <?php foreach ($otherVendors as $v): ?>
-                    <option value="<?= (int)$v['id'] ?>"><?= htmlspecialchars($v['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <div class="admin-field-row">
-                    <div><label>Category</label>
-                        <select name="new_others[category_id]">
-                            <option value="0">— No category —</option>
-                            <?php foreach ($otherCatsFlat as $mc): ?>
-                            <option value="<?= (int)$mc['id'] ?>"><?= str_repeat('— ', $mc['depth']) ?><?= htmlspecialchars($mc['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div><label>Unit</label><input type="text" name="new_others[unit]" placeholder="piece / set / bunch"></div>
+                <textarea name="others[<?= $i ?>][desc]"><?= $ce($m['desc']) ?></textarea>
+                <div class="pm-edit-actions">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Item</button>
+                    <button type="button" class="btn btn-outline pm-cancel">Cancel</button>
                 </div>
-                <div class="admin-field-row">
-                    <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="new_others[price]" placeholder="500"></div>
-                    <div><label>Tag</label><input type="text" name="new_others[tag]" placeholder="New!"></div>
-                </div>
-                <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional, a category icon is shown if empty)</span></label>
-                <input type="file" name="new_others[img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-                <label>Description</label><textarea name="new_others[desc]" placeholder="Short description..."></textarea>
-            </div>
+            </form>
         </div>
-    </section>
+        <?php endforeach; ?>
+    </div>
+    <p class="pm-empty" id="otherEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i> No items match your search.</p>
+</section>
 
-    <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Others Changes</button>
-</form>
+<script>
+(function(){
+  var addBtn=document.getElementById('addItemBtn'),addPanel=document.getElementById('addItemPanel'),addCancel=document.getElementById('addItemCancel');
+  function setAdd(open){
+    if(!addPanel)return;
+    addPanel.style.display=open?'block':'none';
+    if(addBtn)addBtn.classList.toggle('active',open);
+  }
+  if(addBtn)addBtn.addEventListener('click',function(){setAdd(addPanel.style.display==='none');});
+  if(addCancel)addCancel.addEventListener('click',function(){setAdd(false);});
+
+  var search=document.getElementById('otherSearch');
+  if(search){
+    search.addEventListener('input',function(){
+      var q=search.value.trim().toLowerCase(),any=false;
+      document.querySelectorAll('.pm-row').forEach(function(row){
+        var show=!q||(row.getAttribute('data-search')||'').indexOf(q)!==-1;
+        row.style.display=show?'':'none';
+        if(show)any=true;
+      });
+      var empty=document.getElementById('otherEmpty');
+      if(empty)empty.style.display=any?'none':'block';
+    });
+  }
+
+  document.addEventListener('click',function(e){
+    var edit=e.target.closest('.pm-edit');
+    if(edit){
+      var form=document.getElementById(edit.getAttribute('data-target'));
+      var row=edit.closest('.pm-row');
+      if(!form||!row)return;
+      var opening=form.style.display==='none';
+      document.querySelectorAll('.pm-quick-edit').forEach(function(f){f.style.display='none';});
+      document.querySelectorAll('.pm-item').forEach(function(it){it.style.display='';});
+      if(opening){
+        row.querySelector('.pm-item').style.display='none';
+        form.style.display='block';
+      }
+      return;
+    }
+    var cancel=e.target.closest('.pm-cancel');
+    if(cancel){
+      var f=cancel.closest('.pm-quick-edit');
+      if(f){
+        f.style.display='none';
+        var it=f.closest('.pm-row').querySelector('.pm-item');
+        if(it)it.style.display='';
+      }
+    }
+  });
+
+  document.querySelectorAll('.pm-del-inline').forEach(function(form){
+    form.addEventListener('submit',function(e){
+      var btn=form.querySelector('.pm-del-btn');
+      if(btn&&!window.confirm(btn.getAttribute('data-confirm')))e.preventDefault();
+    });
+  });
+
+  document.addEventListener('change',function(e){
+    var input=e.target;
+    if(!input||!input.files||!input.files[0])return;
+    var field=input.closest('.pm-img-field');
+    if(!field)return;
+    var prev=field.querySelector('.pm-img-preview');
+    if(!prev)return;
+    prev.style.display='block';
+    var img=prev.querySelector('img');
+    if(img)img.src=URL.createObjectURL(input.files[0]);
+  });
+})();
+</script>
 <?php
 admin_page_end();
