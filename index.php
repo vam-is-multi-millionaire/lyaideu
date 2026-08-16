@@ -16,22 +16,27 @@ require_once __DIR__ . '/site_config.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-$featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
+$featured = ['dishes' => [], 'mart' => [], 'hotels' => [], 'mart_stores' => []];
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
+        lyaideu_ensure_stores();
         $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
         $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items')->fetchAll();
-        $featured['hotels'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo FROM hotels')->fetchAll();
+        $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels')->fetchAll();
     } catch (Throwable $e) {
-        $featured = ['dishes' => [], 'mart' => [], 'hotels' => []];
+        $featured = ['dishes' => [], 'mart' => [], 'hotels' => [], 'mart_stores' => []];
     }
+    $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
+    $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
     shuffle($featured['hotels']);
+    shuffle($featured['mart_stores']);
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
+    $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
 }
 
 $searchResults = null;
@@ -45,7 +50,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st = $featuredPdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
-        $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
+        $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
         $st->execute([$qp, $qp]);
         $searchResults['hotels'] = $st->fetchAll();
     } catch (Throwable $e) {
@@ -71,7 +76,7 @@ $FEATURED_MART_ICONS = [
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
@@ -83,7 +88,7 @@ $FEATURED_MART_ICONS = [
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="hotels" class="nav-a">Hotels</a></li>
+            <li><a href="hotels" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
@@ -214,7 +219,7 @@ $FEATURED_MART_ICONS = [
             <?php if ($searchResults['hotels']): ?>
             <div class="feat-block">
                 <div class="feat-ribbon">
-                    <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
+                    <h3><i class="fa-solid fa-store"></i> Partner Stores</h3>
                     <a class="see-all" href="hotels">View all <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
                 <div class="grid hotels-grid home-grid">
@@ -224,11 +229,15 @@ $FEATURED_MART_ICONS = [
                             <?php if ($sHotel['logo'] !== ''): ?>
                                 <img class="hotel-logo" src="<?= lyaideu_featured_e($sHotel['logo']) ?>" alt="<?= lyaideu_featured_e($sHotel['name']) ?>" loading="lazy">
                             <?php else: ?>
-                                <i class="fa-solid <?= lyaideu_featured_e($sHotel['emoji'] !== '' ? $sHotel['emoji'] : 'fa-hotel') ?>"></i>
+                                <i class="fa-solid <?= lyaideu_featured_e($sHotel['emoji'] !== '' ? $sHotel['emoji'] : (($sHotel['kind'] ?? '') === 'mart' ? 'fa-basket-shopping' : 'fa-hotel')) ?>"></i>
                             <?php endif; ?>
                         </div>
                         <div class="hotel-info"><h3><?= lyaideu_featured_e($sHotel['name']) ?></h3><p><?= lyaideu_featured_e($sHotel['type']) ?></p></div>
+                        <?php if (($sHotel['kind'] ?? '') === 'mart'): ?>
+                        <a class="hotel-call" href="mart"><i class="fa-solid fa-basket-shopping"></i> Shop the Mart</a>
+                        <?php else: ?>
                         <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($sHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> <?= lyaideu_featured_e($sHotel['phone']) ?></a>
+                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -246,7 +255,7 @@ $FEATURED_MART_ICONS = [
         <div class="container">
             <div class="section-head">
                 <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
-                <p class="section-sub">Tasty dishes, grocery essentials and partner kitchens — shuffled fresh on every refresh.</p>
+                <p class="section-sub">Tasty dishes, grocery essentials and partner stores — shuffled fresh on every refresh.</p>
             </div>
 
             <div class="featured-stack">
@@ -319,6 +328,30 @@ $FEATURED_MART_ICONS = [
                             </div>
                             <div class="hotel-info"><h3><?= lyaideu_featured_e($fHotel['name']) ?></h3><p><?= lyaideu_featured_e($fHotel['type']) ?></p></div>
                             <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> <?= lyaideu_featured_e($fHotel['phone']) ?></a>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['mart_stores']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-basket-shopping"></i> Mart Partner</h3>
+                        <a class="see-all" href="mart">Shop the Mart <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid hotels-grid home-grid" id="featuredMartStores">
+                        <?php foreach ($featured['mart_stores'] as $fMartStore): ?>
+                        <div class="hotel-card reveal visible">
+                            <div class="hotel-avatar">
+                                <?php if ($fMartStore['logo'] !== ''): ?>
+                                    <img class="hotel-logo" src="<?= lyaideu_featured_e($fMartStore['logo']) ?>" alt="<?= lyaideu_featured_e($fMartStore['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= lyaideu_featured_e($fMartStore['emoji'] !== '' ? $fMartStore['emoji'] : 'fa-basket-shopping') ?>"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hotel-info"><h3><?= lyaideu_featured_e($fMartStore['name']) ?></h3><p><?= lyaideu_featured_e($fMartStore['type']) ?></p></div>
+                            <a class="hotel-call" href="mart"><i class="fa-solid fa-basket-shopping"></i> Shop the Mart</a>
                         </div>
                         <?php endforeach; ?>
                     </div>
@@ -412,14 +445,14 @@ $FEATURED_MART_ICONS = [
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Hotels</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=13"></script>
+<script src="js/script.js?v=14"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

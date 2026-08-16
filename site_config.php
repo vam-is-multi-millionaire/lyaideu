@@ -516,6 +516,31 @@ function lyaideu_sync_item_slug(string $table, int $id, string $name): void {
 }
 
 /**
+ * Ensures the `hotels` table acts as a generic partner-stores table.
+ * Adds the `kind` column (hotel / mart / other) if missing and seeds a
+ * default Mart store so it shows up on the homepage & Stores page.
+ * Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_stores(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        lyaideu_ensure_column($pdo, 'hotels', 'kind', "VARCHAR(20) NOT NULL DEFAULT 'hotel'");
+        $martStore = (int)$pdo->query("SELECT COUNT(*) FROM hotels WHERE kind = 'mart'")->fetchColumn();
+        if ($martStore === 0) {
+            $pdo->prepare(
+                "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (?, ?, ?, ?, ?, 'mart')"
+            )->execute(['LyaiDeu Mart', 'Grocery & daily essentials', '', 'fa-basket-shopping', '']);
+        }
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
  * Ensures a generous catalog exists (dishes, mart items, hotels).
  * Idempotent — inserts any missing rows by name, safe on existing installs.
  */
@@ -812,7 +837,8 @@ function lyaideu_ensure_delivery_tables(): bool {
             'INSERT INTO vendors (name, email, phone, pass, scope, hotel_id, is_active, created_at)
              VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
         );
-        foreach ($pdo->query('SELECT id, name FROM hotels ORDER BY id') as $h) {
+        lyaideu_ensure_column($pdo, 'hotels', 'kind', "VARCHAR(20) NOT NULL DEFAULT 'hotel'");
+        foreach ($pdo->query("SELECT id, name FROM hotels WHERE kind = 'hotel' ORDER BY id") as $h) {
             $hid = (int)$h['id'];
             if (isset($linkedHotelIds[$hid])) {
                 continue;

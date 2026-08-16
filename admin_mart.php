@@ -7,6 +7,7 @@ require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_mart_table();
 lyaideu_ensure_categories_table();
+lyaideu_ensure_stores();
 $martCatsFlat = lyaideu_categories_flat('mart');
 
 try {
@@ -14,6 +15,7 @@ try {
         'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, vendor_id FROM mart_items ORDER BY id'
     )->fetchAll();
     $martVendors = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id")->fetchAll();
+    $martStores = $pdo->query("SELECT id, name, type, phone, emoji, logo FROM hotels WHERE kind = 'mart' ORDER BY id")->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
     exit('Could not load mart items.');
@@ -21,6 +23,56 @@ try {
 
 admin_page_start('Mart', 'mart', 'Mart');
 ?>
+<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="section" value="mart_stores">
+
+    <section class="admin-section">
+        <div class="admin-section-top">
+            <p class="section-sub">Manage the Mart store card shown on the homepage &amp; Stores page.</p>
+            <span class="admin-count-badge"><?= count($martStores) ?> store<?= count($martStores) === 1 ? '' : 's' ?></span>
+        </div>
+        <div class="admin-grid">
+            <?php foreach ($martStores as $i => $ms): ?>
+            <div class="admin-card">
+                <h3><?= htmlspecialchars($ms['name']) ?></h3>
+                <input type="hidden" name="mart_stores[<?= $i ?>][id]" value="<?= (int)$ms['id'] ?>">
+                <label>Store Name</label>
+                <input type="text" name="mart_stores[<?= $i ?>][name]" value="<?= htmlspecialchars($ms['name']) ?>" required>
+                <label>Tagline / Type</label>
+                <input type="text" name="mart_stores[<?= $i ?>][type]" value="<?= htmlspecialchars($ms['type']) ?>">
+                <div class="admin-field-row">
+                    <div><label>Phone</label><input type="text" name="mart_stores[<?= $i ?>][phone]" value="<?= htmlspecialchars($ms['phone']) ?>"></div>
+                    <div><label>Icon class</label><input type="text" name="mart_stores[<?= $i ?>][emoji]" value="<?= htmlspecialchars($ms['emoji']) ?>" placeholder="fa-basket-shopping"></div>
+                </div>
+                <label>Logo <span style="text-transform:none;font-weight:700;">(upload — optional, icon shown if empty)</span></label>
+                <input type="file" name="mart_stores[<?= $i ?>][logo_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                <input type="hidden" name="mart_stores[<?= $i ?>][logo]" value="<?= htmlspecialchars($ms['logo'] ?? '') ?>">
+                <?php if (!empty($ms['logo'])): ?>
+                    <div class="img-preview"><img src="<?= htmlspecialchars($ms['logo'], ENT_QUOTES, 'UTF-8') ?>" alt="Current logo"></div>
+                <?php endif; ?>
+                <label class="delete-check"><input type="checkbox" name="mart_stores[<?= $i ?>][remove_logo]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove logo</label>
+                <label class="delete-check"><input type="checkbox" name="mart_stores[<?= $i ?>][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this store</label>
+            </div>
+            <?php endforeach; ?>
+
+            <div class="admin-card admin-add-card">
+                <h3><i class="fa-solid fa-plus"></i> Add New Mart Store</h3>
+                <label>Store Name</label><input type="text" name="new_mart_store[name]" placeholder="e.g. LyaiDeu Mart">
+                <label>Tagline / Type</label><input type="text" name="new_mart_store[type]" placeholder="e.g. Grocery &amp; daily essentials">
+                <div class="admin-field-row">
+                    <div><label>Phone</label><input type="text" name="new_mart_store[phone]" placeholder="98XXXXXXXX"></div>
+                    <div><label>Icon class</label><input type="text" name="new_mart_store[emoji]" value="fa-basket-shopping"></div>
+                </div>
+                <label>Logo <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
+                <input type="file" name="new_mart_store[logo_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+            </div>
+        </div>
+    </section>
+
+    <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Mart Store</button>
+</form>
+
 <form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="mart">

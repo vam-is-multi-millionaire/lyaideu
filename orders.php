@@ -52,7 +52,7 @@ foreach ($rows as $row) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
@@ -64,7 +64,7 @@ foreach ($rows as $row) {
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="hotels" class="nav-a">Hotels</a></li>
+            <li><a href="hotels" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="orders" class="nav-a active">Orders</a></li>
             <?php if ($user): ?>
@@ -131,4 +131,4 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=13"></script><script src="js/notify.js?v=4"></script></body></html>
+<script src="js/script.js?v=14"></script><script src="js/notify.js?v=4"></script></body></html>

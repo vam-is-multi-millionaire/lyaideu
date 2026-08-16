@@ -211,6 +211,7 @@ section{scroll-margin-top:96px;}
               display:grid;place-items:center;font-size:2.1rem;overflow:hidden;}
 .hotel-avatar .hotel-logo{width:100%;height:100%;object-fit:contain;display:block;background:#fff;padding:6px;border-radius:14px;}
 .hotel-info{min-width:0;}
+.hotel-kind-badge{display:inline-block;font-size:.62rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--orange-700);background:var(--orange-100);border:1px solid var(--orange-200);border-radius:999px;padding:.2rem .6rem;margin-bottom:.35rem;}
 .hotel-info h3{font-size:1.02rem;font-weight:900;line-height:1.25;}
 .hotel-info p{font-size:.78rem;font-weight:700;color:var(--muted);}
 .hotel-call{flex-shrink:0;font-size:.76rem;font-weight:900;color:var(--orange-700);text-decoration:none;

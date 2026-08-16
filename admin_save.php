@@ -136,7 +136,7 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'mart_stores', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -325,12 +325,13 @@ try {
     }
 
     if ($section === 'hotels') {
+        $validKinds = ['hotel', 'mart', 'other'];
         $deleteHotel = $pdo->prepare('DELETE FROM hotels WHERE id = ?');
         $updateHotel = $pdo->prepare(
-            'UPDATE hotels SET name = :name, type = :type, phone = :phone, logo = :logo WHERE id = :id'
+            'UPDATE hotels SET name = :name, type = :type, phone = :phone, logo = :logo, kind = :kind WHERE id = :id'
         );
         $insertHotel = $pdo->prepare(
-            'INSERT INTO hotels (name, type, phone, logo) VALUES (:name, :type, :phone, :logo)'
+            'INSERT INTO hotels (name, type, phone, logo, kind) VALUES (:name, :type, :phone, :logo, :kind)'
         );
 
         foreach (($_POST['hotels'] ?? []) as $i => $h) {
@@ -349,6 +350,7 @@ try {
                 continue;
             }
 
+            $kind = in_array(clean_text($h['kind'] ?? 'hotel'), $validKinds, true) ? clean_text($h['kind']) : 'hotel';
             $logo = handle_hotel_logo((string)($h['logo'] ?? ''), $h, uploaded_file_field('hotels', $i, 'logo_file'));
 
             $updateHotel->execute([
@@ -357,6 +359,7 @@ try {
                 ':type' => clean_text($h['type'] ?? ''),
                 ':phone' => clean_phone($h['phone'] ?? ''),
                 ':logo' => $logo,
+                ':kind' => $kind,
             ]);
         }
 
@@ -372,12 +375,77 @@ try {
                     'size' => $newFile['size']['logo_file'] ?? 0,
                 ]
                 : null;
+            $kind = in_array(clean_text($newHotel['kind'] ?? 'hotel'), $validKinds, true) ? clean_text($newHotel['kind']) : 'hotel';
             $logo = handle_hotel_logo('', $newHotel, $newLogoFile);
 
             $insertHotel->execute([
                 ':name' => clean_text($newHotel['name'] ?? ''),
                 ':type' => clean_text($newHotel['type'] ?? ''),
                 ':phone' => clean_phone($newHotel['phone'] ?? ''),
+                ':logo' => $logo,
+                ':kind' => $kind,
+            ]);
+        }
+    }
+
+    if ($section === 'mart_stores') {
+        $deleteStore = $pdo->prepare("DELETE FROM hotels WHERE id = ? AND kind = 'mart'");
+        $updateStore = $pdo->prepare(
+            "UPDATE hotels SET name = :name, type = :type, phone = :phone, emoji = :emoji, logo = :logo WHERE id = :id AND kind = 'mart'"
+        );
+        $insertStore = $pdo->prepare(
+            "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (:name, :type, :phone, :emoji, :logo, 'mart')"
+        );
+
+        foreach (($_POST['mart_stores'] ?? []) as $i => $ms) {
+            $id = (int)($ms['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($ms['delete'])) {
+                $deleteStore->execute([$id]);
+                continue;
+            }
+
+            $name = clean_text($ms['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $logo = handle_hotel_logo((string)($ms['logo'] ?? ''), $ms, uploaded_file_field('mart_stores', $i, 'logo_file'));
+            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($ms['emoji'] ?? 'fa-basket-shopping'));
+
+            $updateStore->execute([
+                ':id' => $id,
+                ':name' => $name,
+                ':type' => clean_text($ms['type'] ?? ''),
+                ':phone' => clean_phone($ms['phone'] ?? ''),
+                ':emoji' => $emoji !== '' ? $emoji : 'fa-basket-shopping',
+                ':logo' => $logo,
+            ]);
+        }
+
+        $newStore = $_POST['new_mart_store'] ?? [];
+        if (clean_text($newStore['name'] ?? '') !== '') {
+            $newFile = $_FILES['new_mart_store'] ?? null;
+            $newLogoFile = (isset($newFile['name']['logo_file']))
+                ? [
+                    'name' => $newFile['name']['logo_file'],
+                    'type' => $newFile['type']['logo_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['logo_file'],
+                    'error' => $newFile['error']['logo_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['logo_file'] ?? 0,
+                ]
+                : null;
+            $logo = handle_hotel_logo('', $newStore, $newLogoFile);
+            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($newStore['emoji'] ?? 'fa-basket-shopping'));
+
+            $insertStore->execute([
+                ':name' => clean_text($newStore['name'] ?? ''),
+                ':type' => clean_text($newStore['type'] ?? ''),
+                ':phone' => clean_phone($newStore['phone'] ?? ''),
+                ':emoji' => $emoji !== '' ? $emoji : 'fa-basket-shopping',
                 ':logo' => $logo,
             ]);
         }

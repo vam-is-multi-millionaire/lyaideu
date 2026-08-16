@@ -38,7 +38,7 @@ function admin_nav_items(): array {
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
-        'hotels' => ['label' => 'Hotels', 'href' => 'admin_hotels', 'icon' => '<i class="fa-solid fa-hotel"></i>'],
+        'hotels' => ['label' => 'Stores', 'href' => 'admin_hotels', 'icon' => '<i class="fa-solid fa-store"></i>'],
         'vendors' => ['label' => 'Vendors', 'href' => 'admin_vendors', 'icon' => '<i class="fa-solid fa-store"></i>'],
         'riders' => ['label' => 'Riders', 'href' => 'admin_riders', 'icon' => '<i class="fa-solid fa-motorcycle"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts', 'icon' => '<i class="fa-solid fa-phone"></i>'],
@@ -96,7 +96,7 @@ function admin_show_login(?string $error = null): void {
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17"></head>
+<link rel="stylesheet" href="css/style.css?v=18"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div><h2 class="display"><i class="fa-solid fa-lock"></i> Admin Login</h2>';
     if ($safeError !== '') {
@@ -145,7 +145,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17"></head><body class="admin-body">';
+<link rel="stylesheet" href="css/style.css?v=18"></head><body class="admin-body">';
     echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
@@ -175,6 +175,7 @@ function admin_section_redirect(string $section, bool $saved, ?string $error = n
         'dishes' => 'admin_dishes',
         'mart' => 'admin_mart',
         'hotels' => 'admin_hotels',
+        'mart_stores' => 'admin_mart',
         'contacts' => 'admin_contacts',
     ];
 

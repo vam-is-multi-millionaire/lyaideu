@@ -4,6 +4,9 @@ RewriteEngine On
 # (holds api/notifications.php for the live notification feed).
 RewriteRule ^api/?$ api.php [QSA,L]
 
+# /stores is the Stores page (hotels.php rebranded); /hotels still works too.
+RewriteRule ^stores/?$ hotels.php [QSA,L]
+
 # Existing real files/directories bypass all rewriting (menu.php, mart.php, css, js still work directly)
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

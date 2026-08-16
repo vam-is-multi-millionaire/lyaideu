@@ -29,7 +29,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -171,7 +171,7 @@ require_once __DIR__ . '/site_config.php';
     <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
 </main>
 </div>
-<script src="js/script.js?v=13"></script>
+<script src="js/script.js?v=14"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)

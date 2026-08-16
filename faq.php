@@ -24,7 +24,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
@@ -36,7 +36,7 @@ require_once __DIR__ . '/site_config.php';
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="hotels" class="nav-a">Hotels</a></li>
+            <li><a href="hotels" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
@@ -176,14 +176,14 @@ require_once __DIR__ . '/site_config.php';
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Hotels</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Birendranagar, Surkhet</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=13"></script>
+<script src="js/script.js?v=14"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

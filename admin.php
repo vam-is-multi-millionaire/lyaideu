@@ -76,7 +76,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
                 'orders' => ['count' => $totalOrders, 'desc' => 'Track and update customer orders'],
                 'dishes' => ['count' => $dishCount, 'desc' => 'Add, edit, or remove menu items'],
                 'mart' => ['count' => $martCount, 'desc' => 'Manage grocery items on the Mart page'],
-                'hotels' => ['count' => $hotelCount, 'desc' => 'Manage partner restaurant listings'],
+                'hotels' => ['count' => $hotelCount, 'desc' => 'Manage partner stores, hotels & businesses'],
                 'vendors' => ['count' => $vendorCount, 'desc' => 'Manage kitchen accounts that log in at /vendor'],
                 'riders' => ['count' => $riderCount, 'desc' => 'Manage delivery riders that log in at /rider'],
                 'contacts' => ['count' => $contactCount, 'desc' => 'Update service team phone numbers'],
