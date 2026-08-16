@@ -131,4 +131,4 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=15"></script><script src="js/notify.js?v=4"></script></body></html>
+<script src="js/script.js?v=16"></script><script src="js/notify.js?v=4"></script></body></html>
