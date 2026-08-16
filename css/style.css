@@ -117,7 +117,7 @@ section{scroll-margin-top:96px;}
 @media (max-width:900px){
   .hero-split{padding:2.6rem 1.25rem 3rem;}
   .hero-split-inner{grid-template-columns:1fr;gap:2rem;text-align:center;}
-  .hero-split-text{order:2;}
+  .hero-split-text{display:none;}
   .hero-split-slider{order:1;}
   .hero-tagline{margin-left:auto;margin-right:auto;}
   .hero-ctas{justify-content:center;}
