@@ -180,7 +180,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <?php if ($isDetail): ?>
     <section id="store" class="section section-white">
         <div class="container">
-            <a class="back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>"><i class="fa-solid fa-arrow-left"></i> <?= lyaideu_from_home() ? 'Back to Home' : 'Back to Stores' ?></a>
+            <a class="back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>" data-back-home="<?= lyaideu_from_home() ? '1' : '0' ?>"><i class="fa-solid fa-arrow-left"></i> <?= lyaideu_from_home() ? 'Back to Home' : 'Back to Stores' ?></a>
 
             <div class="store-hero">
                 <div class="store-hero-avatar">
@@ -298,6 +298,18 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <script src="js/script.js?v=18"></script>
 <script src="js/scroll-memory.js?v=3"></script>
 <script src="js/notify.js?v=4"></script>
+<script>
+(function(){
+  var backHome = document.querySelector('.back-link[data-back-home="1"]');
+  if (!backHome || !window.history) return;
+  backHome.addEventListener('click', function (e) {
+    if (window.history.length > 1) {
+      e.preventDefault();
+      window.history.back();
+    }
+  });
+})();
+</script>
 <?php if ($isDetail): ?>
 <script>
 (function(){
