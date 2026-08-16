@@ -51,6 +51,17 @@ function subtree_item_count(array $cats, int $id, array $counts): int {
     return $total;
 }
 
+function category_select_options(array $flat): string {
+    global $ce;
+    $html = '';
+    foreach ($flat as $c) {
+        $indent = str_repeat('&nbsp;&nbsp;', (int)$c['depth']);
+        $arrow = (int)$c['depth'] > 0 ? '└ ' : '';
+        $html .= '<option value="' . (int)$c['id'] . '">' . $indent . $arrow . $ce($c['name']) . '</option>';
+    }
+    return $html;
+}
+
 $dishCounts = [];
 foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM dishes GROUP BY category_id') as $r) {
     $dishCounts[(int)$r['category_id']] = (int)$r['c'];
@@ -79,95 +90,136 @@ $ICON_OPTIONS = [
     'fa-bouquet', 'fa-candle-holder', 'fa-jar', 'fa-gift',
 ];
 
+$TYPE_LABELS = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other'];
+$TYPE_ICONS  = ['menu' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift'];
+
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
-function category_select_options(array $flat): string {
-    global $ce;
-    $html = '';
-    foreach ($flat as $c) {
-        $indent = str_repeat('&nbsp;&nbsp;', $c['depth']);
-        $arrow = $c['depth'] > 0 ? '└ ' : '';
-        $html .= '<option value="' . (int)$c['id'] . '">' . $indent . $arrow . $ce($c['name']) . '</option>';
+function render_category_group(array $flat, string $type, array $counts, array $typeCats, array $ICON_OPTIONS): string {
+    global $ce, $TYPE_LABELS, $TYPE_ICONS;
+    $html = '<div class="wp-cat-group">';
+    $html .= '<h3 class="wp-cat-group-title"><i class="fa-solid ' . $TYPE_ICONS[$type] . '"></i> ' . $TYPE_LABELS[$type] . ' <span class="wp-cat-group-count">' . count($flat) . '</span></h3>';
+    if (!$flat) {
+        $html .= '<p class="wp-cat-none">No ' . strtolower($TYPE_LABELS[$type]) . ' categories yet. Add one on the right.</p>';
     }
-    return $html;
-}
-
-function render_category_cards(array $flat, string $type, array $counts, array $allCats): string {
-    global $ce, $ICON_OPTIONS;
-    $out = '';
     foreach ($flat as $i => $c) {
-        $skip = descendant_ids_of($allCats, (int)$c['id']);
-        $parentOptions = '';
+        $id = (int)$c['id'];
+        $depth = min((int)$c['depth'], 5);
+        $skip = descendant_ids_of($typeCats, $id);
+
+        $parentOptions = '<option value="0">— No parent (top level) —</option>';
         foreach ($flat as $pc) {
             if (in_array((int)$pc['id'], $skip, true)) {
                 continue;
             }
             $sel = (int)$pc['id'] === (int)$c['parent_id'] ? ' selected' : '';
-            $indent = str_repeat('&nbsp;&nbsp;', $pc['depth']);
-            $arrow = $pc['depth'] > 0 ? '└ ' : '';
+            $indent = str_repeat('&nbsp;&nbsp;', (int)$pc['depth']);
+            $arrow = (int)$pc['depth'] > 0 ? '└ ' : '';
             $parentOptions .= '<option value="' . (int)$pc['id'] . '"' . $sel . '>' . $indent . $arrow . $ce($pc['name']) . '</option>';
         }
+
         $iconOptions = '';
         foreach ($ICON_OPTIONS as $ic) {
             $iconOptions .= '<option value="' . $ic . '"' . ($c['icon'] === $ic ? ' selected' : '') . '>' . $ic . '</option>';
         }
-        $itemCount = subtree_item_count($allCats, (int)$c['id'], $counts);
-        $indentCls = 'admin-cat-depth-' . min($c['depth'], 5);
-        $out .= '<div class="admin-card ' . $indentCls . '">';
-        $out .= '<h3>' . $ce($c['name']);
-        $typeLabel = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other'][$type] ?? ucfirst($type);
-        $out .= '<span class="admin-cat-badges"><span class="admin-cat-type cat-type-' . $type . '">' . $typeLabel . '</span><span class="admin-count-badge">' . (int)$itemCount . ' items</span></span></h3>';
-        $out .= '<input type="hidden" name="categories[' . $i . '][id]" value="' . (int)$c['id'] . '">';
-        $out .= '<input type="hidden" name="categories[' . $i . '][type]" value="' . $type . '">';
-        $out .= '<label>Category Name</label>';
-        $out .= '<input type="text" name="categories[' . $i . '][name]" value="' . $ce($c['name']) . '" required>';
-        $out .= '<div class="admin-field-row">';
-        $out .= '<div><label>Slug (URL)</label><input type="text" name="categories[' . $i . '][slug]" value="' . $ce($c['slug']) . '" placeholder="auto from name"></div>';
-        $out .= '<div><label>Sort Order</label><input type="number" min="0" name="categories[' . $i . '][sort_order]" value="' . (int)$c['sort_order'] . '"></div>';
-        $out .= '</div>';
-        $out .= '<label>Parent Category</label>';
-        $out .= '<select name="categories[' . $i . '][parent_id]">' . $parentOptions . '</select>';
-        $out .= '<label>Icon</label>';
-        $out .= '<select name="categories[' . $i . '][icon]">' . $iconOptions . '</select>';
-        $out .= '<label class="delete-check"><input type="checkbox" name="categories[' . $i . '][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this category (items become uncategorized, sub-categories move up)</label>';
-        $out .= '</div>';
+
+        $itemCount = subtree_item_count($typeCats, $id, $counts);
+        $confirm = 'Delete "' . $c['name'] . '"? Items in it will become uncategorized, and its sub-categories will move up one level.';
+
+        $html .= '<div class="wp-cat-row" data-search="' . $ce(strtolower((string)$c['name'])) . '">';
+        $html .= '<div class="wp-cat-item">';
+        $html .= '<span class="wp-cat-indent" style="' . ($depth > 0 ? 'padding-left:' . ($depth * 1.6) . 'rem;' : '') . '">';
+        $html .= '<span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span>';
+        $html .= '<span class="wp-cat-name">' . $ce($c['name']) . '</span>';
+        $html .= '</span>';
+        $html .= '<span class="wp-cat-meta">';
+        $html .= '<span class="admin-cat-type cat-type-' . $type . '">' . $TYPE_LABELS[$type] . '</span>';
+        $html .= '<span class="admin-count-badge">' . (int)$itemCount . ' items</span>';
+        $html .= '</span>';
+        $html .= '<span class="wp-cat-actions">';
+        $html .= '<button type="button" class="wp-cat-act wp-cat-edit" data-target="qe-' . $type . '-' . $id . '"><i class="fa-solid fa-pen"></i> Edit</button>';
+        $html .= '<form class="wp-cat-del-inline" action="admin_save" method="POST">';
+        $html .= '<input type="hidden" name="csrf_token" value="' . $ce(admin_csrf_token()) . '">';
+        $html .= '<input type="hidden" name="section" value="categories">';
+        $html .= '<input type="hidden" name="categories[' . $i . '][id]" value="' . $id . '">';
+        $html .= '<input type="hidden" name="categories[' . $i . '][delete]" value="1">';
+        $html .= '<button type="submit" class="wp-cat-act wp-cat-del-btn" data-confirm="' . $ce($confirm) . '"><i class="fa-solid fa-trash-can"></i> Delete</button>';
+        $html .= '</form>';
+        $html .= '</span>';
+        $html .= '</div>';
+
+        $html .= '<form class="wp-cat-quick-edit" id="qe-' . $type . '-' . $id . '" action="admin_save" method="POST">';
+        $html .= '<input type="hidden" name="csrf_token" value="' . $ce(admin_csrf_token()) . '">';
+        $html .= '<input type="hidden" name="section" value="categories">';
+        $html .= '<input type="hidden" name="categories[' . $i . '][id]" value="' . $id . '">';
+        $html .= '<input type="hidden" name="categories[' . $i . '][type]" value="' . $type . '">';
+        $html .= '<div class="admin-field-row">';
+        $html .= '<div><label>Name</label><input type="text" name="categories[' . $i . '][name]" value="' . $ce($c['name']) . '" required></div>';
+        $html .= '<div><label>Slug (URL)</label><input type="text" name="categories[' . $i . '][slug]" value="' . $ce($c['slug']) . '" placeholder="auto from name"></div>';
+        $html .= '</div>';
+        $html .= '<div class="admin-field-row">';
+        $html .= '<div><label>Parent Category</label><select name="categories[' . $i . '][parent_id]">' . $parentOptions . '</select></div>';
+        $html .= '<div><label>Sort Order</label><input type="number" min="0" name="categories[' . $i . '][sort_order]" value="' . (int)$c['sort_order'] . '"></div>';
+        $html .= '</div>';
+        $html .= '<label>Icon</label>';
+        $html .= '<div class="wp-cat-icon-wrap"><select name="categories[' . $i . '][icon]">' . $iconOptions . '</select><span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span></div>';
+        $html .= '<div class="wp-cat-edit-actions">';
+        $html .= '<button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Category</button>';
+        $html .= '<button type="button" class="btn btn-outline wp-cat-cancel">Cancel</button>';
+        $html .= '</div>';
+        $html .= '</form>';
+
+        $html .= '</div>';
     }
-    return $out;
+    $html .= '</div>';
+    return $html;
 }
 
 admin_page_start('Categories', 'categories', 'Categories');
 ?>
 <section class="admin-section">
     <div class="admin-section-top">
-        <p class="section-sub">Organise every product into a category tree. Sub-categories nest inside parent categories — manage them all here.</p>
+        <p class="section-sub">Organise every product into a category tree, just like WordPress. Use <strong>Edit</strong> to change any category, <strong>Delete</strong> to remove one, and the form on the right to add new categories.</p>
         <span class="admin-count-badge"><?= count($allCats) ?> categories</span>
     </div>
 </section>
 
-<form action="admin_save" method="POST" class="admin-form">
-    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="section" value="categories">
+<div class="wp-cat-layout">
+    <div class="wp-cat-main">
+        <section class="admin-section">
+            <div class="admin-section-top">
+                <h2 style="margin:0"><i class="fa-solid fa-sitemap"></i> All Categories</h2>
+                <input type="search" class="wp-cat-search" id="catSearch" placeholder="Search categories…" aria-label="Search categories">
+            </div>
 
-    <section class="admin-section">
-        <h2><i class="fa-solid fa-plus"></i> Add New Category</h2>
-        <div class="admin-grid">
-            <div class="admin-card admin-add-card">
-                <h3><i class="fa-solid fa-tags"></i> New Category</h3>
-                <div class="admin-field-row">
-                    <div><label>Type</label>
-                        <select name="new_category[type]" id="newCatType">
-                            <option value="menu">Menu (dishes)</option>
-                            <option value="mart">Mart (groceries)</option>
-                            <option value="other">Other (gifts, decor & achar)</option>
-                        </select>
-                    </div>
-                    <div><label>Name</label><input type="text" name="new_category[name]" placeholder="e.g. Steamed Momos"></div>
-                </div>
+            <div class="wp-cat-list" id="catList">
+                <?= render_category_group($menuFlat, 'menu', $dishCounts, $menuCats, $ICON_OPTIONS) ?>
+                <?= render_category_group($martFlat, 'mart', $martCounts, $martCats, $ICON_OPTIONS) ?>
+                <?= render_category_group($otherFlat, 'other', $otherCounts, $otherCats, $ICON_OPTIONS) ?>
+            </div>
+            <p class="wp-cat-empty" id="catEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i> No categories match your search.</p>
+        </section>
+    </div>
+
+    <aside class="wp-cat-side">
+        <section class="admin-section">
+            <h2><i class="fa-solid fa-plus"></i> Add New Category</h2>
+            <form action="admin_save" method="POST">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="section" value="categories">
+                <label>Type</label>
+                <select name="new_category[type]" id="newCatType">
+                    <option value="menu">Menu (dishes)</option>
+                    <option value="mart">Mart (groceries)</option>
+                    <option value="other">Other (gifts, decor &amp; achar)</option>
+                </select>
+                <label>Name</label>
+                <input type="text" name="new_category[name]" placeholder="e.g. Steamed Momos" required>
                 <div class="admin-field-row">
                     <div><label>Slug (URL)</label><input type="text" name="new_category[slug]" placeholder="auto from name"></div>
                     <div><label>Sort Order</label><input type="number" min="0" name="new_category[sort_order]" placeholder="1"></div>
                 </div>
-                <label>Parent Category <span style="text-transform:none;font-weight:700;">(optional — makes this a sub-category)</span></label>
+                <label>Parent Category <span style="text-transform:none;font-weight:700;">(optional)</span></label>
                 <select name="new_category[parent_id]" id="newCatParent">
                     <option value="0">— No parent (top level) —</option>
                     <optgroup label="Menu Categories"><?= category_select_options($menuFlat) ?></optgroup>
@@ -175,53 +227,26 @@ admin_page_start('Categories', 'categories', 'Categories');
                     <optgroup label="Other Categories"><?= category_select_options($otherFlat) ?></optgroup>
                 </select>
                 <label>Icon</label>
-                <select name="new_category[icon]">
-                    <?php foreach ($ICON_OPTIONS as $ic): ?>
-                    <option value="<?= $ic ?>"><?= $ic ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-    </section>
+                <div class="wp-cat-icon-wrap">
+                    <select name="new_category[icon]">
+                        <?php foreach ($ICON_OPTIONS as $ic): ?>
+                        <option value="<?= $ic ?>"<?= $ic === 'fa-tags' ? ' selected' : '' ?>><?= $ic ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="cat-icon-chip"><i class="fa-solid fa-tags"></i></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top:1rem;"><i class="fa-solid fa-plus"></i> Add New Category</button>
+            </form>
+        </section>
+    </aside>
+</div>
 
-    <section class="admin-section">
-        <div class="admin-section-top">
-            <h2 style="margin:0"><i class="fa-solid fa-utensils"></i> Menu Categories</h2>
-            <span class="admin-count-badge"><?= count($menuCats) ?> categories</span>
-        </div>
-        <div class="admin-grid">
-            <?= render_category_cards($menuFlat, 'menu', $dishCounts, $menuCats) ?>
-        </div>
-    </section>
-
-    <section class="admin-section">
-        <div class="admin-section-top">
-            <h2 style="margin:0"><i class="fa-solid fa-basket-shopping"></i> Mart Categories</h2>
-            <span class="admin-count-badge"><?= count($martCats) ?> categories</span>
-        </div>
-        <div class="admin-grid">
-            <?= render_category_cards($martFlat, 'mart', $martCounts, $martCats) ?>
-        </div>
-    </section>
-
-    <section class="admin-section">
-        <div class="admin-section-top">
-            <h2 style="margin:0"><i class="fa-solid fa-gift"></i> Other Categories</h2>
-            <span class="admin-count-badge"><?= count($otherCats) ?> categories</span>
-        </div>
-        <div class="admin-grid">
-            <?= render_category_cards($otherFlat, 'other', $otherCounts, $otherCats) ?>
-        </div>
-    </section>
-
-    <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Category Changes</button>
-</form>
 <script>
 (function(){
   var type=document.getElementById('newCatType'),parent=document.getElementById('newCatParent');
-  if(!type||!parent)return;
   var labelFor={menu:'Menu',mart:'Mart',other:'Other'};
   function sync(){
+    if(!type||!parent)return;
     var v=type.value;
     Array.prototype.forEach.call(parent.querySelectorAll('optgroup'),function(g){
       g.style.display=(g.getAttribute('label').indexOf(labelFor[v]||v)>-1)?'':'none';
@@ -229,8 +254,71 @@ admin_page_start('Categories', 'categories', 'Categories');
     var sel=parent.selectedOptions[0];
     if(sel&&sel.parentNode.tagName==='OPTGROUP'&&sel.parentNode.style.display==='none'){parent.value='0';}
   }
-  type.addEventListener('change',sync);
+  if(type)type.addEventListener('change',sync);
   sync();
+
+  function initIconPreviews(){
+    document.querySelectorAll('.wp-cat-icon-wrap').forEach(function(wrap){
+      var sel=wrap.querySelector('select'),chip=wrap.querySelector('.cat-icon-chip i');
+      if(sel&&chip)chip.className='fa-solid '+sel.value;
+    });
+  }
+  document.addEventListener('change',function(e){
+    var sel=e.target;
+    if(!sel||!sel.name||sel.name.indexOf('[icon]')===-1)return;
+    var wrap=sel.closest('.wp-cat-icon-wrap');
+    if(!wrap)return;
+    var chip=wrap.querySelector('.cat-icon-chip i');
+    if(chip)chip.className='fa-solid '+sel.value;
+  });
+  initIconPreviews();
+
+  var search=document.getElementById('catSearch');
+  if(search){
+    search.addEventListener('input',function(){
+      var q=search.value.trim().toLowerCase(),any=false;
+      document.querySelectorAll('.wp-cat-row').forEach(function(row){
+        var show=!q||(row.getAttribute('data-search')||'').indexOf(q)!==-1;
+        row.style.display=show?'':'none';
+        if(show)any=true;
+      });
+      var empty=document.getElementById('catEmpty');
+      if(empty)empty.style.display=any?'none':'block';
+    });
+  }
+
+  document.addEventListener('click',function(e){
+    var edit=e.target.closest('.wp-cat-edit');
+    if(edit){
+      var form=document.getElementById(edit.getAttribute('data-target'));
+      var row=edit.closest('.wp-cat-row');
+      if(!form||!row)return;
+      var opening=form.style.display==='none';
+      document.querySelectorAll('.wp-cat-quick-edit').forEach(function(f){f.style.display='none';});
+      document.querySelectorAll('.wp-cat-item').forEach(function(it){it.style.display='';});
+      if(opening){
+        row.querySelector('.wp-cat-item').style.display='none';
+        form.style.display='block';
+      }
+      return;
+    }
+    var cancel=e.target.closest('.wp-cat-cancel');
+    if(cancel){
+      var f=cancel.closest('.wp-cat-quick-edit');
+      if(f){
+        f.style.display='none';
+        var it=f.closest('.wp-cat-row').querySelector('.wp-cat-item');
+        if(it)it.style.display='';
+      }
+    }
+  });
+
+  document.querySelectorAll('.wp-cat-del-inline').forEach(function(form){
+    form.addEventListener('submit',function(e){
+      var btn=form.querySelector('.wp-cat-del-btn');
+      if(btn&&!window.confirm(btn.getAttribute('data-confirm')))e.preventDefault();
+    });
+  });
 })();
 </script>
 <?php
