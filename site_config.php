@@ -535,6 +535,33 @@ function lyaideu_ensure_stores(): bool {
                 "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (?, ?, ?, ?, ?, 'mart')"
             )->execute(['LyaiDeu Mart', 'Grocery & daily essentials', '', 'fa-basket-shopping', '']);
         }
+
+        // Link each mart vendor to its mart store (matched by name) so a
+        // store's page shows only that store's products.
+        try {
+            $hasVendors = (bool)$pdo->query("SHOW TABLES LIKE 'vendors'")->fetchColumn();
+            if ($hasVendors) {
+                $martStores = $pdo->query("SELECT id, name FROM hotels WHERE kind = 'mart' ORDER BY id")->fetchAll();
+                $storeByName = [];
+                foreach ($martStores as $ms) {
+                    $storeByName[lyaideu_normalize_name((string)$ms['name'])] = (int)$ms['id'];
+                }
+                if ($storeByName) {
+                    $link = $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ? AND (hotel_id IS NULL OR hotel_id = 0)');
+                    foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'mart'") as $mv) {
+                        if (!empty($mv['hotel_id'])) {
+                            continue;
+                        }
+                        $key = lyaideu_normalize_name((string)$mv['name']);
+                        if ($key !== '' && isset($storeByName[$key])) {
+                            $link->execute([$storeByName[$key], (int)$mv['id']]);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            // Ignore linking errors.
+        }
         return true;
     } catch (Throwable $e) {
         return false;

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass = (string)($_POST['password'] ?? '');
         $isActive = !empty($_POST['is_active']) ? 1 : 0;
         $scope = (($_POST['scope'] ?? 'hotel') === 'mart') ? 'mart' : 'hotel';
-        $hotelId = $scope === 'hotel' ? (int)($_POST['hotel_id'] ?? 0) : 0;
+        $hotelId = (int)($_POST['hotel_id'] ?? 0);
 
         if ($name === '') {
             $errors[] = 'Vendor name is required.';
@@ -38,7 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($phone === '') {
             $errors[] = 'Vendor phone is required.';
         }
-        if ($scope === 'hotel' && $hotelId <= 0) {
+        if ($hotelId > 0) {
+            try {
+                $kindOf = (string)$pdo->query('SELECT kind FROM hotels WHERE id = ' . (int)$hotelId)->fetchColumn();
+                if ($scope === 'hotel' && $kindOf !== 'hotel') {
+                    $errors[] = 'Hotel vendors must be linked to a Hotel / Restaurant store.';
+                } elseif ($scope === 'mart' && $kindOf !== 'mart') {
+                    $errors[] = 'Mart vendors must be linked to a Mart store.';
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'The linked store could not be found.';
+            }
+        } elseif ($scope === 'hotel') {
             $errors[] = 'Select the hotel this vendor belongs to (or mark them as the Mart vendor).';
         }
         if ($id === 0 && strlen($pass) < 6) {
@@ -149,9 +160,9 @@ admin_page_start('Vendors', 'vendors', 'Vendor Management');
                         <option value="mart" <?= ($v['scope'] ?? '') === 'mart' ? 'selected' : '' ?>>Mart vendor</option>
                     </select>
                 </div>
-                <div><label>Hotel</label>
+                <div><label>Hotel / Store</label>
                     <select name="hotel_id">
-                        <option value="0">— Select hotel —</option>
+                        <option value="0">— Select hotel / store —</option>
                         <?php foreach ($hotels as $ht): ?>
                         <option value="<?= (int)$ht['id'] ?>" <?= (int)$v['hotel_id'] === (int)$ht['id'] ? 'selected' : '' ?>><?= htmlspecialchars($ht['name']) ?></option>
                         <?php endforeach; ?>
@@ -181,9 +192,9 @@ admin_page_start('Vendors', 'vendors', 'Vendor Management');
                         <option value="mart">Mart vendor</option>
                     </select>
                 </div>
-                <div><label>Hotel</label>
+                <div><label>Hotel / Store</label>
                     <select name="hotel_id">
-                        <option value="0">— Select hotel —</option>
+                        <option value="0">— Select hotel / store —</option>
                         <?php foreach ($hotels as $ht): ?>
                         <option value="<?= (int)$ht['id'] ?>"><?= htmlspecialchars($ht['name']) ?></option>
                         <?php endforeach; ?>

@@ -69,10 +69,19 @@ if ($isDetail) {
 
     try {
         if ($kind === 'mart') {
-            $vendorId = (int)$pdo->query("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1")->fetchColumn();
-            $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE vendor_id = ? OR (vendor_id IS NULL) ORDER BY id');
-            $st->execute([$vendorId > 0 ? $vendorId : 0]);
-            $products = $st->fetchAll();
+            $vendorId = 0;
+            try {
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'mart' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
+                $st->execute([$id]);
+                $vendorId = (int)$st->fetchColumn();
+            } catch (Throwable $e) {
+                $vendorId = 0;
+            }
+            if ($vendorId > 0) {
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE vendor_id = ? ORDER BY id');
+                $st->execute([$vendorId]);
+                $products = $st->fetchAll();
+            }
         } elseif ($kind === 'hotel') {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
