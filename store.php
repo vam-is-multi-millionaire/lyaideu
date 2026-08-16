@@ -296,7 +296,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=2"></script>
+<script src="js/scroll-memory.js?v=3"></script>
 <script src="js/notify.js?v=4"></script>
 <?php if ($isDetail): ?>
 <script>

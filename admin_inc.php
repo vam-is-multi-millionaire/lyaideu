@@ -166,7 +166,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 function admin_page_end(): void {
     echo '</div></main></div>';
     echo '<script>(function(){var t=document.getElementById("adminNavToggle"),s=document.getElementById("adminSidebar"),b=document.getElementById("adminNavBackdrop");if(!t||!s)return;var h=document.querySelector(".admin-header");function isMobile(){return window.innerWidth<=900}function pos(){var ht=h?h.offsetHeight:64;s.style.top=ht+"px";if(b)b.style.top=ht+"px"}function setOpen(o){s.classList.toggle("open",o);t.classList.toggle("open",o);t.setAttribute("aria-expanded",o?"true":"false");if(b)b.classList.toggle("show",o)}pos();window.addEventListener("resize",function(){pos();if(!isMobile()&&s.classList.contains("open"))setOpen(false)});t.addEventListener("click",function(){if(isMobile())setOpen(!s.classList.contains("open"))});if(b)b.addEventListener("click",function(){setOpen(false)});s.addEventListener("click",function(e){if(e.target.closest("a"))setOpen(false)})})();</script>';
-    echo '<script src="js/scroll-memory.js?v=2"></script>';
+    echo '<script src="js/scroll-memory.js?v=3"></script>';
     echo '</body></html>';
 }
 

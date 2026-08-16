@@ -123,7 +123,7 @@ require_once __DIR__ . '/site_config.php';
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=2"></script>
+<script src="js/scroll-memory.js?v=3"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

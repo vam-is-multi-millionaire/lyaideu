@@ -1,6 +1,11 @@
 /* LyaiDeu scroll memory: keeps the page where the user left it after saving,
-   deleting, reloading or navigating. Scroll position is stored per page path
-   in sessionStorage and restored on the next load of that page.
+   deleting, reloading or submitting a form on that same page. Scroll position
+   is stored per page path in sessionStorage and restored on the next load.
+
+   A plain link to a different page (e.g. clicking "Home" from the menu) must
+   land at the top — or at the clicked anchor — so the saved position is only
+   restored on reload, on back/forward, or right after a form submission that
+   returns to the same path.
 
    This script must never interfere with the user: it stops restoring the
    moment the user scrolls on their own, and it does nothing on back/forward
@@ -9,10 +14,39 @@
   'use strict';
 
   var KEY = 'lyaideu_scroll_v1:' + location.pathname;
+  var FLAG_KEY = 'lyaideu_scroll_do_restore:1';
   var target = null;
   var restoring = true;
   var autoScrolling = false;
   var timer = null;
+
+  function navType() {
+    try {
+      var entries = performance.getEntriesByType('navigation');
+      if (entries && entries.length) return entries[0].type; /* navigate | reload | back_forward | prerender */
+    } catch (e) {}
+    if (window.performance && window.performance.navigation) {
+      var n = window.performance.navigation.type; /* 0 navigate, 1 reload, 2 back_forward */
+      return n === 1 ? 'reload' : (n === 2 ? 'back_forward' : 'navigate');
+    }
+    return 'navigate';
+  }
+
+  /* A form submission (save/edit/delete) that ends up back on this same page
+     should keep the place. Record the target path so only that page restores;
+     a plain nav link sets no flag, so it can never cause a restore. */
+  function markForRestore() {
+    try { sessionStorage.setItem(FLAG_KEY, location.pathname); } catch (e) {}
+  }
+
+  function takeRestoreFlag() {
+    var savedPath = null;
+    try {
+      savedPath = sessionStorage.getItem(FLAG_KEY);
+      sessionStorage.removeItem(FLAG_KEY);
+    } catch (e) {}
+    return savedPath === location.pathname;
+  }
 
   function read() {
     var raw = null;
@@ -59,7 +93,15 @@
   });
 
   window.addEventListener('beforeunload', saveNow);
-  document.addEventListener('submit', saveNow, true);
+  document.addEventListener('submit', function () { markForRestore(); saveNow(); }, true);
+
+  /* Decide whether this load is allowed to restore: reload, back/forward, or a
+     form submit that returned to this same path. Everything else (typing a
+     URL, clicking a nav link like "Home") must start at the top/anchor. */
+  var type = navType();
+  if (type !== 'reload' && type !== 'back_forward' && !takeRestoreFlag()) {
+    restoring = false;
+  }
 
   read();
   if (document.readyState === 'loading') {

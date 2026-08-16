@@ -241,6 +241,6 @@ function delivery_footer(): void {
   initMaps();setInterval(initMaps,2000);
 })();
 </script>
-<script src="js/scroll-memory.js?v=2"></script>
+<script src="js/scroll-memory.js?v=3"></script>
 </body></html>';
 }
