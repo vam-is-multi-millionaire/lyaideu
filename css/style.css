@@ -801,10 +801,10 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .back-link:hover{color:var(--orange-500);transform:translateX(-3px);}
 .product-wrap{padding-top:2.2rem;}
 .product-main{display:grid;grid-template-columns:1.05fr 1fr;gap:2rem;align-items:start;}
-.product-media{position:relative;border-radius:18px;overflow:hidden;background:var(--orange-100);box-shadow:var(--shadow-sm);}
-.product-media img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;}
+.product-media{position:relative;border-radius:18px;overflow:hidden;background:var(--orange-100);box-shadow:var(--shadow-sm);width:100%;max-width:440px;margin:0 auto;}
+.product-media img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;}
 .product-media .dish-tag{top:14px;left:14px;font-size:.72rem;padding:.35rem .75rem;}
-.product-media-noimg{height:330px;display:grid;place-items:center;font-size:5rem;color:var(--orange-600);}
+.product-media-noimg{aspect-ratio:1/1;display:grid;place-items:center;font-size:5rem;color:var(--orange-600);}
 .product-details{background:#fff;border:1px solid var(--orange-100);border-radius:18px;padding:1.6rem 1.7rem;box-shadow:var(--shadow-sm);}
 .product-cat{display:inline-flex;align-items:center;gap:.35rem;background:var(--orange-100);color:var(--orange-800);font-weight:900;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;padding:.3rem .7rem;border-radius:999px;margin-bottom:.6rem;}
 .product-details h1{font-size:clamp(1.6rem,3vw,2.2rem);line-height:1.1;}
@@ -838,14 +838,14 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .related-foot .btn-order.add-cart:active{transform:translateY(0) scale(.96);}
 @media (max-width:900px){
   .product-main{grid-template-columns:1fr;gap:1.4rem;}
-  .product-media img{aspect-ratio:4/3;}
+  .product-media img{aspect-ratio:1/1;}
 }
 @media (max-width:600px){
   .related-grid{grid-template-columns:repeat(2,1fr);}
   .product-details{padding:1.2rem 1.15rem;}
   .product-price{font-size:1.7rem;}
   .product-actions .btn{flex:1 1 100%;}
-  .product-media-noimg{height:230px;}
+  .product-media-noimg{aspect-ratio:1/1;height:auto;}
 }
 
 /* ==========================================================
