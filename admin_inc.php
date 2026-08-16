@@ -38,8 +38,7 @@ function admin_nav_items(): array {
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
-        'hotels' => ['label' => 'Stores', 'href' => 'admin_hotels', 'icon' => '<i class="fa-solid fa-store"></i>'],
-        'vendors' => ['label' => 'Vendors', 'href' => 'admin_vendors', 'icon' => '<i class="fa-solid fa-store"></i>'],
+        'hotels' => ['label' => 'Stores & Vendors', 'href' => 'admin_vendors', 'icon' => '<i class="fa-solid fa-store"></i>'],
         'riders' => ['label' => 'Riders', 'href' => 'admin_riders', 'icon' => '<i class="fa-solid fa-motorcycle"></i>'],
         'contacts' => ['label' => 'Contacts', 'href' => 'admin_contacts', 'icon' => '<i class="fa-solid fa-phone"></i>'],
         'messages' => ['label' => 'Messages', 'href' => 'admin_messages', 'icon' => '<i class="fa-solid fa-envelope"></i>'],
@@ -174,8 +173,7 @@ function admin_section_redirect(string $section, bool $saved, ?string $error = n
         'categories' => 'admin_categories',
         'dishes' => 'admin_dishes',
         'mart' => 'admin_mart',
-        'hotels' => 'admin_hotels',
-        'mart_stores' => 'admin_mart',
+        'hotels' => 'admin_vendors',
         'contacts' => 'admin_contacts',
     ];
 

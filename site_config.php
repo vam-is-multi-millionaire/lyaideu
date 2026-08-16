@@ -888,6 +888,42 @@ function lyaideu_ensure_delivery_tables(): bool {
             ]);
         }
 
+        // Every mart store also gets a vendor account (same rule as hotels)
+        // so its products always reach a vendor the moment a customer orders.
+        $linkedMartHotelIds = [];
+        $martVendorByName = [];
+        foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'mart'") as $mv) {
+            if (!empty($mv['hotel_id'])) {
+                $linkedMartHotelIds[(int)$mv['hotel_id']] = (int)$mv['id'];
+            }
+            $martVendorByName[lyaideu_normalize_name((string)$mv['name'])] = (int)$mv['id'];
+        }
+        $insMartVendor = $pdo->prepare(
+            'INSERT INTO vendors (name, email, phone, pass, scope, hotel_id, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+        );
+        foreach ($pdo->query("SELECT id, name FROM hotels WHERE kind = 'mart' ORDER BY id") as $ms) {
+            $mid = (int)$ms['id'];
+            if (isset($linkedMartHotelIds[$mid])) {
+                continue;
+            }
+            $mn = lyaideu_normalize_name((string)$ms['name']);
+            $existingVendorId = ($mn !== '' && isset($martVendorByName[$mn])) ? (int)$martVendorByName[$mn] : 0;
+            if ($existingVendorId > 0) {
+                $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ?')->execute([$mid, $existingVendorId]);
+                continue;
+            }
+            $insMartVendor->execute([
+                (string)$ms['name'],
+                'martvendor' . $mid . '@lyaideu.local',
+                '9' . str_pad((string)$mid, 9, '0', STR_PAD_LEFT),
+                $defaultVendorPass,
+                'mart',
+                $mid,
+                date('Y-m-d H:i:s'),
+            ]);
+        }
+
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS notifications (
                 id INT UNSIGNED NOT NULL AUTO_INCREMENT,

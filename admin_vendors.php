@@ -5,207 +5,117 @@ admin_require_login();
 require_once __DIR__ . '/db.php';
 
 lyaideu_ensure_delivery_tables();
+lyaideu_ensure_stores();
 
-$errors = [];
-$saved = isset($_GET['saved']);
+$storeKinds = ['hotel' => 'Hotel / Restaurant', 'mart' => 'Mart', 'other' => 'Other business'];
 
-$hotels = [];
+$stores = [];
 try {
-    $hotels = $pdo->query('SELECT id, name FROM hotels ORDER BY name')->fetchAll();
-} catch (Throwable $e) {
-    $hotels = [];
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!hash_equals(admin_csrf_token(), $_POST['csrf_token'] ?? '')) {
-        http_response_code(403);
-        exit('Invalid security token.');
-    }
-
-    if (isset($_POST['vendor_save'])) {
-        $id = (int)($_POST['id'] ?? 0);
-        $name = trim((string)($_POST['name'] ?? ''));
-        $email = strtolower(trim((string)($_POST['email'] ?? '')));
-        $phone = preg_replace('/[^0-9]/', '', (string)($_POST['phone'] ?? ''));
-        $pass = (string)($_POST['password'] ?? '');
-        $isActive = !empty($_POST['is_active']) ? 1 : 0;
-        $scope = (($_POST['scope'] ?? 'hotel') === 'mart') ? 'mart' : 'hotel';
-        $hotelId = (int)($_POST['hotel_id'] ?? 0);
-
-        if ($name === '') {
-            $errors[] = 'Vendor name is required.';
-        }
-        if ($phone === '') {
-            $errors[] = 'Vendor phone is required.';
-        }
-        if ($hotelId > 0) {
-            try {
-                $kindOf = (string)$pdo->query('SELECT kind FROM hotels WHERE id = ' . (int)$hotelId)->fetchColumn();
-                if ($scope === 'hotel' && $kindOf !== 'hotel') {
-                    $errors[] = 'Hotel vendors must be linked to a Hotel / Restaurant store.';
-                } elseif ($scope === 'mart' && $kindOf !== 'mart') {
-                    $errors[] = 'Mart vendors must be linked to a Mart store.';
-                }
-            } catch (Throwable $e) {
-                $errors[] = 'The linked store could not be found.';
-            }
-        } elseif ($scope === 'hotel') {
-            $errors[] = 'Select the hotel this vendor belongs to (or mark them as the Mart vendor).';
-        }
-        if ($id === 0 && strlen($pass) < 6) {
-            $errors[] = 'Password must be at least 6 characters for a new vendor.';
-        }
-
-        if ($scope === 'hotel' && $hotelId > 0 && !$errors) {
-            try {
-                $dup = $pdo->prepare(
-                    "SELECT id, name FROM vendors
-                     WHERE scope = 'hotel' AND hotel_id = :hid AND is_active = 1 AND id <> :id
-                     LIMIT 1"
-                );
-                $dup->execute([':hid' => $hotelId, ':id' => $id]);
-                $other = $dup->fetch();
-                if ($other) {
-                    $errors[] = '"' . $other['name'] . '" is already assigned to this hotel. Only one vendor per hotel is allowed.';
-                }
-            } catch (Throwable $e) {
-                // Ignore lookup errors.
-            }
-        }
-
-        if (!$errors) {
-            $conflict = lyaideu_delivery_credential_conflict('vendor', $phone, $email, $id);
-            if ($conflict) {
-                $errors[] = $conflict;
-            }
-        }
-
-        if (!$errors) {
-            try {
-                if ($id > 0) {
-                    if ($pass !== '') {
-                        $st = $pdo->prepare('UPDATE vendors SET name = ?, email = ?, phone = ?, scope = ?, hotel_id = ?, pass = ?, is_active = ? WHERE id = ?');
-                        $st->execute([$name, $email, $phone, $scope, $hotelId > 0 ? $hotelId : null, password_hash($pass, PASSWORD_DEFAULT), $isActive, $id]);
-                    } else {
-                        $st = $pdo->prepare('UPDATE vendors SET name = ?, email = ?, phone = ?, scope = ?, hotel_id = ?, is_active = ? WHERE id = ?');
-                        $st->execute([$name, $email, $phone, $scope, $hotelId > 0 ? $hotelId : null, $isActive, $id]);
-                    }
-                } else {
-                    $st = $pdo->prepare('INSERT INTO vendors (name, email, phone, scope, hotel_id, pass, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                    $st->execute([$name, $email, $phone, $scope, $hotelId > 0 ? $hotelId : null, password_hash($pass, PASSWORD_DEFAULT), $isActive, date('Y-m-d H:i:s')]);
-                }
-                lyaideu_reindex_item_vendors();
-                header('Location: admin_vendors?saved=1');
-                exit;
-            } catch (Throwable $e) {
-                $errors[] = 'Could not save vendor. ' . (str_contains(strtolower($e->getMessage()), 'duplicate') ? 'A vendor with this phone or email may already exist.' : '');
-            }
-        }
-    }
-
-    if (isset($_POST['vendor_delete'])) {
-        $id = (int)($_POST['id'] ?? 0);
-        try {
-            $pdo->prepare('UPDATE dishes SET vendor_id = NULL WHERE vendor_id = ?')->execute([$id]);
-            $pdo->prepare('UPDATE mart_items SET vendor_id = NULL WHERE vendor_id = ?')->execute([$id]);
-            $pdo->prepare('DELETE FROM vendors WHERE id = ?')->execute([$id]);
-            header('Location: admin_vendors?saved=1');
-            exit;
-        } catch (Throwable $e) {
-            $errors[] = 'Could not delete vendor.';
-        }
-    }
-}
-
-$vendors = [];
-try {
-    $vendors = $pdo->query(
-        'SELECT v.id, v.name, v.email, v.phone, v.scope, v.hotel_id, v.is_active, v.created_at,
-                h.name AS hotel_name
-         FROM vendors v
-         LEFT JOIN hotels h ON h.id = v.hotel_id
-         ORDER BY v.name'
+    $stores = $pdo->query(
+        'SELECT h.id, h.name, h.type, h.phone, h.emoji, h.logo, h.kind,
+                v.id AS vendor_id, v.name AS vendor_name, v.email AS vendor_email,
+                v.phone AS vendor_phone, v.is_active AS vendor_active
+         FROM hotels h
+         LEFT JOIN vendors v ON v.hotel_id = h.id AND v.scope = h.kind
+         ORDER BY h.id'
     )->fetchAll();
 } catch (Throwable $e) {
-    $vendors = [];
+    http_response_code(500);
+    exit('Could not load stores.');
 }
 
-admin_page_start('Vendors', 'vendors', 'Vendor Management');
+admin_page_start('Stores & Vendors', 'stores', 'Stores & Vendors');
 ?>
-<?php if ($saved): ?><div class="flash-banner flash-success admin-flash"><i class="fa-solid fa-circle-check"></i> Changes saved successfully.</div><?php endif; ?>
-<?php foreach ($errors as $er): ?><div class="flash-banner flash-error admin-flash"><i class="fa-solid fa-circle-xmark"></i> <?= htmlspecialchars($er, ENT_QUOTES, 'UTF-8') ?></div><?php endforeach; ?>
+<p class="section-sub" style="margin-bottom:1rem;">Manage partner stores — hotels, the Mart and other businesses — and their vendor login accounts. Every hotel or Mart store gets a vendor automatically; the vendor logs in at <strong>/vendor</strong> to confirm orders.</p>
+<form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="section" value="hotels">
 
-<section class="admin-section">
-    <div class="admin-section-top">
-        <p class="section-sub">Partner kitchens who prepare and confirm orders. They log in at <strong>/vendor</strong>.</p>
-        <span class="admin-count-badge"><?= count($vendors) ?> vendors</span>
-    </div>
-    <div class="admin-grid">
-        <?php foreach ($vendors as $v): ?>
-        <form action="admin_vendors" method="POST" class="admin-card">
-            <h3><?= htmlspecialchars($v['name']) ?></h3>
-            <p class="small-note"><?= ($v['scope'] ?? 'hotel') === 'mart' ? '<i class="fa-solid fa-basket-shopping"></i> Mart vendor' : ('<i class="fa-solid fa-hotel"></i> Hotel: ' . htmlspecialchars($v['hotel_name'] ?? 'Not linked')) ?></p>
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="id" value="<?= (int)$v['id'] ?>">
-            <label>Vendor Name</label>
-            <input type="text" name="name" value="<?= htmlspecialchars($v['name']) ?>" required>
-            <div class="admin-field-row">
-                <div><label>Phone</label><input type="text" name="phone" value="<?= htmlspecialchars($v['phone']) ?>" required></div>
-                <div><label>Email</label><input type="email" name="email" value="<?= htmlspecialchars($v['email']) ?>"></div>
-            </div>
-            <div class="admin-field-row">
-                <div><label>Section</label>
-                    <select name="scope">
-                        <option value="hotel" <?= ($v['scope'] ?? 'hotel') === 'hotel' ? 'selected' : '' ?>>Hotel / Restaurant</option>
-                        <option value="mart" <?= ($v['scope'] ?? '') === 'mart' ? 'selected' : '' ?>>Mart vendor</option>
-                    </select>
+    <section class="admin-section">
+        <div class="admin-section-top">
+            <p class="section-sub">Edit existing stores or add new ones. Changes appear live on the Stores page.</p>
+            <span class="admin-count-badge"><?= count($stores) ?> stores</span>
+        </div>
+        <div class="admin-grid">
+            <?php foreach ($stores as $i => $h): ?>
+            <?php $isMartStore = ($h['kind'] ?? 'hotel') === 'mart'; ?>
+            <div class="admin-card">
+                <h3><?= htmlspecialchars($h['name']) ?></h3>
+                <input type="hidden" name="hotels[<?= $i ?>][id]" value="<?= (int)$h['id'] ?>">
+                <label>Store Name</label>
+                <input type="text" name="hotels[<?= $i ?>][name]" value="<?= htmlspecialchars($h['name']) ?>" required>
+                <label>Kind of business</label>
+                <select name="hotels[<?= $i ?>][kind]">
+                    <?php foreach ($storeKinds as $sk => $skLabel): ?>
+                    <option value="<?= $sk ?>" <?= ($h['kind'] ?? 'hotel') === $sk ? 'selected' : '' ?>><?= htmlspecialchars($skLabel) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label>Type / Location</label>
+                <input type="text" name="hotels[<?= $i ?>][type]" value="<?= htmlspecialchars($h['type']) ?>">
+                <div class="admin-field-row">
+                    <div><label>Phone</label><input type="text" name="hotels[<?= $i ?>][phone]" value="<?= htmlspecialchars($h['phone']) ?>"></div>
+                    <div><label>Icon class</label><input type="text" name="hotels[<?= $i ?>][emoji]" value="<?= htmlspecialchars($h['emoji'] ?? '') ?>" placeholder="fa-basket-shopping"></div>
                 </div>
-                <div><label>Hotel / Store</label>
-                    <select name="hotel_id">
-                        <option value="0">— Select hotel / store —</option>
-                        <?php foreach ($hotels as $ht): ?>
-                        <option value="<?= (int)$ht['id'] ?>" <?= (int)$v['hotel_id'] === (int)$ht['id'] ? 'selected' : '' ?>><?= htmlspecialchars($ht['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            </div>
-            <label>New Password <span class="muted">(leave blank to keep)</span></label>
-            <input type="password" name="password" autocomplete="new-password">
-            <label class="delete-check"><input type="checkbox" name="is_active" value="1" <?= $v['is_active'] ? 'checked' : '' ?>> <i class="fa-solid fa-circle-check"></i> Active</label>
-            <button type="submit" name="vendor_save" class="btn btn-primary btn-block">Save Vendor</button>
-            <label class="delete-check"><input type="checkbox" name="vendor_delete" value="1" onchange="if(confirm('Delete this vendor?'))this.form.submit()"> <i class="fa-solid fa-trash-can"></i> Delete this vendor</label>
-        </form>
-        <?php endforeach; ?>
+                <label>Logo <span style="text-transform:none;font-weight:700;">(upload — optional, icon shown if empty)</span></label>
+                <input type="file" name="hotels[<?= $i ?>][logo_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                <input type="hidden" name="hotels[<?= $i ?>][logo]" value="<?= htmlspecialchars($h['logo'] ?? '') ?>">
+                <?php if (!empty($h['logo'])): ?>
+                    <div class="img-preview"><img src="<?= htmlspecialchars($h['logo'], ENT_QUOTES, 'UTF-8') ?>" alt="Current logo"></div>
+                <?php endif; ?>
+                <label class="delete-check"><input type="checkbox" name="hotels[<?= $i ?>][remove_logo]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove logo</label>
 
-        <form action="admin_vendors" method="POST" class="admin-card admin-add-card">
-            <h3><i class="fa-solid fa-plus"></i> Add New Vendor</h3>
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-            <label>Vendor Name</label><input type="text" name="name" placeholder="e.g. Himalayan Momo House">
-            <div class="admin-field-row">
-                <div><label>Phone</label><input type="text" name="phone" placeholder="98XXXXXXXX"></div>
-                <div><label>Email</label><input type="email" name="email" placeholder="kitchen@example.com"></div>
-            </div>
-            <div class="admin-field-row">
-                <div><label>Section</label>
-                    <select name="scope">
-                        <option value="hotel">Hotel / Restaurant</option>
-                        <option value="mart">Mart vendor</option>
-                    </select>
+                <div class="admin-vendor-block">
+                    <h4><i class="fa-solid fa-user-tie"></i> Vendor Account</h4>
+                    <p class="small-note"><?= $isMartStore ? 'Mart vendor — fulfils grocery orders.' : ($h['kind'] === 'other' ? 'This store has no vendor (no products).' : 'Hotel vendor — prepares &amp; confirms orders at /vendor.') ?></p>
+                    <input type="hidden" name="hotels[<?= $i ?>][vendor_id]" value="<?= (int)($h['vendor_id'] ?? 0) ?>">
+                    <label>Vendor Name</label>
+                    <input type="text" name="hotels[<?= $i ?>][vendor_name]" value="<?= htmlspecialchars($h['vendor_name'] ?? '') ?>" placeholder="<?= htmlspecialchars($h['name']) ?>">
+                    <div class="admin-field-row">
+                        <div><label>Phone</label><input type="text" name="hotels[<?= $i ?>][vendor_phone]" value="<?= htmlspecialchars($h['vendor_phone'] ?? '') ?>"></div>
+                        <div><label>Email</label><input type="email" name="hotels[<?= $i ?>][vendor_email]" value="<?= htmlspecialchars($h['vendor_email'] ?? '') ?>"></div>
+                    </div>
+                    <label>New Password <span class="muted">(leave blank to keep)</span></label>
+                    <input type="password" name="hotels[<?= $i ?>][vendor_password]" autocomplete="new-password">
+                    <label class="delete-check"><input type="checkbox" name="hotels[<?= $i ?>][vendor_active]" value="1" <?= ($h['vendor_active'] ?? 1) ? 'checked' : '' ?>> <i class="fa-solid fa-circle-check"></i> Vendor active</label>
                 </div>
-                <div><label>Hotel / Store</label>
-                    <select name="hotel_id">
-                        <option value="0">— Select hotel / store —</option>
-                        <?php foreach ($hotels as $ht): ?>
-                        <option value="<?= (int)$ht['id'] ?>"><?= htmlspecialchars($ht['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+
+                <label class="delete-check"><input type="checkbox" name="hotels[<?= $i ?>][delete]" value="1"> <i class="fa-solid fa-trash-can"></i> Delete this store</label>
+            </div>
+            <?php endforeach; ?>
+
+            <div class="admin-card admin-add-card">
+                <h3><i class="fa-solid fa-plus"></i> Add New Store</h3>
+                <label>Store Name</label><input type="text" name="new_hotel[name]" placeholder="e.g. Spice Garden">
+                <label>Kind of business</label>
+                <select name="new_hotel[kind]">
+                    <?php foreach ($storeKinds as $sk => $skLabel): ?>
+                    <option value="<?= $sk ?>"><?= htmlspecialchars($skLabel) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label>Type / Location</label><input type="text" name="new_hotel[type]" placeholder="e.g. Indian · Pokhara Rd">
+                <div class="admin-field-row">
+                    <div><label>Phone</label><input type="text" name="new_hotel[phone]" placeholder="98XXXXXXXX"></div>
+                    <div><label>Icon class</label><input type="text" name="new_hotel[emoji]" placeholder="fa-basket-shopping"></div>
+                </div>
+                <label>Logo <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
+                <input type="file" name="new_hotel[logo_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+
+                <div class="admin-vendor-block">
+                    <h4><i class="fa-solid fa-user-tie"></i> Vendor Account</h4>
+                    <p class="small-note">Created automatically for hotel &amp; Mart stores. Leave blank to use the store name and a default password.</p>
+                    <label>Vendor Name</label><input type="text" name="new_hotel[vendor_name]" placeholder="e.g. Spice Garden Kitchen">
+                    <div class="admin-field-row">
+                        <div><label>Phone</label><input type="text" name="new_hotel[vendor_phone]" placeholder="98XXXXXXXX"></div>
+                        <div><label>Email</label><input type="email" name="new_hotel[vendor_email]" placeholder="kitchen@example.com"></div>
+                    </div>
+                    <label>Password <span class="muted">(default: vendor123)</span></label>
+                    <input type="password" name="new_hotel[vendor_password]" autocomplete="new-password">
                 </div>
             </div>
-            <label>Password</label><input type="password" name="password" placeholder="Set a password (min 6 chars)">
-            <label class="delete-check"><input type="checkbox" name="is_active" value="1" checked> <i class="fa-solid fa-circle-check"></i> Active</label>
-            <button type="submit" name="vendor_save" class="btn btn-primary btn-block"><i class="fa-solid fa-plus"></i> Create Vendor</button>
-        </form>
-    </div>
-</section>
+        </div>
+    </section>
+
+    <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Stores &amp; Vendors</button>
+</form>
 <?php
 admin_page_end();

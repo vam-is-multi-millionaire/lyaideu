@@ -136,7 +136,7 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'mart_stores', 'contacts'];
+$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -327,12 +327,27 @@ try {
     if ($section === 'hotels') {
         $validKinds = ['hotel', 'mart', 'other'];
         $deleteHotel = $pdo->prepare('DELETE FROM hotels WHERE id = ?');
+        $unlinkDishes = $pdo->prepare('UPDATE dishes SET vendor_id = NULL WHERE vendor_id = ?');
+        $unlinkMart = $pdo->prepare('UPDATE mart_items SET vendor_id = NULL WHERE vendor_id = ?');
+        $deleteVendor = $pdo->prepare('DELETE FROM vendors WHERE id = ?');
         $updateHotel = $pdo->prepare(
-            'UPDATE hotels SET name = :name, type = :type, phone = :phone, logo = :logo, kind = :kind WHERE id = :id'
+            'UPDATE hotels SET name = :name, type = :type, phone = :phone, emoji = :emoji, logo = :logo, kind = :kind WHERE id = :id'
         );
         $insertHotel = $pdo->prepare(
-            'INSERT INTO hotels (name, type, phone, logo, kind) VALUES (:name, :type, :phone, :logo, :kind)'
+            'INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (:name, :type, :phone, :emoji, :logo, :kind)'
         );
+        $updateVendor = $pdo->prepare(
+            'UPDATE vendors SET name = :name, email = :email, phone = :phone, scope = :scope, hotel_id = :hotel_id, is_active = :is_active WHERE id = :id'
+        );
+        $updateVendorPass = $pdo->prepare(
+            'UPDATE vendors SET name = :name, email = :email, phone = :phone, scope = :scope, hotel_id = :hotel_id, pass = :pass, is_active = :is_active WHERE id = :id'
+        );
+        $insertVendor = $pdo->prepare(
+            'INSERT INTO vendors (name, email, phone, scope, hotel_id, pass, is_active, created_at)
+             VALUES (:name, :email, :phone, :scope, :hotel_id, :pass, :is_active, :created_at)'
+        );
+
+        $vendorPassDefault = 'vendor123';
 
         foreach (($_POST['hotels'] ?? []) as $i => $h) {
             $id = (int)($h['id'] ?? 0);
@@ -340,7 +355,14 @@ try {
                 continue;
             }
 
+            $vendorId = (int)($h['vendor_id'] ?? 0);
+
             if (!empty($h['delete'])) {
+                if ($vendorId > 0) {
+                    $unlinkDishes->execute([$vendorId]);
+                    $unlinkMart->execute([$vendorId]);
+                    $deleteVendor->execute([$vendorId]);
+                }
                 $deleteHotel->execute([$id]);
                 continue;
             }
@@ -352,15 +374,73 @@ try {
 
             $kind = in_array(clean_text($h['kind'] ?? 'hotel'), $validKinds, true) ? clean_text($h['kind']) : 'hotel';
             $logo = handle_hotel_logo((string)($h['logo'] ?? ''), $h, uploaded_file_field('hotels', $i, 'logo_file'));
+            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($h['emoji'] ?? ''));
 
             $updateHotel->execute([
                 ':id' => $id,
                 ':name' => $name,
                 ':type' => clean_text($h['type'] ?? ''),
                 ':phone' => clean_phone($h['phone'] ?? ''),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ''),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
+
+            // Hotels and marts always own a vendor account; 'other' stores do not.
+            if ($kind === 'hotel' || $kind === 'mart') {
+                $vName = clean_text($h['vendor_name'] ?? '');
+                if ($vName === '') {
+                    $vName = $name;
+                }
+                $vEmail = strtolower(trim((string)($h['vendor_email'] ?? '')));
+                $vPhone = preg_replace('/[^0-9]/', '', (string)($h['vendor_phone'] ?? ''));
+                $vActive = !empty($h['vendor_active']) ? 1 : 0;
+
+                if ($vendorId > 0) {
+                    $vPass = (string)($h['vendor_password'] ?? '');
+                    if ($vPass !== '') {
+                        $updateVendorPass->execute([
+                            ':name' => $vName,
+                            ':email' => $vEmail,
+                            ':phone' => $vPhone,
+                            ':scope' => $kind,
+                            ':hotel_id' => $id,
+                            ':pass' => password_hash($vPass, PASSWORD_DEFAULT),
+                            ':is_active' => $vActive,
+                            ':id' => $vendorId,
+                        ]);
+                    } else {
+                        $updateVendor->execute([
+                            ':name' => $vName,
+                            ':email' => $vEmail,
+                            ':phone' => $vPhone,
+                            ':scope' => $kind,
+                            ':hotel_id' => $id,
+                            ':is_active' => $vActive,
+                            ':id' => $vendorId,
+                        ]);
+                    }
+                } else {
+                    if ($vEmail === '') {
+                        $vEmail = 'vendor' . $id . '@lyaideu.local';
+                    }
+                    $insertVendor->execute([
+                        ':name' => $vName,
+                        ':email' => $vEmail,
+                        ':phone' => $vPhone,
+                        ':scope' => $kind,
+                        ':hotel_id' => $id,
+                        ':pass' => password_hash($vendorPassDefault, PASSWORD_DEFAULT),
+                        ':is_active' => $vActive,
+                        ':created_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+            } elseif ($vendorId > 0) {
+                // Store switched to 'other': its vendor is no longer needed.
+                $unlinkDishes->execute([$vendorId]);
+                $unlinkMart->execute([$vendorId]);
+                $deleteVendor->execute([$vendorId]);
+            }
         }
 
         $newHotel = $_POST['new_hotel'] ?? [];
@@ -377,78 +457,47 @@ try {
                 : null;
             $kind = in_array(clean_text($newHotel['kind'] ?? 'hotel'), $validKinds, true) ? clean_text($newHotel['kind']) : 'hotel';
             $logo = handle_hotel_logo('', $newHotel, $newLogoFile);
+            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($newHotel['emoji'] ?? ''));
 
             $insertHotel->execute([
                 ':name' => clean_text($newHotel['name'] ?? ''),
                 ':type' => clean_text($newHotel['type'] ?? ''),
                 ':phone' => clean_phone($newHotel['phone'] ?? ''),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ''),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
-        }
-    }
+            $newStoreId = (int)$pdo->lastInsertId();
 
-    if ($section === 'mart_stores') {
-        $deleteStore = $pdo->prepare("DELETE FROM hotels WHERE id = ? AND kind = 'mart'");
-        $updateStore = $pdo->prepare(
-            "UPDATE hotels SET name = :name, type = :type, phone = :phone, emoji = :emoji, logo = :logo WHERE id = :id AND kind = 'mart'"
-        );
-        $insertStore = $pdo->prepare(
-            "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (:name, :type, :phone, :emoji, :logo, 'mart')"
-        );
+            if ($kind === 'hotel' || $kind === 'mart') {
+                $vName = clean_text($newHotel['vendor_name'] ?? '');
+                if ($vName === '') {
+                    $vName = clean_text($newHotel['name'] ?? '');
+                }
+                $vEmail = strtolower(trim((string)($newHotel['vendor_email'] ?? '')));
+                if ($vEmail === '') {
+                    $vEmail = 'vendor' . $newStoreId . '@lyaideu.local';
+                }
+                $vPhone = preg_replace('/[^0-9]/', '', (string)($newHotel['vendor_phone'] ?? ''));
+                $vPass = (string)($newHotel['vendor_password'] ?? '');
+                if ($vPass === '') {
+                    $vPass = $vendorPassDefault;
+                }
 
-        foreach (($_POST['mart_stores'] ?? []) as $i => $ms) {
-            $id = (int)($ms['id'] ?? 0);
-            if ($id <= 0) {
-                continue;
+                $insertVendor->execute([
+                    ':name' => $vName,
+                    ':email' => $vEmail,
+                    ':phone' => $vPhone,
+                    ':scope' => $kind,
+                    ':hotel_id' => $newStoreId,
+                    ':pass' => password_hash($vPass, PASSWORD_DEFAULT),
+                    ':is_active' => 1,
+                    ':created_at' => date('Y-m-d H:i:s'),
+                ]);
             }
-
-            if (!empty($ms['delete'])) {
-                $deleteStore->execute([$id]);
-                continue;
-            }
-
-            $name = clean_text($ms['name'] ?? '');
-            if ($name === '') {
-                continue;
-            }
-
-            $logo = handle_hotel_logo((string)($ms['logo'] ?? ''), $ms, uploaded_file_field('mart_stores', $i, 'logo_file'));
-            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($ms['emoji'] ?? 'fa-basket-shopping'));
-
-            $updateStore->execute([
-                ':id' => $id,
-                ':name' => $name,
-                ':type' => clean_text($ms['type'] ?? ''),
-                ':phone' => clean_phone($ms['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : 'fa-basket-shopping',
-                ':logo' => $logo,
-            ]);
         }
 
-        $newStore = $_POST['new_mart_store'] ?? [];
-        if (clean_text($newStore['name'] ?? '') !== '') {
-            $newFile = $_FILES['new_mart_store'] ?? null;
-            $newLogoFile = (isset($newFile['name']['logo_file']))
-                ? [
-                    'name' => $newFile['name']['logo_file'],
-                    'type' => $newFile['type']['logo_file'] ?? '',
-                    'tmp_name' => $newFile['tmp_name']['logo_file'],
-                    'error' => $newFile['error']['logo_file'] ?? UPLOAD_ERR_NO_FILE,
-                    'size' => $newFile['size']['logo_file'] ?? 0,
-                ]
-                : null;
-            $logo = handle_hotel_logo('', $newStore, $newLogoFile);
-            $emoji = preg_replace('/[^a-z0-9-]/', '', clean_text($newStore['emoji'] ?? 'fa-basket-shopping'));
-
-            $insertStore->execute([
-                ':name' => clean_text($newStore['name'] ?? ''),
-                ':type' => clean_text($newStore['type'] ?? ''),
-                ':phone' => clean_phone($newStore['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : 'fa-basket-shopping',
-                ':logo' => $logo,
-            ]);
-        }
+        lyaideu_reindex_item_vendors();
     }
 
     if ($section === 'contacts') {
