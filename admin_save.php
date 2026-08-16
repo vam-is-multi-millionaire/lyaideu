@@ -148,6 +148,19 @@ if (!in_array($section, $allowedSections, true)) {
     exit;
 }
 
+require_once __DIR__ . '/site_config.php';
+
+/* Ensure tables/columns BEFORE opening the transaction: MySQL DDL (CREATE
+   TABLE / ALTER TABLE) implicitly commits the current transaction, which
+   would make the later commit() fail with "There is no active transaction".
+   The ensure_* calls inside the handlers below then short-circuit via their
+   request guards. */
+if ($section === 'categories') {
+    lyaideu_ensure_categories_table();
+} elseif ($section === 'others') {
+    lyaideu_ensure_other_table();
+}
+
 try {
     $pdo->beginTransaction();
 
