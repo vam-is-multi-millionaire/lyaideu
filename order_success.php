@@ -48,4 +48,4 @@ $orderId = (int)$order['id'];
     <div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$order['total'] ?></strong></div>
     <p class="small-note"><i class="fa-solid fa-location-dot"></i> Delivering to: <?= htmlspecialchars($order['address']) ?><?php if (!empty($order['delivery_lat']) && !empty($order['delivery_lng'])): ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars((string)$order['delivery_lat']) ?>,<?= htmlspecialchars((string)$order['delivery_lng']) ?>">Open in Maps</a><?php endif; ?></p>
     <div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>
-</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=16"></script><script src="js/notify.js?v=4"></script></body></html>
+</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=17"></script><script src="js/notify.js?v=4"></script></body></html>
