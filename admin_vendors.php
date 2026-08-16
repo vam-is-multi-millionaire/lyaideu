@@ -26,7 +26,7 @@ try {
 
 admin_page_start('Stores & Vendors', 'stores', 'Stores & Vendors');
 ?>
-<p class="section-sub" style="margin-bottom:1rem;">Manage partner stores — hotels, the Mart and other businesses — and their vendor login accounts. Every hotel or Mart store gets a vendor automatically; the vendor logs in at <strong>/vendor</strong> to confirm orders.</p>
+<p class="section-sub" style="margin-bottom:1rem;">Manage partner stores — hotels, the Mart and other businesses — and their vendor login accounts. Every hotel, Mart or Other store gets a vendor automatically; the vendor logs in at <strong>/vendor</strong> to manage products and confirm orders.</p>
 <form action="admin_save" method="POST" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
     <input type="hidden" name="section" value="hotels">
@@ -39,6 +39,7 @@ admin_page_start('Stores & Vendors', 'stores', 'Stores & Vendors');
         <div class="admin-grid">
             <?php foreach ($stores as $i => $h): ?>
             <?php $isMartStore = ($h['kind'] ?? 'hotel') === 'mart'; ?>
+            <?php $isOtherStore = ($h['kind'] ?? '') === 'other'; ?>
             <div class="admin-card">
                 <h3><?= htmlspecialchars($h['name']) ?></h3>
                 <input type="hidden" name="hotels[<?= $i ?>][id]" value="<?= (int)$h['id'] ?>">
@@ -66,7 +67,7 @@ admin_page_start('Stores & Vendors', 'stores', 'Stores & Vendors');
 
                 <div class="admin-vendor-block">
                     <h4><i class="fa-solid fa-user-tie"></i> Vendor Account</h4>
-                    <p class="small-note"><?= $isMartStore ? 'Mart vendor — fulfils grocery orders.' : ($h['kind'] === 'other' ? 'This store has no vendor (no products).' : 'Hotel vendor — prepares &amp; confirms orders at /vendor.') ?></p>
+                    <p class="small-note"><?= $isMartStore ? 'Mart vendor — fulfils grocery orders.' : ($isOtherStore ? 'Other vendor — manages gifts, decor &amp; achar items.' : 'Hotel vendor — prepares &amp; confirms orders at /vendor.') ?></p>
                     <input type="hidden" name="hotels[<?= $i ?>][vendor_id]" value="<?= (int)($h['vendor_id'] ?? 0) ?>">
                     <label>Vendor Name</label>
                     <input type="text" name="hotels[<?= $i ?>][vendor_name]" value="<?= htmlspecialchars($h['vendor_name'] ?? '') ?>" placeholder="<?= htmlspecialchars($h['name']) ?>">

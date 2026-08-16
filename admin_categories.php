@@ -59,17 +59,24 @@ $martCounts = [];
 foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM mart_items GROUP BY category_id') as $r) {
     $martCounts[(int)$r['category_id']] = (int)$r['c'];
 }
+$otherCounts = [];
+foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM other_items GROUP BY category_id') as $r) {
+    $otherCounts[(int)$r['category_id']] = (int)$r['c'];
+}
 
 $menuCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'menu'));
 $martCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'mart'));
+$otherCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'other'));
 $menuFlat = tree_flat_rows($menuCats);
 $martFlat = tree_flat_rows($martCats);
+$otherFlat = tree_flat_rows($otherCats);
 
 $ICON_OPTIONS = [
     'fa-drumstick-bite', 'fa-pizza-slice', 'fa-bowl-rice', 'fa-bowl-food', 'fa-cookie',
     'fa-mug-saucer', 'fa-mug-hot', 'fa-glass-water', 'fa-burger', 'fa-bacon', 'fa-fire',
     'fa-pepper-hot', 'fa-carrot', 'fa-apple-whole', 'fa-cow', 'fa-cheese', 'fa-mortar-pestle',
     'fa-leaf', 'fa-chocolate-bar', 'fa-basket-shopping', 'fa-utensils', 'fa-tags',
+    'fa-bouquet', 'fa-candle-holder', 'fa-jar', 'fa-gift',
 ];
 
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -108,7 +115,8 @@ function render_category_cards(array $flat, string $type, array $counts, array $
         $indentCls = 'admin-cat-depth-' . min($c['depth'], 5);
         $out .= '<div class="admin-card ' . $indentCls . '">';
         $out .= '<h3>' . $ce($c['name']);
-        $out .= '<span class="admin-cat-badges"><span class="admin-cat-type cat-type-' . $type . '">' . ($type === 'menu' ? 'Menu' : 'Mart') . '</span><span class="admin-count-badge">' . (int)$itemCount . ' items</span></span></h3>';
+        $typeLabel = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other'][$type] ?? ucfirst($type);
+        $out .= '<span class="admin-cat-badges"><span class="admin-cat-type cat-type-' . $type . '">' . $typeLabel . '</span><span class="admin-count-badge">' . (int)$itemCount . ' items</span></span></h3>';
         $out .= '<input type="hidden" name="categories[' . $i . '][id]" value="' . (int)$c['id'] . '">';
         $out .= '<input type="hidden" name="categories[' . $i . '][type]" value="' . $type . '">';
         $out .= '<label>Category Name</label>';
@@ -150,6 +158,7 @@ admin_page_start('Categories', 'categories', 'Categories');
                         <select name="new_category[type]" id="newCatType">
                             <option value="menu">Menu (dishes)</option>
                             <option value="mart">Mart (groceries)</option>
+                            <option value="other">Other (gifts, decor & achar)</option>
                         </select>
                     </div>
                     <div><label>Name</label><input type="text" name="new_category[name]" placeholder="e.g. Steamed Momos"></div>
@@ -163,6 +172,7 @@ admin_page_start('Categories', 'categories', 'Categories');
                     <option value="0">— No parent (top level) —</option>
                     <optgroup label="Menu Categories"><?= category_select_options($menuFlat) ?></optgroup>
                     <optgroup label="Mart Categories"><?= category_select_options($martFlat) ?></optgroup>
+                    <optgroup label="Other Categories"><?= category_select_options($otherFlat) ?></optgroup>
                 </select>
                 <label>Icon</label>
                 <select name="new_category[icon]">
@@ -194,16 +204,27 @@ admin_page_start('Categories', 'categories', 'Categories');
         </div>
     </section>
 
+    <section class="admin-section">
+        <div class="admin-section-top">
+            <h2 style="margin:0"><i class="fa-solid fa-gift"></i> Other Categories</h2>
+            <span class="admin-count-badge"><?= count($otherCats) ?> categories</span>
+        </div>
+        <div class="admin-grid">
+            <?= render_category_cards($otherFlat, 'other', $otherCounts, $otherCats) ?>
+        </div>
+    </section>
+
     <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Category Changes</button>
 </form>
 <script>
 (function(){
   var type=document.getElementById('newCatType'),parent=document.getElementById('newCatParent');
   if(!type||!parent)return;
+  var labelFor={menu:'Menu',mart:'Mart',other:'Other'};
   function sync(){
     var v=type.value;
     Array.prototype.forEach.call(parent.querySelectorAll('optgroup'),function(g){
-      g.style.display=(g.getAttribute('label').indexOf(v==='menu'?'Menu':'Mart')>-1)?'':'none';
+      g.style.display=(g.getAttribute('label').indexOf(labelFor[v]||v)>-1)?'':'none';
     });
     var sel=parent.selectedOptions[0];
     if(sel&&sel.parentNode.tagName==='OPTGROUP'&&sel.parentNode.style.display==='none'){parent.value='0';}

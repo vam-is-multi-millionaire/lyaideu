@@ -12,16 +12,17 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+lyaideu_ensure_other_table();
 lyaideu_ensure_categories_table();
-$menuCats = lyaideu_categories('menu');
-$menuParents = array_values(array_filter($menuCats, fn($c) => $c['parent_id'] === null));
-$menuChildren = [];
-foreach ($menuCats as $c) {
+$otherCats = lyaideu_categories('other');
+$otherParents = array_values(array_filter($otherCats, fn($c) => $c['parent_id'] === null));
+$otherChildren = [];
+foreach ($otherCats as $c) {
     if ($c['parent_id'] !== null) {
-        $menuChildren[(int)$c['parent_id']][] = $c;
+        $otherChildren[(int)$c['parent_id']][] = $c;
     }
 }
-$ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+$oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,7 +30,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Menu | LyaiDeu</title>
+<title>Others | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,14 +43,14 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search the menu"></form>
+        <form class="nav-search" action="others" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search others"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
-            <li><a href="menu" class="nav-a active">Menu</a></li>
+            <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
-            <li><a href="others" class="nav-a">Others</a></li>
+            <li><a href="others" class="nav-a active">Others</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
@@ -85,24 +86,27 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <?php endif; ?>
 
 <main>
-    <section id="menu" class="section">
+    <section id="others" class="section">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-utensils"></i> Khaja time — what's the craving?</p>
-                <h1 class="display">Today's Menu <i class="fa-solid fa-utensils"></i></h1>
-                <p class="section-sub">Fresh from our partner kitchens — call the hotel to confirm your order.</p>
+                <p class="kicker"><i class="fa-solid fa-gift"></i> Flowers, candles, achar &amp; gifts — delivered to your door</p>
+                <h1 class="display">LyaiDeu Others <i class="fa-solid fa-gift"></i></h1>
+                <p class="section-sub">Surprises, celebrations and everyday extras from our partner stores — add them to your cart with your food.</p>
+                <div class="hero-actions" style="margin-top:1.2rem;">
+                    <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
+                </div>
             </div>
             <div class="menu-toolbar"><div class="chip-row">
-                <button class="chip active" data-cat="all">All</button>
-                <?php foreach ($menuParents as $pc): ?>
-                <button class="chip" data-cat="<?= $ce($pc['slug']) ?>"><?= $ce($pc['name']) ?></button>
-                <?php foreach ($menuChildren[(int)$pc['id']] ?? [] as $cc): ?>
-                <button class="chip sub-chip" data-cat="<?= $ce($cc['slug']) ?>" data-parent="<?= $ce($pc['slug']) ?>"><?= $ce($cc['name']) ?></button>
+                <button class="chip active" data-ocat="all">All</button>
+                <?php foreach ($otherParents as $pc): ?>
+                <button class="chip" data-ocat="<?= $oce($pc['slug']) ?>"><?= $oce($pc['name']) ?></button>
+                <?php foreach ($otherChildren[(int)$pc['id']] ?? [] as $cc): ?>
+                <button class="chip sub-chip" data-ocat="<?= $oce($cc['slug']) ?>" data-parent="<?= $oce($pc['slug']) ?>"><?= $oce($cc['name']) ?></button>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
-            </div><div class="menu-tools"><select id="sortMenu" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
-            <div class="grid dish-grid" id="menu-grid"></div>
-            <div class="empty-state" id="emptyState"><span class="big"><i class="fa-solid fa-utensils"></i></span><p>No dishes match your search.</p></div>
+            </div><div class="menu-tools"><select id="sortOthers" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
+            <div class="grid dish-grid" id="others-grid"></div>
+            <div class="empty-state" id="othersEmpty"><span class="big"><i class="fa-solid fa-gift"></i></span><p>No items match your search.</p></div>
         </div>
     </section>
 </main>

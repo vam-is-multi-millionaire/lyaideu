@@ -16,11 +16,12 @@ require_once __DIR__ . '/site_config.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-$featured = ['dishes' => [], 'mart' => [], 'hotels' => [], 'mart_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => []];
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_ensure_stores();
+        lyaideu_ensure_other_table();
         $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
         $featured['mart']   = $featuredPdo->query(
             'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
@@ -30,25 +31,35 @@ if ($featuredPdo instanceof PDO) {
              LEFT JOIN hotels h ON h.id = v.hotel_id
              ORDER BY m.id'
         )->fetchAll();
+        $featured['others'] = $featuredPdo->query(
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM other_items oi
+             LEFT JOIN vendors v ON v.id = oi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             ORDER BY oi.id'
+        )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels')->fetchAll();
     } catch (Throwable $e) {
-        $featured = ['dishes' => [], 'mart' => [], 'hotels' => [], 'mart_stores' => []];
+        $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => []];
     }
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
+    shuffle($featured['others']);
     shuffle($featured['hotels']);
     shuffle($featured['mart_stores']);
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
+    $featured['others'] = array_slice($featured['others'], 0, 12);
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
     $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
 }
 
 $searchResults = null;
 if ($q !== '' && $featuredPdo instanceof PDO) {
-    $searchResults = ['dishes' => [], 'mart' => [], 'hotels' => []];
+    $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
         $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
@@ -65,6 +76,17 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         );
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
+        $st = $featuredPdo->prepare(
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM other_items oi
+             LEFT JOIN vendors v ON v.id = oi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE oi.name LIKE ? OR oi.tag LIKE ? OR oi.`desc` LIKE ?
+             ORDER BY oi.name LIMIT 30'
+        );
+        $st->execute([$qp, $qp, $qp]);
+        $searchResults['others'] = $st->fetchAll();
         $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
         $st->execute([$qp, $qp]);
         $searchResults['hotels'] = $st->fetchAll();
@@ -72,11 +94,16 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $searchResults = null;
     }
 }
-$totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['hotels']) : 0;
+$totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['others']) + count($searchResults['hotels']) : 0;
 
 $FEATURED_MART_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
     'staples'    => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie',
+];
+
+$FEATURED_OTHER_ICONS = [
+    'flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder',
+    'achar'   => 'fa-jar', 'gifts' => 'fa-gift',
 ];
 ?>
 <!DOCTYPE html>
@@ -105,6 +132,7 @@ $FEATURED_MART_ICONS = [
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
@@ -177,7 +205,7 @@ $FEATURED_MART_ICONS = [
             <div class="section-head">
                 <p class="kicker"><i class="fa-solid fa-magnifying-glass"></i> Search results</p>
                 <h2 class="display">Results for &ldquo;<?= lyaideu_featured_e($q) ?>&rdquo;</h2>
-                <p class="section-sub"><?= $totalResults > 0 ? $totalResults . ' match' . ($totalResults === 1 ? '' : 'es') . ' found across the menu, mart and partner hotels.' : 'No matches found. Try a different word or browse the sections below.' ?></p>
+                <p class="section-sub"><?= $totalResults > 0 ? $totalResults . ' match' . ($totalResults === 1 ? '' : 'es') . ' found across the menu, mart, other products and partner stores.' : 'No matches found. Try a different word or browse the sections below.' ?></p>
             </div>
 
             <?php if ($searchResults['dishes']): ?>
@@ -231,6 +259,32 @@ $FEATURED_MART_ICONS = [
             </div>
             <?php endif; ?>
 
+            <?php if ($searchResults['others']): ?>
+            <div class="feat-block">
+                <div class="feat-ribbon">
+                    <h3><i class="fa-solid fa-gift"></i> Other Products</h3>
+                    <a class="see-all" href="others">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="grid dish-grid home-grid">
+                    <?php foreach ($searchResults['others'] as $sOther): ?>
+                    <article class="dish-card reveal visible" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-slug="<?= lyaideu_featured_e($sOther['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($sOther['category_id'] ?? 0), (string)$sOther['cat']))) ?>">
+                        <div class="dish-art mart-art">
+                            <?php if ($sOther['img'] !== ''): ?>
+                                <img src="<?= lyaideu_featured_e($sOther['img']) ?>" alt="<?= lyaideu_featured_e($sOther['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <i class="fa-solid <?= $FEATURED_OTHER_ICONS[$sOther['cat']] ?? 'fa-gift' ?>"></i>
+                            <?php endif; ?>
+                            <?php if ($sOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sOther['tag']) ?></span><?php endif; ?>
+                        </div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sOther['name']) ?></h3></div>
+                        <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sOther['price'] ?><?= $sOther['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sOther['unit']) . '</span>' : '' ?></span>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-price="<?= (int)$sOther['price'] ?>" data-unit="<?= lyaideu_featured_e($sOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sOther['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php if ($searchResults['hotels']): ?>
             <div class="feat-block">
                 <div class="feat-ribbon">
@@ -271,7 +325,7 @@ $FEATURED_MART_ICONS = [
         <div class="container">
             <div class="section-head">
                 <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
-                <p class="section-sub">Tasty dishes, grocery essentials and partner stores — shuffled fresh on every refresh.</p>
+                <p class="section-sub">Tasty dishes, grocery essentials, gifts &amp; decor and partner stores — shuffled fresh on every refresh.</p>
             </div>
 
             <div class="featured-stack">
@@ -320,6 +374,32 @@ $FEATURED_MART_ICONS = [
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fMart['price'] ?><?= $fMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fMart['unit']) . '</span>' : '' ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['others']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-gift"></i> Other Products</h3>
+                        <a class="see-all" href="others">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid dish-grid home-grid" id="featuredOthers">
+                        <?php foreach ($featured['others'] as $fOther): ?>
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-slug="<?= lyaideu_featured_e($fOther['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fOther['category_id'] ?? 0), (string)$fOther['cat']))) ?>">
+                            <div class="dish-art mart-art">
+                                <?php if ($fOther['img'] !== ''): ?>
+                                    <img src="<?= lyaideu_featured_e($fOther['img']) ?>" alt="<?= lyaideu_featured_e($fOther['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= $FEATURED_OTHER_ICONS[$fOther['cat']] ?? 'fa-gift' ?>"></i>
+                                <?php endif; ?>
+                                <?php if ($fOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fOther['tag']) ?></span><?php endif; ?>
+                            </div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div>
+                            <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fOther['price'] ?><?= $fOther['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fOther['unit']) . '</span>' : '' ?></span>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= (int)$fOther['price'] ?>" data-unit="<?= lyaideu_featured_e($fOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -471,7 +551,7 @@ $FEATURED_MART_ICONS = [
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>

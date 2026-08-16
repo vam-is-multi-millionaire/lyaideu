@@ -22,9 +22,11 @@ if (!$vendor) {
     exit;
 }
 
-$isMart = ($vendor['scope'] ?? 'hotel') === 'mart';
+$scope = (string)($vendor['scope'] ?? 'hotel');
+$isMart = $scope === 'mart';
+$isOther = $scope === 'other';
 $hotelName = '';
-if (!$isMart) {
+if (!$isMart && !$isOther) {
     try {
         $st = $pdo->prepare('SELECT name FROM hotels WHERE id = ?');
         $st->execute([(int)$vendor['hotel_id']]);
@@ -35,14 +37,14 @@ if (!$isMart) {
 }
 
 lyaideu_ensure_categories_table();
-$catType = $isMart ? 'mart' : 'menu';
+$catType = $isMart ? 'mart' : ($isOther ? 'other' : 'menu');
 $catsFlat = lyaideu_categories_flat($catType);
 $allowedCats = [];
 foreach ($catsFlat as $c) {
     $allowedCats[(int)$c['id']] = $c;
 }
 
-$table = $isMart ? 'mart_items' : 'dishes';
+$table = $isMart ? 'mart_items' : ($isOther ? 'other_items' : 'dishes');
 $msg = $_GET['msg'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -70,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Product name is required.';
         } elseif ($price <= 0) {
             $error = 'Price must be greater than 0.';
-        } elseif (!$isMart && $hotelName === '') {
+        } elseif ($scope === 'hotel' && $hotelName === '') {
             $error = 'Your account is not linked to a hotel, so you cannot add menu products. Ask the admin to link a hotel.';
         }
 
@@ -98,11 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $st->execute([$id]);
                     $existing = (string)$st->fetchColumn();
                 }
-                $img = lyaideu_handle_item_image($existing, $_POST, $file, $isMart ? 'mart_img' : 'dish_img');
+                $img = lyaideu_handle_item_image($existing, $_POST, $file, $isMart ? 'mart_img' : ($isOther ? 'other_img' : 'dish_img'));
 
                 if ($id > 0) {
                     if ($isMart) {
                         $upd = $pdo->prepare('UPDATE mart_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
+                    } elseif ($isOther) {
+                        $upd = $pdo->prepare('UPDATE other_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
                         $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
                     } else {
                         $upd = $pdo->prepare('UPDATE dishes SET name = ?, hotel = ?, category_id = ?, price = ?, phone = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
@@ -112,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     if ($isMart) {
                         $ins = $pdo->prepare('INSERT INTO mart_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
+                    } elseif ($isOther) {
+                        $ins = $pdo->prepare('INSERT INTO other_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
                         $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
                     } else {
                         $ins = $pdo->prepare('INSERT INTO dishes (name, hotel, category_id, price, phone, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -147,7 +155,9 @@ try {
     $st = $pdo->prepare(
         $isMart
             ? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM mart_items WHERE vendor_id = ? ORDER BY name'
-            : 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img FROM dishes WHERE vendor_id = ? ORDER BY name'
+            : ($isOther
+                ? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM other_items WHERE vendor_id = ? ORDER BY name'
+                : 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img FROM dishes WHERE vendor_id = ? ORDER BY name')
     );
     $st->execute([$vendorId]);
     $products = $st->fetchAll();
@@ -160,9 +170,9 @@ function vp_esc($v): string {
 }
 
 delivery_header(
-    $isMart ? 'My Mart Products' : 'My Products',
-    $isMart ? 'Manage My Mart Items' : 'Manage My Menu',
-    $isMart ? 'fa-basket-shopping' : 'fa-store',
+    $isMart ? 'My Mart Products' : ($isOther ? 'My Other Products' : 'My Products'),
+    $isMart ? 'Manage My Mart Items' : ($isOther ? 'Manage My Other Items' : 'Manage My Menu'),
+    $isMart ? 'fa-basket-shopping' : ($isOther ? 'fa-gift' : 'fa-store'),
     $role
 );
 ?>
@@ -176,6 +186,8 @@ delivery_header(
     <p class="small-note" style="margin-bottom:1rem;">
         <?php if ($isMart): ?>
         <i class="fa-solid fa-basket-shopping"></i> These items appear on the <strong>Mart</strong> page as soon as you save them.
+        <?php elseif ($isOther): ?>
+        <i class="fa-solid fa-gift"></i> These items appear on the <strong>Others</strong> page as soon as you save them.
         <?php else: ?>
         <i class="fa-solid fa-hotel"></i> Your items appear under <strong><?= vp_esc($hotelName) ?></strong> on the <strong>Menu</strong> page as soon as you save them.
         <?php endif; ?>
@@ -209,10 +221,10 @@ delivery_header(
                     </select>
                 </div>
             </div>
-            <?php if ($isMart): ?>
+            <?php if ($isMart || $isOther): ?>
             <div class="admin-field-row">
                 <div><label>Unit</label>
-                    <input type="text" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="kg / litre / pack">
+                    <input type="text" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
                 </div>
                 <div><label>Tag</label>
                     <input type="text" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="New!">
@@ -245,7 +257,7 @@ delivery_header(
             <h3><i class="fa-solid fa-plus"></i> Add New Product</h3>
             <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
             <input type="hidden" name="id" value="0">
-            <label>Product Name</label><input type="text" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : 'e.g. Chicken Momo' ?>" required>
+            <label>Product Name</label><input type="text" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : ($isOther ? 'e.g. Rose Bouquet' : 'e.g. Chicken Momo') ?>" required>
             <div class="admin-field-row">
                 <div><label>Price (Rs.)</label><input type="number" min="1" step="1" name="price" placeholder="250" required></div>
                 <div><label>Category</label>
@@ -257,8 +269,8 @@ delivery_header(
                     </select>
                 </div>
             </div>
-            <?php if ($isMart): ?>
-            <label>Unit</label><input type="text" name="unit" placeholder="kg / litre / pack">
+            <?php if ($isMart || $isOther): ?>
+            <label>Unit</label><input type="text" name="unit" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
             <?php else: ?>
             <label>Phone</label><input type="text" name="phone" placeholder="98XXXXXXXX">
             <?php endif; ?>

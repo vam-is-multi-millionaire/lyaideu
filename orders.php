@@ -66,6 +66,7 @@ foreach ($rows as $row) {
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="orders" class="nav-a active">Orders</a></li>
             <?php if ($user): ?>
             <li>

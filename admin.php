@@ -29,6 +29,7 @@ try {
     $userCount = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     $dishCount = (int)$pdo->query('SELECT COUNT(*) FROM dishes')->fetchColumn();
     $martCount = (int)$pdo->query('SELECT COUNT(*) FROM mart_items')->fetchColumn();
+    $othersCount = (int)$pdo->query('SELECT COUNT(*) FROM other_items')->fetchColumn();
     $hotelCount = (int)$pdo->query('SELECT COUNT(*) FROM hotels')->fetchColumn();
     $contactCount = (int)$pdo->query('SELECT COUNT(*) FROM contacts')->fetchColumn();
     $categoryCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
@@ -76,6 +77,7 @@ admin_page_start('Dashboard', 'dashboard', 'Dashboard');
                 'orders' => ['count' => $totalOrders, 'desc' => 'Track and update customer orders'],
                 'dishes' => ['count' => $dishCount, 'desc' => 'Add, edit, or remove menu items'],
                 'mart' => ['count' => $martCount, 'desc' => 'Manage grocery items on the Mart page'],
+                'others' => ['count' => $othersCount, 'desc' => 'Manage gifts, decor & achar on the Others page'],
                 'hotels' => ['count' => $hotelCount + $vendorCount, 'desc' => 'Manage partner stores & their vendor logins'],
                 'riders' => ['count' => $riderCount, 'desc' => 'Manage delivery riders that log in at /rider'],
                 'contacts' => ['count' => $contactCount, 'desc' => 'Update service team phone numbers'],

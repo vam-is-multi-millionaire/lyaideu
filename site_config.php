@@ -138,6 +138,72 @@ function lyaideu_ensure_mart_table(): bool {
     }
 }
 
+/**
+ * Ensures the `other_items` table exists (products sold on the Others page:
+ * flowers, candles, achar, gifts, etc.) and seeds a small default catalog.
+ * Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_other_table(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $stmt = $pdo->query("SHOW TABLES LIKE 'other_items'");
+        $exists = $stmt && (bool)$stmt->fetchColumn();
+        if (!$exists) {
+            $pdo->exec(
+                'CREATE TABLE other_items (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    cat VARCHAR(50) NOT NULL,
+                    category_id INT UNSIGNED NULL,
+                    name_slug VARCHAR(120) NOT NULL DEFAULT \'\',
+                    unit VARCHAR(50) NOT NULL DEFAULT \'\',
+                    price INT UNSIGNED NOT NULL DEFAULT 0,
+                    tag VARCHAR(100) NOT NULL DEFAULT \'\',
+                    `desc` TEXT NOT NULL,
+                    img VARCHAR(500) NOT NULL DEFAULT \'\',
+                    vendor_id INT UNSIGNED NULL DEFAULT NULL,
+                    PRIMARY KEY (id),
+                    KEY idx_other_items_category (category_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $seed = $pdo->prepare(
+                'INSERT INTO other_items (name, cat, unit, price, tag, `desc`, img)
+                 VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
+            );
+            $defaults = [
+                ['Rose Bouquet', 'flowers', 'bunch', 1200, 'Best Seller', 'A dozen fresh red roses, hand-wrapped in premium paper.', ''],
+                ['Assorted Flower Bunch', 'flowers', 'bunch', 800, '', 'A cheerful mix of seasonal blooms, tied fresh on order.', ''],
+                ['Marigold Garland', 'flowers', 'strand', 350, 'Traditional', 'Hand-strung marigold mala, perfect for puja and festivals.', ''],
+                ['Scented Candle Set', 'candles', 'set', 650, '', 'Three soy-wax candles in calming lavender, vanilla and rose.', ''],
+                ['Tealight Candles (Pack of 12)', 'candles', 'pack', 250, '', 'Long-burning tealights for cosy evenings and celebrations.', ''],
+                ['Birthday Cake Candles', 'candles', 'pack', 120, '', 'Colourful twist candles to light up any birthday cake.', ''],
+                ['Timur Achar', 'achar', 'jar', 380, 'Spicy', 'Homemade Szechuan pepper pickle with a bold, numbing kick.', ''],
+                ['Mango Achar', 'achar', 'jar', 420, '', 'Tangy green-mango pickle, slow-cooked the traditional way.', ''],
+                ['Gift Hamper Box', 'gifts', 'box', 1500, 'Premium', 'A curated hamper of treats, candles and a handwritten card.', ''],
+                ['Celebration Gift Bag', 'gifts', 'bag', 550, '', 'A ready-to-give bag with assorted goodies inside.', ''],
+            ];
+            foreach ($defaults as $row) {
+                $seed->execute([
+                    ':name' => $row[0],
+                    ':cat' => $row[1],
+                    ':unit' => $row[2],
+                    ':price' => $row[3],
+                    ':tag' => $row[4],
+                    ':descr' => $row[5],
+                    ':img' => $row[6],
+                ]);
+            }
+        }
+        lyaideu_ensure_product_slugs();
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 function lyaideu_slugify(string $value): string {
     $slug = strtolower(trim(html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8')));
     $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
@@ -173,7 +239,9 @@ function lyaideu_ensure_categories_table(): bool {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
 
-        foreach (['dishes', 'mart_items'] as $table) {
+        lyaideu_ensure_other_table();
+
+        foreach (['dishes', 'mart_items', 'other_items'] as $table) {
             $col = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'category_id'")->fetchAll();
             if (!$col) {
                 $pdo->exec("ALTER TABLE `$table` ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_{$table}_category (category_id)");
@@ -288,6 +356,24 @@ function lyaideu_seed_categories(): void {
                 ['Chocolates', 'chocolates', 'fa-chocolate-bar'],
             ]],
         ],
+        'other' => [
+            ['Bouquets & Flowers', 'flowers', 'fa-bouquet', [
+                ['Fresh Bouquets', 'fresh-bouquets', 'fa-bouquet'],
+                ['Garlands & Strands', 'garlands', 'fa-fan'],
+            ]],
+            ['Candles & Decor', 'candles', 'fa-candle-holder', [
+                ['Candles', 'candles', 'fa-candle-holder'],
+                ['Decor Items', 'decor', 'fa-wand-magic-sparkles'],
+            ]],
+            ['Achar & Pickles', 'achar', 'fa-jar', [
+                ['Spicy Achar', 'spicy-achar', 'fa-pepper-hot'],
+                ['Sweet Achar', 'sweet-achar', 'fa-jar'],
+            ]],
+            ['Gifts', 'gifts', 'fa-gift', [
+                ['Gift Boxes & Hampers', 'gift-boxes', 'fa-gift'],
+                ['Occasion Gifts', 'occasion-gifts', 'fa-champagne-glasses'],
+            ]],
+        ],
     ];
 
     foreach ($tree as $type => $items) {
@@ -329,9 +415,15 @@ function lyaideu_assign_products_to_categories(): void {
             'oils' => [['cooking-oils', ['oil']], ['spices', ['spice', 'masala', 'turmeric', 'chilli powder']]],
             'snacks' => [['chips-biscuits', ['chips', 'biscuit', 'parle']], ['chocolates', ['chocolate']]],
         ],
+        'other' => [
+            'flowers' => [['fresh-bouquets', ['bouquet', 'bunch', 'flower']], ['garlands', ['garland', 'mala', 'strand']]],
+            'candles' => [['candles', ['candle', 'tealight']], ['decor', ['decor', 'decoration', 'ornament']]],
+            'achar' => [['spicy-achar', ['timur', 'spicy']], ['sweet-achar', ['mango', 'sweet', 'achar']]],
+            'gifts' => [['gift-boxes', ['hamper', 'box']], ['occasion-gifts', ['gift', 'celebration', 'occasion']]],
+        ],
     ];
 
-    $tables = ['dishes' => 'dishes', 'mart' => 'mart_items'];
+    $tables = ['dishes' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items'];
     foreach ($tables as $key => $table) {
         $rows = $pdo->query("SELECT id, name, cat, category_id FROM `$table`")->fetchAll();
         $upd = $pdo->prepare("UPDATE `$table` SET category_id = :cid WHERE id = :id");
@@ -353,7 +445,7 @@ function lyaideu_assign_products_to_categories(): void {
             if ($target === '') {
                 $target = $cat !== '' ? $cat : 'category';
             }
-            $cid = lyaideu_category_id_by_slug($target, $key === 'dishes' ? 'menu' : 'mart');
+            $cid = lyaideu_category_id_by_slug($target, $key === 'dishes' ? 'menu' : ($key === 'other' ? 'other' : 'mart'));
             if ($cid > 0) {
                 $upd->execute([':cid' => $cid, ':id' => (int)$row['id']]);
             }
@@ -460,7 +552,7 @@ function lyaideu_ensure_product_slugs(): void {
         return;
     }
     try {
-        foreach (['dishes', 'mart_items'] as $table) {
+        foreach (['dishes', 'mart_items', 'other_items'] as $table) {
             $cols = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'name_slug'")->fetchAll();
             if (!$cols) {
                 $pdo->exec("ALTER TABLE `$table` ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT ''");
@@ -493,7 +585,7 @@ function lyaideu_ensure_product_slugs(): void {
  */
 function lyaideu_sync_item_slug(string $table, int $id, string $name): void {
     $pdo = lyaideu_load_pdo();
-    if (!$pdo instanceof PDO || !in_array($table, ['dishes', 'mart_items'], true) || $id <= 0) {
+    if (!$pdo instanceof PDO || !in_array($table, ['dishes', 'mart_items', 'other_items'], true) || $id <= 0) {
         return;
     }
     try {
@@ -536,6 +628,13 @@ function lyaideu_ensure_stores(): bool {
             )->execute(['LyaiDeu Mart', 'Grocery & daily essentials', '', 'fa-basket-shopping', '']);
         }
 
+        $otherStore = (int)$pdo->query("SELECT COUNT(*) FROM hotels WHERE kind = 'other'")->fetchColumn();
+        if ($otherStore === 0) {
+            $pdo->prepare(
+                "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (?, ?, ?, ?, ?, 'other')"
+            )->execute(['LyaiDeu Others', 'Flowers, candles, achar & gifts', '', 'fa-gift', '']);
+        }
+
         // Link each mart vendor to its mart store (matched by name) so a
         // store's page shows only that store's products.
         try {
@@ -555,6 +654,33 @@ function lyaideu_ensure_stores(): bool {
                         $key = lyaideu_normalize_name((string)$mv['name']);
                         if ($key !== '' && isset($storeByName[$key])) {
                             $link->execute([$storeByName[$key], (int)$mv['id']]);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            // Ignore linking errors.
+        }
+
+        // Link each 'other' vendor to its other store (matched by name) so a
+        // store's page shows only that store's products.
+        try {
+            $hasVendors = (bool)$pdo->query("SHOW TABLES LIKE 'vendors'")->fetchColumn();
+            if ($hasVendors) {
+                $otherStores = $pdo->query("SELECT id, name FROM hotels WHERE kind = 'other' ORDER BY id")->fetchAll();
+                $storeByName = [];
+                foreach ($otherStores as $os) {
+                    $storeByName[lyaideu_normalize_name((string)$os['name'])] = (int)$os['id'];
+                }
+                if ($storeByName) {
+                    $link = $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ? AND (hotel_id IS NULL OR hotel_id = 0)');
+                    foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'other'") as $ov) {
+                        if (!empty($ov['hotel_id'])) {
+                            continue;
+                        }
+                        $key = lyaideu_normalize_name((string)$ov['name']);
+                        if ($key !== '' && isset($storeByName[$key])) {
+                            $link->execute([$storeByName[$key], (int)$ov['id']]);
                         }
                     }
                 }
@@ -920,6 +1046,42 @@ function lyaideu_ensure_delivery_tables(): bool {
                 $defaultVendorPass,
                 'mart',
                 $mid,
+                date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Every 'other' store also gets a vendor account (same rule as hotels
+        // and marts) so its products always reach a vendor when ordered.
+        $linkedOtherHotelIds = [];
+        $otherVendorByName = [];
+        foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'other'") as $ov) {
+            if (!empty($ov['hotel_id'])) {
+                $linkedOtherHotelIds[(int)$ov['hotel_id']] = (int)$ov['id'];
+            }
+            $otherVendorByName[lyaideu_normalize_name((string)$ov['name'])] = (int)$ov['id'];
+        }
+        $insOtherVendor = $pdo->prepare(
+            'INSERT INTO vendors (name, email, phone, pass, scope, hotel_id, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+        );
+        foreach ($pdo->query("SELECT id, name FROM hotels WHERE kind = 'other' ORDER BY id") as $os) {
+            $oid = (int)$os['id'];
+            if (isset($linkedOtherHotelIds[$oid])) {
+                continue;
+            }
+            $on = lyaideu_normalize_name((string)$os['name']);
+            $existingVendorId = ($on !== '' && isset($otherVendorByName[$on])) ? (int)$otherVendorByName[$on] : 0;
+            if ($existingVendorId > 0) {
+                $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ?')->execute([$oid, $existingVendorId]);
+                continue;
+            }
+            $insOtherVendor->execute([
+                (string)$os['name'],
+                'othervendor' . $oid . '@lyaideu.local',
+                '9' . str_pad((string)$oid, 9, '0', STR_PAD_LEFT),
+                $defaultVendorPass,
+                'other',
+                $oid,
                 date('Y-m-d H:i:s'),
             ]);
         }
@@ -1411,6 +1573,35 @@ function lyaideu_reindex_item_vendors(): void {
             $pdo->exec('UPDATE mart_items SET vendor_id = ' . $martVendor . ' WHERE vendor_id IS NULL');
         }
 
+        // Other items belong to an 'other'-scope vendor (via the store's
+        // vendor link). Assign only items that have no owner yet.
+        try {
+            $otherVendors = $pdo->query(
+                "SELECT v.id, v.hotel_id FROM vendors v
+                 WHERE v.scope = 'other' AND v.is_active = 1 AND v.hotel_id IS NOT NULL
+                 ORDER BY v.id"
+            )->fetchAll();
+            if ($otherVendors) {
+                $unassigned = $pdo->query('SELECT id, vendor_id FROM other_items WHERE vendor_id IS NULL')->fetchAll();
+                $byStore = [];
+                foreach ($otherVendors as $ov) {
+                    $byStore[(int)$ov['hotel_id']] = (int)$ov['id'];
+                }
+                $upd = $pdo->prepare('UPDATE other_items SET vendor_id = ? WHERE id = ?');
+                foreach ($unassigned as $oi) {
+                    if (!empty($oi['vendor_id'])) {
+                        continue;
+                    }
+                    $vid = $byStore[1] ?? ($otherVendors[0]['id'] ?? 0);
+                    if ($vid > 0) {
+                        $upd->execute([$vid, (int)$oi['id']]);
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            // Best-effort.
+        }
+
         // Backfill order items so pre-existing orders route to vendors too.
         $pdo->exec(
             'UPDATE order_items oi
@@ -1545,6 +1736,56 @@ function lyaideu_mart_store_name(int $itemId): string {
         return 'LyaiDeu Mart';
     }
 }
+function lyaideu_resolve_other_vendor(int $itemId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare('SELECT vendor_id FROM other_items WHERE id = ?');
+        $st->execute([$itemId]);
+        $existing = (int)$st->fetchColumn();
+        if ($existing > 0) {
+            return $existing;
+        }
+        // Fall back to the first active 'other'-scope vendor (usually the
+        // default "LyaiDeu Others" store) so the item still reaches a vendor.
+        $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'other' AND is_active = 1 ORDER BY id LIMIT 1");
+        $st->execute();
+        $vendorId = (int)$st->fetchColumn();
+        $upd = $pdo->prepare('UPDATE other_items SET vendor_id = ? WHERE id = ?');
+        $upd->execute([$vendorId > 0 ? $vendorId : null, $itemId]);
+        return $vendorId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Resolves the store (hotel) name that owns an other item, via the item's
+ * vendor and that vendor's linked store. Falls back to 'LyaiDeu Others'.
+ */
+function lyaideu_other_store_name(int $itemId): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 'LyaiDeu Others';
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT COALESCE(h.name, \'\')
+             FROM other_items oi
+             LEFT JOIN vendors v ON v.id = oi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE oi.id = ?'
+        );
+        $st->execute([$itemId]);
+        $name = (string)$st->fetchColumn();
+        return $name !== '' ? $name : 'LyaiDeu Others';
+    } catch (Throwable $e) {
+        return 'LyaiDeu Others';
+    }
+}
+
 function lyaideu_handle_item_image(string $existingImg, array $post, ?array $file, string $prefix): string {
     $img = $existingImg;
 

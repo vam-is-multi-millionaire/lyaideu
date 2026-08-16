@@ -82,6 +82,21 @@ if ($isDetail) {
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
+        } elseif ($kind === 'other') {
+            lyaideu_ensure_other_table();
+            $vendorId = 0;
+            try {
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'other' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
+                $st->execute([$id]);
+                $vendorId = (int)$st->fetchColumn();
+            } catch (Throwable $e) {
+                $vendorId = 0;
+            }
+            if ($vendorId > 0) {
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM other_items WHERE vendor_id = ? ORDER BY id');
+                $st->execute([$vendorId]);
+                $products = $st->fetchAll();
+            }
         } elseif ($kind === 'hotel') {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
@@ -96,8 +111,9 @@ if ($isDetail) {
 }
 
 $kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : 'Hotel');
-$kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-store' : 'fa-hotel');
+$kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : 'fa-hotel');
 $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow', 'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie'];
+$OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 'achar' => 'fa-jar', 'gifts' => 'fa-gift'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -125,6 +141,7 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="store" class="nav-a active">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
@@ -195,6 +212,8 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
                 <h2 class="store-products-title">
                     <?php if ($kind === 'mart'): ?>
                         <i class="fa-solid fa-basket-shopping"></i> Our Products
+                    <?php elseif ($kind === 'other'): ?>
+                        <i class="fa-solid fa-gift"></i> Our Products
                     <?php else: ?>
                         <i class="fa-solid fa-utensils"></i> Our Menu
                     <?php endif; ?>
@@ -203,18 +222,21 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
                     <div class="grid dish-grid store-grid">
                         <?php foreach ($products as $p):
                             $isMart = $kind === 'mart';
+                            $isOther = $kind === 'other';
+                            $hasUnit = $isMart || $isOther;
                             $price = (int)$p['price'];
-                            $unitHtml = $isMart && $p['unit'] !== '' ? ' <span class="unit">/ ' . e($p['unit']) . '</span>' : '';
+                            $unitHtml = $hasUnit && $p['unit'] !== '' ? ' <span class="unit">/ ' . e($p['unit']) . '</span>' : '';
                             $img = (string)$p['img'];
-                            $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($isMart ? '<span class="mart-art"><i class="fa-solid ' . e($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
-                            $url = ($isMart ? 'mart' : 'menu') . '/' . (int)$p['id'];
+                            $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift')) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
+                            $url = ($isMart ? 'mart' : ($isOther ? 'others' : 'menu')) . '/' . (int)$p['id'];
+                            $cardType = $isMart ? 'mart' : ($isOther ? 'other' : 'dish');
                         ?>
-                        <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $isMart ? 'mart' : 'dish' ?>">
-                            <div class="dish-art <?= $isMart ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
+                        <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $cardType ?>">
+                            <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
                                 <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $price ?><?= $unitHtml ?></span>
-                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $isMart ? 'mart' : 'dish' ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $isMart && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($isMart ? $store['name'] : ($p['hotel'] !== '' ? $p['hotel'] : $store['name'])) ?>" data-img="<?= e($img) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
                             </div>
                         </article>
                         <?php endforeach; ?>
@@ -266,7 +288,7 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>

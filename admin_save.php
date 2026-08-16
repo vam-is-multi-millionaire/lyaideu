@@ -44,6 +44,11 @@ function valid_mart_category($value): string {
     return in_array($value, $allowed, true) ? $value : 'vegetables';
 }
 
+function valid_other_category($value): string {
+    $allowed = ['flowers', 'candles', 'achar', 'gifts'];
+    return in_array($value, $allowed, true) ? $value : 'gifts';
+}
+
 function resolve_product_category(?int $value, string $type): array {
     if (!$value || $value <= 0) {
         return [0, ''];
@@ -136,7 +141,7 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'dishes', 'mart', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'dishes', 'mart', 'others', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -324,11 +329,111 @@ try {
         }
     }
 
+    if ($section === 'others') {
+        lyaideu_ensure_other_table();
+        $otherVendorId = function ($value): int {
+            $vid = (int)($value ?? 0);
+            if ($vid > 0) {
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE id = :id AND scope = 'other' AND is_active = 1");
+                $st->execute([':id' => $vid]);
+                if ($st->fetchColumn()) {
+                    return $vid;
+                }
+            }
+            return 0;
+        };
+
+        $deleteItem = $pdo->prepare('DELETE FROM other_items WHERE id = ?');
+        $updateItem = $pdo->prepare(
+            'UPDATE other_items
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
+                 `desc` = :descr, img = :img, vendor_id = :vendor_id
+             WHERE id = :id'
+        );
+        $insertItem = $pdo->prepare(
+            'INSERT INTO other_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
+        );
+
+        foreach (($_POST['others'] ?? []) as $i => $m) {
+            $id = (int)($m['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($m['delete'])) {
+                $deleteItem->execute([$id]);
+                continue;
+            }
+
+            $name = clean_text($m['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $vid = $otherVendorId($m['vendor_id'] ?? 0);
+            if ($vid <= 0) {
+                $vid = lyaideu_resolve_other_vendor($id);
+            }
+
+            $img = handle_item_image((string)($m['img'] ?? ''), $m, uploaded_file_field('others', $i, 'img_file'), 'other_img');
+            $catRes = resolve_product_category((int)($m['category_id'] ?? 0), 'other');
+
+            $updateItem->execute([
+                ':id' => $id,
+                ':name' => $name,
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($m['cat'] ?? 'gifts'),
+                ':category_id' => $catRes[0] ?: null,
+                ':unit' => clean_text($m['unit'] ?? ''),
+                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':tag' => clean_text($m['tag'] ?? ''),
+                ':descr' => clean_text($m['desc'] ?? ''),
+                ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
+            ]);
+            lyaideu_sync_item_slug('other_items', $id, $name);
+        }
+
+        $newItem = $_POST['new_others'] ?? [];
+        if (clean_text($newItem['name'] ?? '') !== '') {
+            $newFile = $_FILES['new_others'] ?? null;
+            $newImgFile = (isset($newFile['name']['img_file']))
+                ? [
+                    'name' => $newFile['name']['img_file'],
+                    'type' => $newFile['type']['img_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['img_file'],
+                    'error' => $newFile['error']['img_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['img_file'] ?? 0,
+                ]
+                : null;
+            $vid = $otherVendorId($newItem['vendor_id'] ?? 0);
+            $img = handle_item_image('', $newItem, $newImgFile, 'other_img');
+            $catRes = resolve_product_category((int)($newItem['category_id'] ?? 0), 'other');
+
+            $insertItem->execute([
+                ':name' => clean_text($newItem['name'] ?? ''),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($newItem['cat'] ?? 'gifts'),
+                ':category_id' => $catRes[0] ?: null,
+                ':unit' => clean_text($newItem['unit'] ?? ''),
+                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':tag' => clean_text($newItem['tag'] ?? ''),
+                ':descr' => clean_text($newItem['desc'] ?? ''),
+                ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
+            ]);
+            lyaideu_sync_item_slug('other_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            if ($vid <= 0) {
+                lyaideu_resolve_other_vendor((int)$pdo->lastInsertId());
+            }
+        }
+    }
+
     if ($section === 'hotels') {
         $validKinds = ['hotel', 'mart', 'other'];
         $deleteHotel = $pdo->prepare('DELETE FROM hotels WHERE id = ?');
         $unlinkDishes = $pdo->prepare('UPDATE dishes SET vendor_id = NULL WHERE vendor_id = ?');
         $unlinkMart = $pdo->prepare('UPDATE mart_items SET vendor_id = NULL WHERE vendor_id = ?');
+        $unlinkOther = $pdo->prepare('UPDATE other_items SET vendor_id = NULL WHERE vendor_id = ?');
         $deleteVendor = $pdo->prepare('DELETE FROM vendors WHERE id = ?');
         $updateHotel = $pdo->prepare(
             'UPDATE hotels SET name = :name, type = :type, phone = :phone, emoji = :emoji, logo = :logo, kind = :kind WHERE id = :id'
@@ -361,6 +466,7 @@ try {
                 if ($vendorId > 0) {
                     $unlinkDishes->execute([$vendorId]);
                     $unlinkMart->execute([$vendorId]);
+                    $unlinkOther->execute([$vendorId]);
                     $deleteVendor->execute([$vendorId]);
                 }
                 $deleteHotel->execute([$id]);
@@ -381,13 +487,13 @@ try {
                 ':name' => $name,
                 ':type' => clean_text($h['type'] ?? ''),
                 ':phone' => clean_phone($h['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ''),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : '')),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
 
-            // Hotels and marts always own a vendor account; 'other' stores do not.
-            if ($kind === 'hotel' || $kind === 'mart') {
+            // Hotels, marts and 'other' stores always own a vendor account.
+            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other') {
                 $vName = clean_text($h['vendor_name'] ?? '');
                 if ($vName === '') {
                     $vName = $name;
@@ -463,13 +569,13 @@ try {
                 ':name' => clean_text($newHotel['name'] ?? ''),
                 ':type' => clean_text($newHotel['type'] ?? ''),
                 ':phone' => clean_phone($newHotel['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ''),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : '')),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
             $newStoreId = (int)$pdo->lastInsertId();
 
-            if ($kind === 'hotel' || $kind === 'mart') {
+            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other') {
                 $vName = clean_text($newHotel['vendor_name'] ?? '');
                 if ($vName === '') {
                     $vName = clean_text($newHotel['name'] ?? '');
@@ -581,6 +687,7 @@ try {
         );
         $nullDish = $pdo->prepare('UPDATE dishes SET category_id = NULL WHERE category_id = ?');
         $nullMart = $pdo->prepare('UPDATE mart_items SET category_id = NULL WHERE category_id = ?');
+        $nullOther = $pdo->prepare('UPDATE other_items SET category_id = NULL WHERE category_id = ?');
         $reparent = $pdo->prepare('UPDATE categories SET parent_id = ? WHERE parent_id = ?');
         $deleteCat = $pdo->prepare('DELETE FROM categories WHERE id = ?');
         $dupeCat = $pdo->prepare('SELECT id FROM categories WHERE slug = :slug AND type = :type AND id <> :id');
@@ -596,6 +703,7 @@ try {
                 foreach ($ids as $did) {
                     $nullDish->execute([$did]);
                     $nullMart->execute([$did]);
+                    $nullOther->execute([$did]);
                 }
                 $parent = (int)($byId[$id]['parent_id'] ?? 0);
                 $reparent->execute([$parent ?: null, $id]);
@@ -607,7 +715,7 @@ try {
             if ($name === '') {
                 continue;
             }
-            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart'], true) ? clean_text($cat['type']) : 'menu';
+            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart', 'other'], true) ? clean_text($cat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($cat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);
@@ -641,7 +749,7 @@ try {
         $newCat = $_POST['new_category'] ?? [];
         if (clean_text($newCat['name'] ?? '') !== '') {
             $name = clean_text($newCat['name']);
-            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart'], true) ? clean_text($newCat['type']) : 'menu';
+            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart', 'other'], true) ? clean_text($newCat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($newCat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);

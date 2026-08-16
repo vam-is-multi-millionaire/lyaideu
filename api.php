@@ -40,6 +40,17 @@ try {
          ORDER BY m.id'
     )->fetchAll();
 
+    lyaideu_ensure_other_table();
+
+    $others = $pdo->query(
+        'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug,
+                COALESCE(h.name, \'\') AS hotel
+         FROM other_items oi
+         LEFT JOIN vendors v ON v.id = oi.vendor_id
+         LEFT JOIN hotels h ON h.id = v.hotel_id
+         ORDER BY oi.id'
+    )->fetchAll();
+
     foreach ($dishes as &$d) {
         $d['cats'] = lyaideu_item_cats((int)($d['category_id'] ?? 0), (string)$d['cat']);
     }
@@ -50,11 +61,17 @@ try {
     }
     unset($m);
 
+    foreach ($others as &$o) {
+        $o['cats'] = lyaideu_item_cats((int)($o['category_id'] ?? 0), (string)$o['cat']);
+    }
+    unset($o);
+
     echo json_encode([
         'dishes' => $dishes,
         'hotels' => $hotels,
         'contacts' => $contacts,
         'mart' => $mart,
+        'others' => $others,
         'categories' => lyaideu_categories(),
         'delivery' => lyaideu_delivery_config(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

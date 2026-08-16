@@ -339,6 +339,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <li>
                 <div class="profile-wrap">
