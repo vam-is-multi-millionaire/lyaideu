@@ -88,7 +88,7 @@ $FEATURED_MART_ICONS = [
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="hotels" class="nav-a">Stores</a></li>
+            <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
@@ -220,7 +220,7 @@ $FEATURED_MART_ICONS = [
             <div class="feat-block">
                 <div class="feat-ribbon">
                     <h3><i class="fa-solid fa-store"></i> Partner Stores</h3>
-                    <a class="see-all" href="hotels">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
                 <div class="grid hotels-grid home-grid">
                     <?php foreach ($searchResults['hotels'] as $sHotel): ?>
@@ -315,7 +315,7 @@ $FEATURED_MART_ICONS = [
                 <div class="feat-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
-                        <a class="see-all" href="hotels">View all <i class="fa-solid fa-arrow-right"></i></a>
+                        <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                     <div class="grid hotels-grid home-grid" id="featuredHotels">
                         <?php foreach ($featured['hotels'] as $fHotel): ?>
@@ -456,7 +456,7 @@ $FEATURED_MART_ICONS = [
 <footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
