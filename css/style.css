@@ -1109,6 +1109,7 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .pm-name{display:block;font-weight:900;color:#3a2415;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pm-meta{display:block;font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pm-price{flex:0 0 auto;font-weight:900;color:var(--orange-800);white-space:nowrap;}
+.pm-unit{font-weight:700;color:var(--muted);font-size:.78rem;}
 .pm-tag{display:inline-block;background:var(--orange-100);color:var(--orange-800);font-size:.68rem;font-weight:800;padding:.15rem .5rem;border-radius:999px;margin-left:.5rem;}
 .pm-actions{flex:0 0 auto;display:flex;align-items:center;gap:.2rem;}
 .pm-act{border:0;background:transparent;color:var(--orange-700);font-weight:800;font-size:.8rem;cursor:pointer;padding:.35rem .6rem;border-radius:8px;font-family:inherit;}

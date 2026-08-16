@@ -248,6 +248,10 @@ try {
         $martVendorId = function ($value): int {
             $vid = (int)($value ?? 0);
             if ($vid > 0) {
+                $pdo = $GLOBALS['pdo'] ?? null;
+                if (!$pdo instanceof PDO) {
+                    return 0;
+                }
                 $st = $pdo->prepare("SELECT id FROM vendors WHERE id = :id AND scope = 'mart' AND is_active = 1");
                 $st->execute([':id' => $vid]);
                 if ($st->fetchColumn()) {
@@ -347,6 +351,10 @@ try {
         $otherVendorId = function ($value): int {
             $vid = (int)($value ?? 0);
             if ($vid > 0) {
+                $pdo = $GLOBALS['pdo'] ?? null;
+                if (!$pdo instanceof PDO) {
+                    return 0;
+                }
                 $st = $pdo->prepare("SELECT id FROM vendors WHERE id = :id AND scope = 'other' AND is_active = 1");
                 $st->execute([':id' => $vid]);
                 if ($st->fetchColumn()) {
