@@ -197,7 +197,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 
 <main class="product-wrap section">
     <div class="container">
-        <a class="back-link" href="<?= $backLink ?>"><i class="fa-solid fa-arrow-left"></i> <?= $backLink === 'index' ? 'Back to Home' : 'Back to ' . ($type === 'mart' ? 'Mart' : ($type === 'other' ? 'Others' : 'Menu')) ?></a>
+        <a class="back-link" href="<?= $backLink ?>" data-back-home="<?= $backLink === 'index' ? '1' : '0' ?>"><i class="fa-solid fa-arrow-left"></i> <?= $backLink === 'index' ? 'Back to Home' : 'Back to ' . ($type === 'mart' ? 'Mart' : ($type === 'other' ? 'Others' : 'Menu')) ?></a>
 
         <div class="product-breadcrumb">
             <a href="<?= $back ?>"><?= $type === 'mart' ? 'Mart' : ($type === 'other' ? 'Others' : 'Menu') ?></a>
@@ -306,5 +306,17 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 <script src="js/script.js?v=18"></script>
 <script src="js/scroll-memory.js?v=2"></script>
 <script src="js/notify.js?v=4"></script>
+<script>
+(function(){
+  var backHome = document.querySelector('.back-link[data-back-home="1"]');
+  if (!backHome || !window.history) return;
+  backHome.addEventListener('click', function (e) {
+    if (window.history.length > 1) {
+      e.preventDefault();
+      window.history.back();
+    }
+  });
+})();
+</script>
 </body>
 </html>
