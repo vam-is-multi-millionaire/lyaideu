@@ -232,7 +232,7 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=17"></script>
+<script src="js/script.js?v=18"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
 (function(){

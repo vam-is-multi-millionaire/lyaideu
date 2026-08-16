@@ -224,7 +224,7 @@ $FEATURED_MART_ICONS = [
                 </div>
                 <div class="grid hotels-grid home-grid">
                     <?php foreach ($searchResults['hotels'] as $sHotel): ?>
-                    <div class="hotel-card reveal visible" data-store-url="store/<?= (int)$sHotel['id'] ?>">
+                    <div class="hotel-card reveal visible" data-store-url="store/<?= lyaideu_slugify((string)$sHotel['name']) ?>">
                         <div class="hotel-avatar">
                             <?php if ($sHotel['logo'] !== ''): ?>
                                 <img class="hotel-logo" src="<?= lyaideu_featured_e($sHotel['logo']) ?>" alt="<?= lyaideu_featured_e($sHotel['name']) ?>" loading="lazy">
@@ -237,7 +237,7 @@ $FEATURED_MART_ICONS = [
                             <?php if ($sHotel['phone'] !== ''): ?>
                             <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($sHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
                             <?php endif; ?>
-                            <a class="hotel-call" href="store/<?= (int)$sHotel['id'] ?>"><i class="fa-solid fa-store"></i> View Store</a>
+                            <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$sHotel['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -319,7 +319,7 @@ $FEATURED_MART_ICONS = [
                     </div>
                     <div class="grid hotels-grid home-grid" id="featuredHotels">
                         <?php foreach ($featured['hotels'] as $fHotel): ?>
-                        <div class="hotel-card reveal visible" data-store-url="store/<?= (int)$fHotel['id'] ?>">
+                        <div class="hotel-card reveal visible" data-store-url="store/<?= lyaideu_slugify((string)$fHotel['name']) ?>">
                             <div class="hotel-avatar">
                                 <?php if ($fHotel['logo'] !== ''): ?>
                                     <img class="hotel-logo" src="<?= lyaideu_featured_e($fHotel['logo']) ?>" alt="<?= lyaideu_featured_e($fHotel['name']) ?>" loading="lazy">
@@ -332,7 +332,7 @@ $FEATURED_MART_ICONS = [
                                 <?php if ($fHotel['phone'] !== ''): ?>
                                 <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
                                 <?php endif; ?>
-                                <a class="hotel-call" href="store/<?= (int)$fHotel['id'] ?>"><i class="fa-solid fa-store"></i> View Store</a>
+                                <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fHotel['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -348,7 +348,7 @@ $FEATURED_MART_ICONS = [
                     </div>
                     <div class="grid hotels-grid home-grid" id="featuredMartStores">
                         <?php foreach ($featured['mart_stores'] as $fMartStore): ?>
-                        <div class="hotel-card reveal visible" data-store-url="store/<?= (int)$fMartStore['id'] ?>">
+                        <div class="hotel-card reveal visible" data-store-url="store/<?= lyaideu_slugify((string)$fMartStore['name']) ?>">
                             <div class="hotel-avatar">
                                 <?php if ($fMartStore['logo'] !== ''): ?>
                                     <img class="hotel-logo" src="<?= lyaideu_featured_e($fMartStore['logo']) ?>" alt="<?= lyaideu_featured_e($fMartStore['name']) ?>" loading="lazy">
@@ -361,7 +361,7 @@ $FEATURED_MART_ICONS = [
                                 <?php if ($fMartStore['phone'] !== ''): ?>
                                 <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fMartStore['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
                                 <?php endif; ?>
-                                <a class="hotel-call" href="store/<?= (int)$fMartStore['id'] ?>"><i class="fa-solid fa-store"></i> View Store</a>
+                                <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fMartStore['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -463,7 +463,7 @@ $FEATURED_MART_ICONS = [
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=17"></script>
+<script src="js/script.js?v=18"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>
