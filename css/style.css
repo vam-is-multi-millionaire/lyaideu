@@ -828,13 +828,14 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .related-img i{font-size:2rem;color:var(--orange-600);}
 .related-info{padding:.6rem .65rem .65rem;display:flex;flex-direction:column;gap:.4rem;align-items:flex-start;flex:1;}
 .related-info h4{font-size:.85rem;font-weight:900;line-height:1.25;overflow-wrap:anywhere;}
-.related-info .price{font-size:.95rem;display:block;}
-.related-info .btn-order.add-cart{position:relative;overflow:hidden;min-height:0;height:auto;width:100%;padding:.4rem .72rem;font-size:.7rem;font-weight:800;gap:.32rem;border:0;border-radius:999px;box-shadow:0 3px 0 rgba(199,88,0,.9);flex:none;line-height:1;margin-top:auto;}
-.related-info .btn-order.add-cart::after{content:"";position:absolute;top:0;left:-160%;width:60%;height:100%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);transition:left .5s ease;pointer-events:none;}
-.related-info .btn-order.add-cart i{font-size:.68rem;}
-.related-info .btn-order.add-cart:hover{background:var(--orange-500,#d95c00)!important;}
-.related-info .btn-order.add-cart:hover::after{left:170%;}
-.related-info .btn-order.add-cart:active{transform:translateY(0) scale(.96);}
+.related-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:.4rem;width:100%;}
+.related-foot .price{font-size:.95rem;display:block;white-space:nowrap;}
+.related-foot .btn-order.add-cart{position:relative;overflow:hidden;min-height:0;height:auto;padding:.38rem .72rem;font-size:.68rem;font-weight:800;gap:.32rem;border:0;border-radius:999px;box-shadow:0 3px 0 rgba(199,88,0,.9);flex:none;line-height:1;}
+.related-foot .btn-order.add-cart::after{content:"";position:absolute;top:0;left:-160%;width:60%;height:100%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);transition:left .5s ease;pointer-events:none;}
+.related-foot .btn-order.add-cart i{font-size:.68rem;}
+.related-foot .btn-order.add-cart:hover{background:var(--orange-500,#d95c00)!important;}
+.related-foot .btn-order.add-cart:hover::after{left:170%;}
+.related-foot .btn-order.add-cart:active{transform:translateY(0) scale(.96);}
 @media (max-width:900px){
   .product-main{grid-template-columns:1fr;gap:1.4rem;}
   .product-media img{aspect-ratio:4/3;}

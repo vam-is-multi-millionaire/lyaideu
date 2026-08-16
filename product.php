@@ -240,8 +240,10 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                             </a>
                             <div class="related-info">
                                 <h4><?= e($rItem['name']) ?></h4>
-                                <span class="price"><small>Rs.</small> <?= (int)$rItem['price'] ?><?= ($type === 'mart' && $rItem['unit'] !== '') ? ' <span class="unit">/ ' . e($rItem['unit']) . '</span>' : '' ?></span>
-                                <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= (int)$rItem['price'] ?>"<?= ($type === 'mart' && $rItem['unit'] !== '') ? ' data-unit="' . e($rItem['unit']) . '"' : '' ?> data-hotel="<?= e($type === 'mart' ? ($rItem['hotel'] ?? '') : ($rItem['hotel'] ?? '')) ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>
+                                <div class="related-foot">
+                                    <span class="price"><small>Rs.</small> <?= (int)$rItem['price'] ?><?= ($type === 'mart' && $rItem['unit'] !== '') ? ' <span class="unit">/ ' . e($rItem['unit']) . '</span>' : '' ?></span>
+                                    <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= (int)$rItem['price'] ?>"<?= ($type === 'mart' && $rItem['unit'] !== '') ? ' data-unit="' . e($rItem['unit']) . '"' : '' ?> data-hotel="<?= e($type === 'mart' ? ($rItem['hotel'] ?? '') : ($rItem['hotel'] ?? '')) ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
