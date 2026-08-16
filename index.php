@@ -16,7 +16,7 @@ require_once __DIR__ . '/site_config.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
@@ -41,20 +41,23 @@ if ($featuredPdo instanceof PDO) {
         )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels')->fetchAll();
     } catch (Throwable $e) {
-        $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
     }
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
+    $featured['other_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'other'));
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
     shuffle($featured['others']);
     shuffle($featured['hotels']);
     shuffle($featured['mart_stores']);
+    shuffle($featured['other_stores']);
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
     $featured['others'] = array_slice($featured['others'], 0, 12);
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
     $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
+    $featured['other_stores'] = array_slice($featured['other_stores'], 0, 4);
 }
 
 $searchResults = null;
@@ -457,6 +460,35 @@ $FEATURED_OTHER_ICONS = [
                                 <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fMartStore['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
                                 <?php endif; ?>
                                 <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fMartStore['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['other_stores']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-gift"></i> Other Stores</h3>
+                        <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid hotels-grid home-grid" id="featuredOtherStores">
+                        <?php foreach ($featured['other_stores'] as $fOtherStore): ?>
+                        <div class="hotel-card reveal visible" data-store-url="store/<?= lyaideu_slugify((string)$fOtherStore['name']) ?>">
+                            <div class="hotel-avatar">
+                                <?php if ($fOtherStore['logo'] !== ''): ?>
+                                    <img class="hotel-logo" src="<?= lyaideu_featured_e($fOtherStore['logo']) ?>" alt="<?= lyaideu_featured_e($fOtherStore['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= lyaideu_featured_e($fOtherStore['emoji'] !== '' ? $fOtherStore['emoji'] : 'fa-gift') ?>"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hotel-info"><h3><?= lyaideu_featured_e($fOtherStore['name']) ?></h3><p><?= lyaideu_featured_e($fOtherStore['type']) ?></p></div>
+                            <div class="hotel-call-row">
+                                <?php if ($fOtherStore['phone'] !== ''): ?>
+                                <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fOtherStore['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
+                                <?php endif; ?>
+                                <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fOtherStore['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>
                         <?php endforeach; ?>
