@@ -442,7 +442,7 @@ $FEATURED_OTHER_ICONS = [
                 <div class="feat-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-basket-shopping"></i> Mart Partner</h3>
-                        <a class="see-all" href="mart">Shop the Mart <i class="fa-solid fa-arrow-right"></i></a>
+                        <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
                     </div>
                     <div class="grid hotels-grid home-grid" id="featuredMartStores">
                         <?php foreach ($featured['mart_stores'] as $fMartStore): ?>
