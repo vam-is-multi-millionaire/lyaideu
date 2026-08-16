@@ -163,7 +163,7 @@ $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'd
 <?php if ($isDetail): ?>
     <section id="store" class="section section-white">
         <div class="container">
-            <a class="back-link" href="store"><i class="fa-solid fa-arrow-left"></i> Back to Stores</a>
+            <a class="back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>"><i class="fa-solid fa-arrow-left"></i> <?= lyaideu_from_home() ? 'Back to Home' : 'Back to Stores' ?></a>
 
             <div class="store-hero">
                 <div class="store-hero-avatar">

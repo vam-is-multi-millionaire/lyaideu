@@ -1778,6 +1778,20 @@ function lyaideu_base_tag(): string {
     return '<base href="' . htmlspecialchars(lyaideu_base_url(), ENT_QUOTES, 'UTF-8') . '">';
 }
 
+function lyaideu_from_home(): bool {
+    $ref = trim((string)($_SERVER['HTTP_REFERER'] ?? ''));
+    if ($ref === '') {
+        return false;
+    }
+    $path = rtrim((string)(parse_url($ref, PHP_URL_PATH) ?: ''), '/');
+    $base = rtrim(parse_url(lyaideu_base_url(), PHP_URL_PATH) ?: '', '/');
+    if ($path === '' || $path === $base) {
+        return true;
+    }
+    $leaf = substr($path, strrpos($path, '/') + 1);
+    return $leaf === 'index' || $leaf === 'index.php';
+}
+
 
 function site_favicon_url(): string {
     return site_setting('site_favicon', 'favicon.ico');

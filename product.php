@@ -27,6 +27,7 @@ if ($id <= 0 && $slug !== '') {
     }
 }
 $back = $type === 'mart' ? 'mart' : 'menu';
+$backLink = lyaideu_from_home() ? 'index' : $back;
 
 $item = null;
 $related = [];
@@ -164,7 +165,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 
 <main class="product-wrap section">
     <div class="container">
-        <a class="back-link" href="<?= $back ?>"><i class="fa-solid fa-arrow-left"></i> Back to <?= $type === 'mart' ? 'Mart' : 'Menu' ?></a>
+        <a class="back-link" href="<?= $backLink ?>"><i class="fa-solid fa-arrow-left"></i> <?= $backLink === 'index' ? 'Back to Home' : 'Back to ' . ($type === 'mart' ? 'Mart' : 'Menu') ?></a>
 
         <div class="product-breadcrumb">
             <a href="<?= $back ?>"><?= $type === 'mart' ? 'Mart' : 'Menu' ?></a>
