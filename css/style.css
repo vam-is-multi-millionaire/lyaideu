@@ -1131,3 +1131,18 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .pm-remove-img input{width:auto!important;accent-color:#c93a3a;}
 .pm-empty{padding:1.2rem;color:var(--muted);text-align:center;font-weight:700;background:#fff;border:1px dashed var(--orange-200);border-radius:12px;}
 @media(max-width:640px){.pm-item{flex-wrap:wrap;}.pm-price{order:3;width:100%;}}
+
+/* === Admin Stores & Vendors === */
+.store-kind-badge{display:inline-block;font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;padding:.28rem .6rem;border-radius:999px;margin-left:.55rem;vertical-align:middle;}
+.store-kind-hotel{background:#fff3d6;color:#9a6b00;}
+.store-kind-mart{background:#e3f4e8;color:#19733a;}
+.store-kind-other{background:#e9e7ff;color:#4c3db8;}
+.pm-vendor-row{font-weight:800;}
+.store-vendor-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:900;padding:.3rem .7rem;border-radius:999px;background:#eef0f3;color:#5a6472;border:1px solid #dfe3ea;white-space:nowrap;}
+.store-vendor-pill.is-active{background:#e4f6ea;color:#1e7d3c;border-color:#bfe8cd;}
+.store-vendor-pill i{font-size:.75rem;}
+.pm-vendor-block{margin-top:1rem;padding:1rem 1.1rem;background:var(--orange-50);border:1px dashed var(--orange-300);border-radius:12px;}
+.pm-vendor-title{margin:0 0 .2rem;font-family:var(--font-display);color:var(--orange-900);font-size:1rem;display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;}
+.pm-vendor-title .small-note{margin-left:auto;font-size:.75rem;font-weight:700;color:var(--muted);}
+.pm-vendor-title code{background:var(--orange-100);padding:.1rem .45rem;border-radius:6px;color:var(--orange-800);font-size:.75rem;}
+.pm-add-panel .pm-vendor-title .small-note{margin-left:0;}
