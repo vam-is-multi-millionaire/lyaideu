@@ -1,0 +1,249 @@
+<?php
+session_set_cookie_params([
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+session_start();
+$user = $_SESSION['user'] ?? null;
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
+$parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
+$firstName = $parts[0] ?? '';
+$initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
+lyaideu_ensure_stores();
+
+$id = (int)($_GET['id'] ?? 0);
+$slug = trim((string)($_GET['slug'] ?? ''));
+if ($id <= 0 && $slug !== '') {
+    try {
+        $st = $pdo->prepare('SELECT id FROM hotels WHERE id = ?');
+        if (preg_match('/^[0-9]+$/', $slug)) {
+            $st->execute([(int)$slug]);
+            $id = (int)$st->fetchColumn();
+        } else {
+            $id = 0;
+            $rows = $pdo->query('SELECT id, name FROM hotels')->fetchAll();
+            $needle = lyaideu_slugify($slug);
+            foreach ($rows as $r) {
+                if (lyaideu_slugify((string)$r['name']) === $needle) {
+                    $id = (int)$r['id'];
+                    break;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        $id = 0;
+    }
+}
+
+$store = null;
+$products = [];
+$vendorId = 0;
+$kind = 'hotel';
+try {
+    $st = $pdo->prepare('SELECT id, name, type, phone, emoji, logo, kind, `desc` FROM hotels WHERE id = ? LIMIT 1');
+    $st->execute([$id]);
+    $store = $st->fetch() ?: null;
+} catch (Throwable $e) {
+    $store = null;
+}
+
+if (!$store) {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Store not found.'];
+    header('Location: ' . lyaideu_base_url() . 'hotels');
+    exit;
+}
+
+$kind = strtolower((string)($store['kind'] ?? 'hotel'));
+$storeName = (string)$store['name'];
+
+try {
+    if ($kind === 'mart') {
+        $vendorId = (int)$pdo->query("SELECT id FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id LIMIT 1")->fetchColumn();
+        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE vendor_id = ? OR (vendor_id IS NULL) ORDER BY id');
+        $st->execute([$vendorId > 0 ? $vendorId : 0]);
+        $products = $st->fetchAll();
+    } elseif ($kind === 'hotel') {
+        $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
+        $st->execute([$id]);
+        $vendorId = (int)$st->fetchColumn();
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
+        $st->execute([$vendorId > 0 ? $vendorId : 0, $storeName]);
+        $products = $st->fetchAll();
+    }
+} catch (Throwable $e) {
+    $products = [];
+}
+
+function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+
+$kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : 'Hotel');
+$kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-store' : 'fa-hotel');
+$MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow', 'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie'];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?= lyaideu_base_tag() ?>
+<title><?= e($store['name']) ?> | Stores · LyaiDeu</title>
+<?= site_head_icons() ?>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="css/style.css?v=18">
+</head>
+<body class="store-pg">
+
+<header class="topbar">
+    <nav class="nav">
+        <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <form class="nav-search" action="hotels" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search stores" aria-label="Search stores"></form>
+        <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index" class="nav-a">Home</a></li>
+            <li><a href="menu" class="nav-a">Menu</a></li>
+            <li><a href="hotels" class="nav-a active">Stores</a></li>
+            <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="orders" class="nav-a">Orders</a></li>
+            <?php if ($user): ?>
+            <li>
+                <div class="profile-wrap">
+                    <button class="profile-chip" id="profileChip" type="button">
+                        <span class="avatar"<?= !empty($user['avatar']) ? ' style="background-image:url(\'' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '\')"' : '' ?>><?= empty($user['avatar']) ? htmlspecialchars($initials) : '' ?></span>
+                        <span class="chip-name"><?= htmlspecialchars($firstName) ?></span>
+                        <span class="caret"><i class="fa-solid fa-chevron-down"></i></span>
+                    </button>
+                    <div class="profile-menu" id="profileMenu">
+                        <p class="pm-name"><i class="fa-solid fa-user"></i> <?= htmlspecialchars($user['name']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($user['email']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($user['phone']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-cake-candles"></i> <?= htmlspecialchars($user['dob']) ?></p>
+                        <?php if (!empty($_SESSION['is_admin'])): ?>
+                            <a class="btn btn-outline btn-block" href="admin"><i class="fa-solid fa-gear"></i> Admin Panel</a>
+                        <?php endif; ?>
+                        <a class="btn btn-outline btn-block" href="profile" style="margin-top:.5rem;"><i class="fa-solid fa-user-gear"></i> My Profile</a>
+                        <a class="btn btn-outline btn-block" href="orders" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
+                        <a class="btn btn-primary btn-block" href="logout" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
+                    </div>
+                </div>
+            </li>
+            <?php else: ?>
+            <li><a class="nav-a nav-cta" href="login"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</header>
+
+<?php if ($flash): ?>
+    <div class="flash-banner flash-<?= $flash['type'] ?>"><?= $flash['msg'] ?></div>
+<?php endif; ?>
+
+<main>
+    <section id="store" class="section section-white">
+        <div class="container">
+            <a class="back-link" href="hotels"><i class="fa-solid fa-arrow-left"></i> Back to Stores</a>
+
+            <div class="store-hero">
+                <div class="store-hero-avatar">
+                    <?php if (!empty($store['logo'])): ?>
+                        <img class="hotel-logo" src="<?= e($store['logo']) ?>" alt="<?= e($store['name']) ?>" loading="lazy">
+                    <?php else: ?>
+                        <i class="fa-solid <?= $store['emoji'] !== '' ? e($store['emoji']) : e($kindIcon) ?>"></i>
+                    <?php endif; ?>
+                </div>
+                <div class="store-hero-info">
+                    <span class="hotel-kind-badge"><i class="fa-solid <?= e($kindIcon) ?>"></i> <?= e($kindLabel) ?></span>
+                    <h1 class="display"><?= e($store['name']) ?></h1>
+                    <?php if ($store['type'] !== ''): ?>
+                        <p class="store-hero-type"><i class="fa-solid fa-location-dot"></i> <?= e($store['type']) ?></p>
+                    <?php endif; ?>
+                    <?php if ($store['desc'] !== ''): ?>
+                        <p class="store-hero-desc"><?= nl2br(e($store['desc'])) ?></p>
+                    <?php endif; ?>
+                    <div class="store-hero-actions">
+                        <?php if ($store['phone'] !== ''): ?>
+                            <a class="btn btn-outline" href="tel:+977<?= e($store['phone']) ?>"><i class="fa-solid fa-phone"></i> +977 <?= e($store['phone']) ?></a>
+                        <?php endif; ?>
+                        <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="store-products">
+                <h2 class="store-products-title">
+                    <?php if ($kind === 'mart'): ?>
+                        <i class="fa-solid fa-basket-shopping"></i> Our Products
+                    <?php else: ?>
+                        <i class="fa-solid fa-utensils"></i> Our Menu
+                    <?php endif; ?>
+                </h2>
+                <?php if ($products): ?>
+                    <div class="grid dish-grid store-grid">
+                        <?php foreach ($products as $p):
+                            $isMart = $kind === 'mart';
+                            $price = (int)$p['price'];
+                            $unitHtml = $isMart && $p['unit'] !== '' ? ' <span class="unit">/ ' . e($p['unit']) . '</span>' : '';
+                            $img = (string)$p['img'];
+                            $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($isMart ? '<span class="mart-art"><i class="fa-solid ' . e($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
+                            $url = ($isMart ? 'mart' : 'menu') . '/' . (int)$p['id'];
+                        ?>
+                        <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $isMart ? 'mart' : 'dish' ?>">
+                            <div class="dish-art <?= $isMart ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
+                            <div class="dish-body">
+                                <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
+                                <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $price ?><?= $unitHtml ?></span>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $isMart ? 'mart' : 'dish' ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $isMart && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($isMart ? $store['name'] : ($p['hotel'] !== '' ? $p['hotel'] : $store['name'])) ?>" data-img="<?= e($img) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
+                            </div>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state" style="display:block;">
+                        <span class="big"><i class="fa-solid <?= e($kindIcon) ?>"></i></span>
+                        <p><?= $kind === 'other' ? 'This partner store is setting up its catalog — check back soon!' : 'No products published yet. Check back soon!' ?></p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+</main>
+
+<button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
+<div class="cart-overlay" id="cartOverlay"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div id="cartItems" class="cart-items"></div>
+  <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
+  <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
+</aside>
+
+<footer class="footer">
+    <div class="footer-grid">
+        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="hotels">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
+    </div>
+    <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
+</footer>
+
+<script src="js/script.js?v=15"></script>
+<script src="js/notify.js?v=4"></script>
+<script>
+(function(){
+  document.addEventListener('click',function(e){
+    var card=e.target.closest('.store-grid .dish-card');
+    if(!card)return;
+    if(e.target.closest('.add-cart')||e.target.closest('a'))return;
+    var url=card.getAttribute('data-url');
+    if(url)window.location.href=url;
+  });
+})();
+</script>
+</body>
+</html>

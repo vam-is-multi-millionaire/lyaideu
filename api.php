@@ -18,7 +18,7 @@ try {
     lyaideu_ensure_stores();
 
     $hotels = $pdo->query(
-        "SELECT h.id, h.name, h.type, h.phone, h.emoji, h.logo, h.kind,
+        "SELECT h.id, h.name, h.type, h.phone, h.emoji, h.logo, h.kind, h.`desc`,
                 v.id AS vendor_id, v.name AS vendor_name
          FROM hotels h
          LEFT JOIN vendors v ON v.hotel_id = h.id AND v.scope = 'hotel' AND v.is_active = 1

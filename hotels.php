@@ -106,7 +106,7 @@ require_once __DIR__ . '/site_config.php';
     <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
-<script src="js/script.js?v=14"></script>
+<script src="js/script.js?v=15"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

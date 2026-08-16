@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS hotels (
   emoji VARCHAR(50) NOT NULL DEFAULT '',
   logo VARCHAR(500) NOT NULL DEFAULT '',
   kind VARCHAR(20) NOT NULL DEFAULT 'hotel',
+  `desc` TEXT NOT NULL,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -283,6 +284,8 @@ ALTER TABLE contacts MODIFY ico VARCHAR(50) NOT NULL DEFAULT '';
 ALTER TABLE hotels ADD COLUMN logo VARCHAR(500) NOT NULL DEFAULT '';
 -- Partner store kind: 'hotel' (default), 'mart', or 'other' for future business types.
 ALTER TABLE hotels ADD COLUMN kind VARCHAR(20) NOT NULL DEFAULT 'hotel';
+-- Store description shown on each store's own page (editable by the vendor).
+ALTER TABLE hotels ADD COLUMN `desc` TEXT NOT NULL;
 INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES ('LyaiDeu Mart', 'Grocery & daily essentials', '', 'fa-basket-shopping', '', 'mart');
 
 -- Category system: table + category_id columns (idempotent for existing installs).

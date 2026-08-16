@@ -221,6 +221,30 @@ section{scroll-margin-top:96px;}
 .hotel-login{display:inline-block;margin-top:.35rem;font-size:.72rem;font-weight:900;color:var(--orange-700);
             border:2px solid var(--orange-300);padding:.35rem .7rem;border-radius:8px;text-decoration:none;transition:.2s;}
 .hotel-login:hover{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+.hotel-card{cursor:pointer;}
+.hotel-call-row{display:flex;flex-wrap:wrap;justify-content:center;gap:.45rem;margin-top:.1rem;}
+.hotel-call-row .hotel-call{display:inline-block;}
+
+/* ---------------- STORE PAGE ---------------- */
+.store-hero{display:flex;gap:1.6rem;align-items:center;background:#fff;border:2px solid var(--orange-100);
+            border-radius:18px;padding:2rem;box-shadow:var(--shadow-sm);margin-bottom:2rem;}
+.store-hero-avatar{width:120px;height:120px;flex-shrink:0;border-radius:22px;background:var(--orange-100);
+                   display:grid;place-items:center;font-size:3.4rem;overflow:hidden;}
+.store-hero-avatar .hotel-logo{width:100%;height:100%;object-fit:contain;display:block;background:#fff;padding:10px;border-radius:22px;}
+.store-hero-info{min-width:0;flex:1;}
+.store-hero-info h1{margin:.2rem 0 .15rem;}
+.store-hero-type{font-size:.95rem;font-weight:800;color:var(--muted);margin:.15rem 0;}
+.store-hero-desc{font-size:.9rem;color:#6b4a2b;font-weight:600;line-height:1.55;margin:.6rem 0 0;}
+.store-hero-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem;}
+.store-hero-actions .btn{margin:0;}
+.store-products-title{font-family:var(--font-display);font-size:1.5rem;color:var(--orange-900);
+                      margin:0 0 1rem;display:flex;align-items:center;gap:.5rem;}
+.store-grid .dish-card{cursor:pointer;}
+@media(max-width:640px){
+  .store-hero{flex-direction:column;text-align:center;padding:1.5rem 1rem;}
+  .store-hero-avatar{width:88px;height:88px;font-size:2.4rem;}
+  .store-hero-actions{justify-content:center;}
+}
 
 /* ---------------- CONTACT ---------------- */
 .contact-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}

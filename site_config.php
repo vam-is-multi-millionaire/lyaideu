@@ -528,6 +528,7 @@ function lyaideu_ensure_stores(): bool {
     }
     try {
         lyaideu_ensure_column($pdo, 'hotels', 'kind', "VARCHAR(20) NOT NULL DEFAULT 'hotel'");
+        lyaideu_ensure_column($pdo, 'hotels', 'desc', 'TEXT NOT NULL');
         $martStore = (int)$pdo->query("SELECT COUNT(*) FROM hotels WHERE kind = 'mart'")->fetchColumn();
         if ($martStore === 0) {
             $pdo->prepare(
