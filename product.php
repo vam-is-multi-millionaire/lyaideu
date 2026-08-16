@@ -43,7 +43,12 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug,
+                                      COALESCE(h.name, \'\') AS hotel
+                               FROM mart_items m
+                               LEFT JOIN vendors v ON v.id = m.vendor_id
+                               LEFT JOIN hotels h ON h.id = v.hotel_id
+                               WHERE m.cat = :cat AND m.id <> :id ORDER BY m.id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -223,19 +228,22 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <div class="related-grid">
                     <?php foreach ($related as $rItem): ?>
                         <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
-                        <a class="related-card" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
-                            <div class="related-img">
-                                <?php if ($rItem['img'] !== ''): ?>
-                                    <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">
-                                <?php else: ?>
-                                    <?= $relIcon($rItem['cat']) ?>
-                                <?php endif; ?>
-                            </div>
+                        <div class="related-card">
+                            <a class="related-link" href="<?= $type === 'mart' ? 'mart' : 'menu' ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
+                                <div class="related-img">
+                                    <?php if ($rItem['img'] !== ''): ?>
+                                        <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">
+                                    <?php else: ?>
+                                        <?= $relIcon($rItem['cat']) ?>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
                             <div class="related-info">
                                 <h4><?= e($rItem['name']) ?></h4>
                                 <span class="price"><small>Rs.</small> <?= (int)$rItem['price'] ?><?= ($type === 'mart' && $rItem['unit'] !== '') ? ' <span class="unit">/ ' . e($rItem['unit']) . '</span>' : '' ?></span>
+                                <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= (int)$rItem['price'] ?>"<?= ($type === 'mart' && $rItem['unit'] !== '') ? ' data-unit="' . e($rItem['unit']) . '"' : '' ?> data-hotel="<?= e($type === 'mart' ? ($rItem['hotel'] ?? '') : ($rItem['hotel'] ?? '')) ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>
                             </div>
-                        </a>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
