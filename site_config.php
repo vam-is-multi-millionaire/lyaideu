@@ -83,6 +83,10 @@ function lyaideu_ensure_settings_table(): bool {
 }
 
 function lyaideu_ensure_mart_table(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return false;
@@ -132,6 +136,7 @@ function lyaideu_ensure_mart_table(): bool {
                 ]);
             }
         }
+        $done = true;
         return true;
     } catch (Throwable $e) {
         return false;
@@ -147,6 +152,9 @@ function lyaideu_ensure_other_table(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return false;
+    }
+    if (!empty($GLOBALS['__lyaideu_other_table_ready'])) {
+        return true;
     }
     try {
         $stmt = $pdo->query("SHOW TABLES LIKE 'other_items'");
@@ -198,6 +206,7 @@ function lyaideu_ensure_other_table(): bool {
             }
         }
         lyaideu_ensure_product_slugs();
+        $GLOBALS['__lyaideu_other_table_ready'] = true;
         return true;
     } catch (Throwable $e) {
         return false;
@@ -250,7 +259,10 @@ function lyaideu_ensure_categories_table(): bool {
 
         $GLOBALS['__lyaideu_categories_ready'] = true;
 
-        lyaideu_seed_categories();
+        $catCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
+        if ($catCount === 0) {
+            lyaideu_seed_categories();
+        }
         lyaideu_assign_products_to_categories();
         return true;
     } catch (Throwable $e) {
@@ -454,6 +466,11 @@ function lyaideu_assign_products_to_categories(): void {
 }
 
 function lyaideu_categories(?string $type = null): array {
+    static $cache = [];
+    $cacheKey = (string)$type;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return [];
@@ -467,7 +484,9 @@ function lyaideu_categories(?string $type = null): array {
     $sql .= ' ORDER BY type, sort_order, name';
     $st = $pdo->prepare($sql);
     $st->execute($params);
-    return $st->fetchAll();
+    $rows = $st->fetchAll();
+    $cache[$cacheKey] = $rows;
+    return $rows;
 }
 
 function lyaideu_categories_flat(string $type, int $excludeId = 0): array {
@@ -503,13 +522,15 @@ function lyaideu_categories_flat(string $type, int $excludeId = 0): array {
 }
 
 function lyaideu_category_path(int $categoryId): array {
-    $pdo = lyaideu_load_pdo();
-    if (!$pdo instanceof PDO || $categoryId <= 0) {
-        return [];
+    static $byId = null;
+    if ($byId === null) {
+        $byId = [];
+        foreach (lyaideu_categories() as $row) {
+            $byId[(int)$row['id']] = $row;
+        }
     }
-    $byId = [];
-    foreach ($pdo->query('SELECT id, name, slug, type, parent_id, icon FROM categories') as $row) {
-        $byId[(int)$row['id']] = $row;
+    if ($categoryId <= 0) {
+        return [];
     }
     $path = [];
     $cur = $byId[$categoryId] ?? null;
@@ -547,6 +568,10 @@ function lyaideu_cat_name(?int $categoryId): string {
  * slugs (name-slug, with "-2", "-3" ... suffixes for duplicate names).
  */
 function lyaideu_ensure_product_slugs(): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return;
@@ -578,6 +603,7 @@ function lyaideu_ensure_product_slugs(): void {
     } catch (Throwable $e) {
         // Best-effort; never break the page because of it.
     }
+    $done = true;
 }
 
 /**
@@ -614,6 +640,10 @@ function lyaideu_sync_item_slug(string $table, int $id, string $name): void {
  * Idempotent — safe to call on every request.
  */
 function lyaideu_ensure_stores(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return false;
@@ -688,6 +718,7 @@ function lyaideu_ensure_stores(): bool {
         } catch (Throwable $e) {
             // Ignore linking errors.
         }
+        $done = true;
         return true;
     } catch (Throwable $e) {
         return false;
