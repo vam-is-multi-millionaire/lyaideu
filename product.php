@@ -33,7 +33,12 @@ $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE id = :id');
+        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug,
+                                    COALESCE(h.name, \'\') AS hotel
+                             FROM mart_items m
+                             LEFT JOIN vendors v ON v.id = m.vendor_id
+                             LEFT JOIN hotels h ON h.id = v.hotel_id
+                             WHERE m.id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
@@ -186,6 +191,8 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <h1 class="display"><?= e($item['name']) ?></h1>
                 <?php if ($type === 'dish' && $item['hotel'] !== ''): ?>
                     <p class="product-hotel"><i class="fa-solid fa-hotel"></i> <?= e($item['hotel']) ?></p>
+                <?php elseif ($type === 'mart' && !empty($item['hotel'])): ?>
+                    <p class="product-hotel"><i class="fa-solid fa-store"></i> <?= e($item['hotel']) ?></p>
                 <?php endif; ?>
                 <?php if ($item['desc'] !== ''): ?>
                     <p class="product-desc"><?= e($item['desc']) ?></p>
@@ -196,7 +203,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 </div>
 
                 <div class="product-actions">
-                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
+                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 

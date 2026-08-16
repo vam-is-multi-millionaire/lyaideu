@@ -57,7 +57,7 @@ foreach ($cart as $row) {
         $item = [
             'dish_id' => null,
             'name' => $d['name'],
-            'hotel' => 'LyaiDeu Mart',
+            'hotel' => lyaideu_mart_store_name($id),
             'price' => (int)$d['price'],
             'vendor_id' => lyaideu_resolve_mart_vendor($id),
         ];

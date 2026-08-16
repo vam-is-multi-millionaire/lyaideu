@@ -22,7 +22,14 @@ if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_ensure_stores();
         $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
-        $featured['mart']   = $featuredPdo->query('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items')->fetchAll();
+        $featured['mart']   = $featuredPdo->query(
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM mart_items m
+             LEFT JOIN vendors v ON v.id = m.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             ORDER BY m.id'
+        )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels')->fetchAll();
     } catch (Throwable $e) {
         $featured = ['dishes' => [], 'mart' => [], 'hotels' => [], 'mart_stores' => []];
@@ -47,7 +54,15 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
         $searchResults['dishes'] = $st->fetchAll();
-        $st = $featuredPdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug FROM mart_items WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st = $featuredPdo->prepare(
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM mart_items m
+             LEFT JOIN vendors v ON v.id = m.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE m.name LIKE ? OR m.tag LIKE ? OR m.`desc` LIKE ?
+             ORDER BY m.name LIMIT 30'
+        );
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
         $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
@@ -209,7 +224,7 @@ $FEATURED_MART_ICONS = [
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sMart['price'] ?><?= $sMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sMart['unit']) . '</span>' : '' ?></span>
-                        <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= (int)$sMart['price'] ?>" data-unit="<?= lyaideu_featured_e($sMart['unit']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= (int)$sMart['price'] ?>" data-unit="<?= lyaideu_featured_e($sMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sMart['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                     </article>
                     <?php endforeach; ?>
                 </div>
@@ -304,7 +319,7 @@ $FEATURED_MART_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fMart['price'] ?><?= $fMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fMart['unit']) . '</span>' : '' ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>

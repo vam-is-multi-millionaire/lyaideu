@@ -1485,9 +1485,30 @@ function lyaideu_resolve_mart_vendor(int $itemId): int {
 }
 
 /**
- * Shared image-upload handler for product images (admin + vendor dashboards).
- * Returns the saved upload path, or the existing image when no new file is sent.
+ * Resolves the mart store (hotel) name that owns a mart item, via the item's
+ * vendor and that vendor's linked store. Falls back to 'LyaiDeu Mart' when no
+ * vendor/store link exists.
  */
+function lyaideu_mart_store_name(int $itemId): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 'LyaiDeu Mart';
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT COALESCE(h.name, \'\')
+             FROM mart_items m
+             LEFT JOIN vendors v ON v.id = m.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE m.id = ?'
+        );
+        $st->execute([$itemId]);
+        $name = (string)$st->fetchColumn();
+        return $name !== '' ? $name : 'LyaiDeu Mart';
+    } catch (Throwable $e) {
+        return 'LyaiDeu Mart';
+    }
+}
 function lyaideu_handle_item_image(string $existingImg, array $post, ?array $file, string $prefix): string {
     $img = $existingImg;
 

@@ -72,7 +72,7 @@ function renderMart(items){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
@@ -108,7 +108,7 @@ function syncSubChips(scope){
 }
 function initMartFilters(){const chips=$$('.chip[data-mcat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.mcat;syncSubChips('mart');applyMartFilters()}));const s=$('#martSearch')||$('.nav-search input[name=q]');if(s){searchQuery=(s.value||'').trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyMartFilters()})}$('#sortMart')?.addEventListener('change',applyMartFilters);const p=new URLSearchParams(location.search);const uq=(p.get('q')||'').trim().toLowerCase();if(uq)searchQuery=uq;const mc=p.get('mcat');if(mc){const t=document.querySelector('.chip[data-mcat="'+mc+'"]');if(t)t.click();else applyMartFilters()}else applyMartFilters()}
 function findItem(id,type){type=type||'dish';return (type==='mart'?allMart:allDishes).find(x=>Number(x.id)===Number(id))||null}
-function shopOfItem(d){if(!d)return'Other';if(d.type==='mart'||String(d.hotel)==='LyaiDeu Mart')return'LyaiDeu Mart';return String(d.hotel||'')||'Other'}
+function shopOfItem(d){if(!d)return'Other';const h=String(d.hotel||'').trim();if(h)return h;if(d.type==='mart')return'LyaiDeu Mart';return'Other'}
 function cartShops(c){c=c||[];return[...new Set(c.map(x=>x.shop||shopOfItem(findItem(x.id,x.type)||x)))].filter(Boolean)}
 function cartHasHotel(c){c=c||[];return c.some(r=>(r.type||'dish')==='dish')}
 function deliveryFeeFor(n){const f=DELIVERY_CFG.fee_schedule||[];n=Math.max(1,n|0);if(!f.length)return 50;if(n<=f.length)return f[n-1]|0;const last=f[f.length-1]|0,prev=f[f.length-2]|0,delta=last-prev;return Math.max(0,last+(n-f.length)*delta)}

@@ -32,9 +32,12 @@ try {
     )->fetchAll();
 
     $mart = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug
-         FROM mart_items
-         ORDER BY id'
+        'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug,
+                COALESCE(h.name, \'\') AS hotel
+         FROM mart_items m
+         LEFT JOIN vendors v ON v.id = m.vendor_id
+         LEFT JOIN hotels h ON h.id = v.hotel_id
+         ORDER BY m.id'
     )->fetchAll();
 
     foreach ($dishes as &$d) {
