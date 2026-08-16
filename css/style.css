@@ -1146,3 +1146,6 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .pm-vendor-title .small-note{margin-left:auto;font-size:.75rem;font-weight:700;color:var(--muted);}
 .pm-vendor-title code{background:var(--orange-100);padding:.1rem .45rem;border-radius:6px;color:var(--orange-800);font-size:.75rem;}
 .pm-add-panel .pm-vendor-title .small-note{margin-left:0;}
+.pm-status-pill{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:900;padding:.3rem .7rem;border-radius:999px;background:#eef0f3;color:#5a6472;border:1px solid #dfe3ea;white-space:nowrap;}
+.pm-status-pill.is-active{background:#e4f6ea;color:#1e7d3c;border-color:#bfe8cd;}
+.pm-status-pill i{font-size:.75rem;}
