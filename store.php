@@ -160,7 +160,6 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
             <li><a href="beverages" class="nav-a">Beverages</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a active">Stores</a></li>
-            <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">

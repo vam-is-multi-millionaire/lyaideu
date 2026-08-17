@@ -178,7 +178,6 @@ $FEATURED_BEVERAGE_ICONS = [
             <li><a href="beverages" class="nav-a">Beverages</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
-            <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
                 <div class="profile-wrap">
