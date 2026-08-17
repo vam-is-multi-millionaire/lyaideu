@@ -40,12 +40,13 @@ $subtotal = 0;
 $dishStmt = $pdo->prepare('SELECT id, name, hotel, price, vendor_id FROM dishes WHERE id = ? LIMIT 1');
 $martStmt = $pdo->prepare('SELECT id, name, price FROM mart_items WHERE id = ? LIMIT 1');
 $otherStmt = $pdo->prepare('SELECT id, name, price FROM other_items WHERE id = ? LIMIT 1');
+$beverageStmt = $pdo->prepare('SELECT id, name, price FROM beverage_items WHERE id = ? LIMIT 1');
 
 foreach ($cart as $row) {
     $id = (int)($row['id'] ?? 0);
     $qty = max(1, min(20, (int)($row['qty'] ?? 1)));
     $rawType = (string)($row['type'] ?? 'dish');
-    $type = in_array($rawType, ['mart', 'other'], true) ? $rawType : 'dish';
+    $type = in_array($rawType, ['mart', 'other', 'beverage'], true) ? $rawType : 'dish';
     if ($id <= 0) {
         continue;
     }
@@ -76,6 +77,20 @@ foreach ($cart as $row) {
             'hotel' => lyaideu_other_store_name($id),
             'price' => (int)$d['price'],
             'vendor_id' => lyaideu_resolve_other_vendor($id),
+        ];
+    } elseif ($type === 'beverage') {
+        lyaideu_ensure_beverage_table();
+        $beverageStmt->execute([$id]);
+        $d = $beverageStmt->fetch();
+        if (!$d) {
+            continue;
+        }
+        $item = [
+            'dish_id' => null,
+            'name' => $d['name'],
+            'hotel' => lyaideu_beverage_store_name($id),
+            'price' => (int)$d['price'],
+            'vendor_id' => lyaideu_resolve_beverage_vendor($id),
         ];
     } else {
         $dishStmt->execute([$id]);

@@ -49,6 +49,7 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a">Beverages</a></li>
             <li><a href="others" class="nav-a active">Others</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
@@ -121,7 +122,7 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=18"></script>
+<script src="js/script.js?v=19"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>

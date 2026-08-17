@@ -97,6 +97,21 @@ if ($isDetail) {
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
+        } elseif ($kind === 'beverage') {
+            lyaideu_ensure_beverage_table();
+            $vendorId = 0;
+            try {
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'beverage' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
+                $st->execute([$id]);
+                $vendorId = (int)$st->fetchColumn();
+            } catch (Throwable $e) {
+                $vendorId = 0;
+            }
+            if ($vendorId > 0) {
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM beverage_items WHERE vendor_id = ? ORDER BY id');
+                $st->execute([$vendorId]);
+                $products = $st->fetchAll();
+            }
         } elseif ($kind === 'hotel') {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
@@ -110,10 +125,11 @@ if ($isDetail) {
     }
 }
 
-$kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : 'Hotel');
-$kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : 'fa-hotel');
+$kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : ($kind === 'beverage' ? 'Beverages' : 'Hotel'));
+$kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : ($kind === 'beverage' ? 'fa-champagne-glasses' : 'fa-hotel'));
 $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow', 'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie'];
 $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 'achar' => 'fa-jar', 'gifts' => 'fa-gift'];
+$BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champagne-glasses', 'water' => 'fa-faucet-drip'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,6 +157,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a">Beverages</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a active">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
@@ -212,6 +229,8 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                         <i class="fa-solid fa-basket-shopping"></i> Our Products
                     <?php elseif ($kind === 'other'): ?>
                         <i class="fa-solid fa-gift"></i> Our Products
+                    <?php elseif ($kind === 'beverage'): ?>
+                        <i class="fa-solid fa-glass-water"></i> Our Products
                     <?php else: ?>
                         <i class="fa-solid fa-utensils"></i> Our Menu
                     <?php endif; ?>
@@ -221,13 +240,15 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                         <?php foreach ($products as $p):
                             $isMart = $kind === 'mart';
                             $isOther = $kind === 'other';
-                            $hasUnit = $isMart || $isOther;
+                            $isBeverage = $kind === 'beverage';
+                            $hasUnit = $isMart || $isOther || $isBeverage;
                             $price = (int)$p['price'];
                             $unitHtml = $hasUnit && $p['unit'] !== '' ? ' <span class="unit">/ ' . e($p['unit']) . '</span>' : '';
                             $img = (string)$p['img'];
-                            $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift')) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
-                            $url = ($isMart ? 'mart' : ($isOther ? 'others' : 'menu')) . '/' . (int)$p['id'];
-                            $cardType = $isMart ? 'mart' : ($isOther ? 'other' : 'dish');
+                            $catIcon = $isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($isOther ? ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift') : ($BEVERAGE_CAT_ICONS[$p['cat']] ?? 'fa-glass-water'));
+                            $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($catIcon) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
+                            $url = ($isMart ? 'mart' : ($isOther ? 'others' : ($isBeverage ? 'beverages' : 'menu'))) . '/' . (int)$p['id'];
+                            $cardType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'dish'));
                         ?>
                         <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $cardType ?>">
                             <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
@@ -242,7 +263,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                 <?php else: ?>
                     <div class="empty-state" style="display:block;">
                         <span class="big"><i class="fa-solid <?= e($kindIcon) ?>"></i></span>
-                        <p><?= $kind === 'other' ? 'This partner store is setting up its catalog — check back soon!' : 'No products published yet. Check back soon!' ?></p>
+                        <p><?= $kind === 'other' || $kind === 'beverage' ? 'This partner store is setting up its catalog — check back soon!' : 'No products published yet. Check back soon!' ?></p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -262,6 +283,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                     <button class="chip" data-skind="hotel"><i class="fa-solid fa-hotel"></i> Hotels</button>
                     <button class="chip" data-skind="mart"><i class="fa-solid fa-basket-shopping"></i> Mart</button>
                     <button class="chip" data-skind="other"><i class="fa-solid fa-store"></i> Other</button>
+                    <button class="chip" data-skind="beverage"><i class="fa-solid fa-glass-water"></i> Beverages</button>
                 </div>
                 <div class="menu-tools"></div>
             </div>
@@ -285,7 +307,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=18"></script>
+<script src="js/script.js?v=19"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>

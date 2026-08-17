@@ -7,8 +7,8 @@ require_once __DIR__ . '/db.php';
 lyaideu_ensure_delivery_tables();
 lyaideu_ensure_stores();
 
-$storeKinds = ['hotel' => 'Hotel / Restaurant', 'mart' => 'Mart', 'other' => 'Other business'];
-$kindIcons = ['hotel' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift'];
+$storeKinds = ['hotel' => 'Hotel / Restaurant', 'mart' => 'Mart', 'other' => 'Other business', 'beverage' => 'Beverages'];
+$kindIcons = ['hotel' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift', 'beverage' => 'fa-champagne-glasses'];
 
 $stores = [];
 try {

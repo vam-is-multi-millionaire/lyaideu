@@ -49,6 +49,11 @@ function valid_other_category($value): string {
     return in_array($value, $allowed, true) ? $value : 'gifts';
 }
 
+function valid_beverage_category($value): string {
+    $allowed = ['cold-drinks', 'alcohol', 'water'];
+    return in_array($value, $allowed, true) ? $value : 'cold-drinks';
+}
+
 function resolve_product_category(?int $value, string $type): array {
     if (!$value || $value <= 0) {
         return [0, ''];
@@ -141,7 +146,7 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'dishes', 'mart', 'others', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -449,12 +454,116 @@ try {
         }
     }
 
+    if ($section === 'beverages') {
+        lyaideu_ensure_beverage_table();
+        $beverageVendorId = function ($value): int {
+            $vid = (int)($value ?? 0);
+            if ($vid > 0) {
+                $pdo = $GLOBALS['pdo'] ?? null;
+                if (!$pdo instanceof PDO) {
+                    return 0;
+                }
+                $st = $pdo->prepare("SELECT id FROM vendors WHERE id = :id AND scope = 'beverage' AND is_active = 1");
+                $st->execute([':id' => $vid]);
+                if ($st->fetchColumn()) {
+                    return $vid;
+                }
+            }
+            return 0;
+        };
+
+        $deleteItem = $pdo->prepare('DELETE FROM beverage_items WHERE id = ?');
+        $updateItem = $pdo->prepare(
+            'UPDATE beverage_items
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
+                 `desc` = :descr, img = :img, vendor_id = :vendor_id
+             WHERE id = :id'
+        );
+        $insertItem = $pdo->prepare(
+            'INSERT INTO beverage_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
+        );
+
+        foreach (($_POST['beverages'] ?? []) as $i => $m) {
+            $id = (int)($m['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($m['delete'])) {
+                $deleteItem->execute([$id]);
+                continue;
+            }
+
+            $name = clean_text($m['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $vid = $beverageVendorId($m['vendor_id'] ?? 0);
+            if ($vid <= 0) {
+                $vid = lyaideu_resolve_beverage_vendor($id);
+            }
+
+            $img = handle_item_image((string)($m['img'] ?? ''), $m, uploaded_file_field('beverages', $i, 'img_file'), 'beverage_img');
+            $catRes = resolve_product_category((int)($m['category_id'] ?? 0), 'beverage');
+
+            $updateItem->execute([
+                ':id' => $id,
+                ':name' => $name,
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($m['cat'] ?? 'cold-drinks'),
+                ':category_id' => $catRes[0] ?: null,
+                ':unit' => clean_text($m['unit'] ?? ''),
+                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':tag' => clean_text($m['tag'] ?? ''),
+                ':descr' => clean_text($m['desc'] ?? ''),
+                ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
+            ]);
+            lyaideu_sync_item_slug('beverage_items', $id, $name);
+        }
+
+        $newItem = $_POST['new_beverages'] ?? [];
+        if (clean_text($newItem['name'] ?? '') !== '') {
+            $newFile = $_FILES['new_beverages'] ?? null;
+            $newImgFile = (isset($newFile['name']['img_file']))
+                ? [
+                    'name' => $newFile['name']['img_file'],
+                    'type' => $newFile['type']['img_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['img_file'],
+                    'error' => $newFile['error']['img_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['img_file'] ?? 0,
+                ]
+                : null;
+            $vid = $beverageVendorId($newItem['vendor_id'] ?? 0);
+            $img = handle_item_image('', $newItem, $newImgFile, 'beverage_img');
+            $catRes = resolve_product_category((int)($newItem['category_id'] ?? 0), 'beverage');
+
+            $insertItem->execute([
+                ':name' => clean_text($newItem['name'] ?? ''),
+                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($newItem['cat'] ?? 'cold-drinks'),
+                ':category_id' => $catRes[0] ?: null,
+                ':unit' => clean_text($newItem['unit'] ?? ''),
+                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':tag' => clean_text($newItem['tag'] ?? ''),
+                ':descr' => clean_text($newItem['desc'] ?? ''),
+                ':img' => $img,
+                ':vendor_id' => $vid > 0 ? $vid : null,
+            ]);
+            lyaideu_sync_item_slug('beverage_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            if ($vid <= 0) {
+                lyaideu_resolve_beverage_vendor((int)$pdo->lastInsertId());
+            }
+        }
+    }
+
     if ($section === 'hotels') {
-        $validKinds = ['hotel', 'mart', 'other'];
+        $validKinds = ['hotel', 'mart', 'other', 'beverage'];
         $deleteHotel = $pdo->prepare('DELETE FROM hotels WHERE id = ?');
         $unlinkDishes = $pdo->prepare('UPDATE dishes SET vendor_id = NULL WHERE vendor_id = ?');
         $unlinkMart = $pdo->prepare('UPDATE mart_items SET vendor_id = NULL WHERE vendor_id = ?');
         $unlinkOther = $pdo->prepare('UPDATE other_items SET vendor_id = NULL WHERE vendor_id = ?');
+        $unlinkBeverage = $pdo->prepare('UPDATE beverage_items SET vendor_id = NULL WHERE vendor_id = ?');
         $deleteVendor = $pdo->prepare('DELETE FROM vendors WHERE id = ?');
         $updateHotel = $pdo->prepare(
             'UPDATE hotels SET name = :name, type = :type, phone = :phone, emoji = :emoji, logo = :logo, kind = :kind WHERE id = :id'
@@ -488,6 +597,7 @@ try {
                     $unlinkDishes->execute([$vendorId]);
                     $unlinkMart->execute([$vendorId]);
                     $unlinkOther->execute([$vendorId]);
+                    $unlinkBeverage->execute([$vendorId]);
                     $deleteVendor->execute([$vendorId]);
                 }
                 $deleteHotel->execute([$id]);
@@ -508,13 +618,13 @@ try {
                 ':name' => $name,
                 ':type' => clean_text($h['type'] ?? ''),
                 ':phone' => clean_phone($h['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : '')),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : ($kind === 'beverage' ? 'fa-champagne-glasses' : ''))),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
 
-            // Hotels, marts and 'other' stores always own a vendor account.
-            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other') {
+            // Hotels, marts, 'other' and 'beverage' stores always own a vendor account.
+            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other' || $kind === 'beverage') {
                 $vName = clean_text($h['vendor_name'] ?? '');
                 if ($vName === '') {
                     $vName = $name;
@@ -563,9 +673,11 @@ try {
                     ]);
                 }
             } elseif ($vendorId > 0) {
-                // Store switched to 'other': its vendor is no longer needed.
+                // Store switched away from hotel/mart: its vendor is no longer needed.
                 $unlinkDishes->execute([$vendorId]);
                 $unlinkMart->execute([$vendorId]);
+                $unlinkOther->execute([$vendorId]);
+                $unlinkBeverage->execute([$vendorId]);
                 $deleteVendor->execute([$vendorId]);
             }
         }
@@ -590,13 +702,13 @@ try {
                 ':name' => clean_text($newHotel['name'] ?? ''),
                 ':type' => clean_text($newHotel['type'] ?? ''),
                 ':phone' => clean_phone($newHotel['phone'] ?? ''),
-                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : '')),
+                ':emoji' => $emoji !== '' ? $emoji : ($kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : ($kind === 'beverage' ? 'fa-champagne-glasses' : ''))),
                 ':logo' => $logo,
                 ':kind' => $kind,
             ]);
             $newStoreId = (int)$pdo->lastInsertId();
 
-            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other') {
+            if ($kind === 'hotel' || $kind === 'mart' || $kind === 'other' || $kind === 'beverage') {
                 $vName = clean_text($newHotel['vendor_name'] ?? '');
                 if ($vName === '') {
                     $vName = clean_text($newHotel['name'] ?? '');

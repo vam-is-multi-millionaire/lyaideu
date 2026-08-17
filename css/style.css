@@ -1343,6 +1343,7 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .store-kind-hotel{background:#fff3d6;color:#9a6b00;}
 .store-kind-mart{background:#e3f4e8;color:#19733a;}
 .store-kind-other{background:#e9e7ff;color:#4c3db8;}
+.store-kind-beverage{background:#e0f2fe;color:#0369a1;}
 .pm-vendor-row{font-weight:800;}
 .pm-user-meta{flex:0 0 auto;display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:.78rem;color:var(--muted);white-space:nowrap;}
 .pm-user-meta span{display:block;}

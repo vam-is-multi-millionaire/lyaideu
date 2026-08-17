@@ -12,17 +12,17 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
-lyaideu_ensure_mart_table();
+lyaideu_ensure_beverage_table();
 lyaideu_ensure_categories_table();
-$martCats = lyaideu_categories('mart');
-$martParents = array_values(array_filter($martCats, fn($c) => $c['parent_id'] === null));
-$martChildren = [];
-foreach ($martCats as $c) {
+$beverageCats = lyaideu_categories('beverage');
+$beverageParents = array_values(array_filter($beverageCats, fn($c) => $c['parent_id'] === null));
+$beverageChildren = [];
+foreach ($beverageCats as $c) {
     if ($c['parent_id'] !== null) {
-        $martChildren[(int)$c['parent_id']][] = $c;
+        $beverageChildren[(int)$c['parent_id']][] = $c;
     }
 }
-$mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+$bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +30,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Mart | LyaiDeu</title>
+<title>Beverages | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,13 +43,13 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="mart" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search the mart"></form>
+        <form class="nav-search" action="beverages" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search beverages"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="mart" class="nav-a active">Mart</a></li>
-            <li><a href="beverages" class="nav-a">Beverages</a></li>
+            <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a active">Beverages</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
@@ -87,27 +87,27 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <?php endif; ?>
 
 <main>
-    <section id="mart" class="section">
+    <section id="beverages" class="section">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-basket-shopping"></i> Grocery essentials — right at your door</p>
-                <h1 class="display">LyaiDeu Mart <i class="fa-solid fa-basket-shopping"></i></h1>
-                <p class="section-sub">Fresh veggies, fruits &amp; daily essentials — add them to your cart with your food.</p>
+                <p class="kicker"><i class="fa-solid fa-champagne-glasses"></i> Cold drinks, alcohol &amp; water — delivered to your door</p>
+                <h1 class="display">LyaiDeu Beverages <i class="fa-solid fa-glass-water"></i></h1>
+                <p class="section-sub">Chilled sodas, juices, beer, spirits and pure water — add them to your cart with your food.</p>
                 <div class="hero-actions" style="margin-top:1.2rem;">
                     <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
             </div>
             <div class="menu-toolbar"><div class="chip-row">
-                <button class="chip active" data-mcat="all">All</button>
-                <?php foreach ($martParents as $pc): ?>
-                <button class="chip" data-mcat="<?= $mce($pc['slug']) ?>"><?= $mce($pc['name']) ?></button>
-                <?php foreach ($martChildren[(int)$pc['id']] ?? [] as $cc): ?>
-                <button class="chip sub-chip" data-mcat="<?= $mce($cc['slug']) ?>" data-parent="<?= $mce($pc['slug']) ?>"><?= $mce($cc['name']) ?></button>
+                <button class="chip active" data-bcat="all">All</button>
+                <?php foreach ($beverageParents as $pc): ?>
+                <button class="chip" data-bcat="<?= $bce($pc['slug']) ?>"><?= $bce($pc['name']) ?></button>
+                <?php foreach ($beverageChildren[(int)$pc['id']] ?? [] as $cc): ?>
+                <button class="chip sub-chip" data-bcat="<?= $bce($cc['slug']) ?>" data-parent="<?= $bce($pc['slug']) ?>"><?= $bce($cc['name']) ?></button>
                 <?php endforeach; ?>
                 <?php endforeach; ?>
-            </div><div class="menu-tools"><select id="sortMart" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
-            <div class="grid dish-grid" id="mart-grid"></div>
-            <div class="empty-state" id="martEmpty"><span class="big"><i class="fa-solid fa-basket-shopping"></i></span><p>No groceries match your search.</p></div>
+            </div><div class="menu-tools"><select id="sortBeverages" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
+            <div class="grid dish-grid" id="beverages-grid"></div>
+            <div class="empty-state" id="beveragesEmpty"><span class="big"><i class="fa-solid fa-glass-water"></i></span><p>No items match your search.</p></div>
         </div>
     </section>
 </main>

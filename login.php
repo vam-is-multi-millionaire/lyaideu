@@ -171,7 +171,7 @@ require_once __DIR__ . '/site_config.php';
     <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
 </main>
 </div>
-<script src="js/script.js?v=18"></script>
+<script src="js/script.js?v=19"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>

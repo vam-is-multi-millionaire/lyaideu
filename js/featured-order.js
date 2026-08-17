@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
+  var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredBeverages', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
   var STORE_KEY = 'lyaideu_featured_v3:' + location.pathname.replace(/\/+$/, '');
 
   function navType() {

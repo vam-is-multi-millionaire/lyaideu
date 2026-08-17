@@ -74,13 +74,19 @@ $otherCounts = [];
 foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM other_items GROUP BY category_id') as $r) {
     $otherCounts[(int)$r['category_id']] = (int)$r['c'];
 }
+$beverageCounts = [];
+foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM beverage_items GROUP BY category_id') as $r) {
+    $beverageCounts[(int)$r['category_id']] = (int)$r['c'];
+}
 
 $menuCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'menu'));
 $martCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'mart'));
 $otherCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'other'));
+$beverageCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'beverage'));
 $menuFlat = tree_flat_rows($menuCats);
 $martFlat = tree_flat_rows($martCats);
 $otherFlat = tree_flat_rows($otherCats);
+$beverageFlat = tree_flat_rows($beverageCats);
 
 $ICON_OPTIONS = [
     'fa-drumstick-bite', 'fa-pizza-slice', 'fa-bowl-rice', 'fa-bowl-food', 'fa-cookie',
@@ -88,10 +94,11 @@ $ICON_OPTIONS = [
     'fa-pepper-hot', 'fa-carrot', 'fa-apple-whole', 'fa-cow', 'fa-cheese', 'fa-mortar-pestle',
     'fa-leaf', 'fa-chocolate-bar', 'fa-basket-shopping', 'fa-utensils', 'fa-tags',
     'fa-bouquet', 'fa-candle-holder', 'fa-jar', 'fa-gift',
+    'fa-champagne-glasses', 'fa-faucet-drip', 'fa-wine-bottle', 'fa-mug-saucer',
 ];
 
-$TYPE_LABELS = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other'];
-$TYPE_ICONS  = ['menu' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift'];
+$TYPE_LABELS = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other', 'beverage' => 'Beverages'];
+$TYPE_ICONS  = ['menu' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift', 'beverage' => 'fa-glass-water'];
 
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
@@ -195,6 +202,7 @@ admin_page_start('Categories', 'categories', 'Categories');
             <div class="wp-cat-list" id="catList">
                 <?= render_category_group($menuFlat, 'menu', $dishCounts, $menuCats, $ICON_OPTIONS) ?>
                 <?= render_category_group($martFlat, 'mart', $martCounts, $martCats, $ICON_OPTIONS) ?>
+                <?= render_category_group($beverageFlat, 'beverage', $beverageCounts, $beverageCats, $ICON_OPTIONS) ?>
                 <?= render_category_group($otherFlat, 'other', $otherCounts, $otherCats, $ICON_OPTIONS) ?>
             </div>
             <p class="wp-cat-empty" id="catEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i> No categories match your search.</p>
@@ -211,6 +219,7 @@ admin_page_start('Categories', 'categories', 'Categories');
                 <select name="new_category[type]" id="newCatType">
                     <option value="menu">Menu (dishes)</option>
                     <option value="mart">Mart (groceries)</option>
+                    <option value="beverage">Beverages (cold drinks, alcohol &amp; water)</option>
                     <option value="other">Other (gifts, decor &amp; achar)</option>
                 </select>
                 <label>Name</label>
@@ -224,6 +233,7 @@ admin_page_start('Categories', 'categories', 'Categories');
                     <option value="0">— No parent (top level) —</option>
                     <optgroup label="Menu Categories"><?= category_select_options($menuFlat) ?></optgroup>
                     <optgroup label="Mart Categories"><?= category_select_options($martFlat) ?></optgroup>
+                    <optgroup label="Beverage Categories"><?= category_select_options($beverageFlat) ?></optgroup>
                     <optgroup label="Other Categories"><?= category_select_options($otherFlat) ?></optgroup>
                 </select>
                 <label>Icon</label>
@@ -244,7 +254,7 @@ admin_page_start('Categories', 'categories', 'Categories');
 <script>
 (function(){
   var type=document.getElementById('newCatType'),parent=document.getElementById('newCatParent');
-  var labelFor={menu:'Menu',mart:'Mart',other:'Other'};
+  var labelFor={menu:'Menu',mart:'Mart',other:'Other',beverage:'Beverages'};
   function sync(){
     if(!type||!parent)return;
     var v=type.value;

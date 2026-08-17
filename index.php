@@ -16,13 +16,14 @@ require_once __DIR__ . '/site_config.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
 $fsSeed = 0;
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_ensure_stores();
         lyaideu_ensure_other_table();
+        lyaideu_ensure_beverage_table();
         $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes ORDER BY id')->fetchAll();
         $featured['mart']   = $featuredPdo->query(
             'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
@@ -40,9 +41,17 @@ if ($featuredPdo instanceof PDO) {
              LEFT JOIN hotels h ON h.id = v.hotel_id
              ORDER BY oi.id'
         )->fetchAll();
+        $featured['beverages'] = $featuredPdo->query(
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM beverage_items bi
+             LEFT JOIN vendors v ON v.id = bi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             ORDER BY bi.id'
+        )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels ORDER BY id')->fetchAll();
     } catch (Throwable $e) {
-$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
     }
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
@@ -52,12 +61,14 @@ $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
     shuffle($featured['others']);
+    shuffle($featured['beverages']);
     shuffle($featured['hotels']);
     shuffle($featured['mart_stores']);
     shuffle($featured['other_stores']);
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
     $featured['others'] = array_slice($featured['others'], 0, 12);
+    $featured['beverages'] = array_slice($featured['beverages'], 0, 12);
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
     $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
     $featured['other_stores'] = array_slice($featured['other_stores'], 0, 4);
@@ -65,7 +76,7 @@ $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart
 
 $searchResults = null;
 if ($q !== '' && $featuredPdo instanceof PDO) {
-    $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => []];
+    $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
         $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
@@ -93,6 +104,17 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         );
         $st->execute([$qp, $qp, $qp]);
         $searchResults['others'] = $st->fetchAll();
+        $st = $featuredPdo->prepare(
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug,
+                    COALESCE(h.name, \'\') AS hotel
+             FROM beverage_items bi
+             LEFT JOIN vendors v ON v.id = bi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE bi.name LIKE ? OR bi.tag LIKE ? OR bi.`desc` LIKE ?
+             ORDER BY bi.name LIMIT 30'
+        );
+        $st->execute([$qp, $qp, $qp]);
+        $searchResults['beverages'] = $st->fetchAll();
         $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
         $st->execute([$qp, $qp]);
         $searchResults['hotels'] = $st->fetchAll();
@@ -100,7 +122,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $searchResults = null;
     }
 }
-$totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['others']) + count($searchResults['hotels']) : 0;
+$totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['others']) + count($searchResults['beverages']) + count($searchResults['hotels']) : 0;
 
 $FEATURED_MART_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
@@ -110,6 +132,11 @@ $FEATURED_MART_ICONS = [
 $FEATURED_OTHER_ICONS = [
     'flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder',
     'achar'   => 'fa-jar', 'gifts' => 'fa-gift',
+];
+
+$FEATURED_BEVERAGE_ICONS = [
+    'cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champagne-glasses',
+    'water'   => 'fa-faucet-drip',
 ];
 ?>
 <!DOCTYPE html>
@@ -148,6 +175,7 @@ $FEATURED_OTHER_ICONS = [
             <li><a href="#home" class="nav-a active">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a">Beverages</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
@@ -302,6 +330,32 @@ $FEATURED_OTHER_ICONS = [
             </div>
             <?php endif; ?>
 
+            <?php if ($searchResults['beverages']): ?>
+            <div class="feat-block">
+                <div class="feat-ribbon">
+                    <h3><i class="fa-solid fa-glass-water"></i> Beverages</h3>
+                    <a class="see-all" href="beverages">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <div class="grid dish-grid home-grid">
+                    <?php foreach ($searchResults['beverages'] as $sBev): ?>
+                    <article class="dish-card reveal visible" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-slug="<?= lyaideu_featured_e($sBev['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($sBev['category_id'] ?? 0), (string)$sBev['cat']))) ?>">
+                        <div class="dish-art mart-art">
+                            <?php if ($sBev['img'] !== ''): ?>
+                                <img src="<?= lyaideu_featured_e($sBev['img']) ?>" alt="<?= lyaideu_featured_e($sBev['name']) ?>" loading="lazy">
+                            <?php else: ?>
+                                <i class="fa-solid <?= $FEATURED_BEVERAGE_ICONS[$sBev['cat']] ?? 'fa-glass-water' ?>"></i>
+                            <?php endif; ?>
+                            <?php if ($sBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sBev['tag']) ?></span><?php endif; ?>
+                        </div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sBev['name']) ?></h3></div>
+                        <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sBev['price'] ?><?= $sBev['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sBev['unit']) . '</span>' : '' ?></span>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-price="<?= (int)$sBev['price'] ?>" data-unit="<?= lyaideu_featured_e($sBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sBev['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php if ($searchResults['hotels']): ?>
             <div class="feat-block">
                 <div class="feat-ribbon">
@@ -414,6 +468,32 @@ $FEATURED_OTHER_ICONS = [
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fOther['price'] ?><?= $fOther['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fOther['unit']) . '</span>' : '' ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= (int)$fOther['price'] ?>" data-unit="<?= lyaideu_featured_e($fOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($featured['beverages']): ?>
+                <div class="feat-block">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-glass-water"></i> Beverages</h3>
+                        <a class="see-all" href="beverages">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid dish-grid home-grid" id="featuredBeverages">
+                        <?php foreach ($featured['beverages'] as $fBev): ?>
+                        <article class="dish-card reveal visible" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-slug="<?= lyaideu_featured_e($fBev['name_slug'] ?? '') ?>" data-cats="<?= lyaideu_featured_e(implode(',', lyaideu_item_cats((int)($fBev['category_id'] ?? 0), (string)$fBev['cat']))) ?>">
+                            <div class="dish-art mart-art">
+                                <?php if ($fBev['img'] !== ''): ?>
+                                    <img src="<?= lyaideu_featured_e($fBev['img']) ?>" alt="<?= lyaideu_featured_e($fBev['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= $FEATURED_BEVERAGE_ICONS[$fBev['cat']] ?? 'fa-glass-water' ?>"></i>
+                                <?php endif; ?>
+                                <?php if ($fBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fBev['tag']) ?></span><?php endif; ?>
+                            </div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fBev['name']) ?></h3></div>
+                            <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fBev['price'] ?><?= $fBev['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fBev['unit']) . '</span>' : '' ?></span>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-price="<?= (int)$fBev['price'] ?>" data-unit="<?= lyaideu_featured_e($fBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fBev['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -586,7 +666,7 @@ $FEATURED_OTHER_ICONS = [
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=18"></script>
+<script src="js/script.js?v=19"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>

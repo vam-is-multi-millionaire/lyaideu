@@ -213,6 +213,81 @@ function lyaideu_ensure_other_table(): bool {
     }
 }
 
+/**
+ * Ensures the `beverage_items` table exists (products sold on the Beverages
+ * page: cold drinks, alcohol, water, etc.) and seeds a small default catalog.
+ * Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_beverage_table(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    if (!empty($GLOBALS['__lyaideu_beverage_table_ready'])) {
+        return true;
+    }
+    try {
+        $stmt = $pdo->query("SHOW TABLES LIKE 'beverage_items'");
+        $exists = $stmt && (bool)$stmt->fetchColumn();
+        if (!$exists) {
+            $pdo->exec(
+                'CREATE TABLE beverage_items (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    name VARCHAR(255) NOT NULL,
+                    cat VARCHAR(50) NOT NULL,
+                    category_id INT UNSIGNED NULL,
+                    name_slug VARCHAR(120) NOT NULL DEFAULT \'\',
+                    unit VARCHAR(50) NOT NULL DEFAULT \'\',
+                    price INT UNSIGNED NOT NULL DEFAULT 0,
+                    tag VARCHAR(100) NOT NULL DEFAULT \'\',
+                    `desc` TEXT NOT NULL,
+                    img VARCHAR(500) NOT NULL DEFAULT \'\',
+                    vendor_id INT UNSIGNED NULL DEFAULT NULL,
+                    PRIMARY KEY (id),
+                    KEY idx_beverage_items_category (category_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $seed = $pdo->prepare(
+                'INSERT INTO beverage_items (name, cat, unit, price, tag, `desc`, img)
+                 VALUES (:name, :cat, :unit, :price, :tag, :descr, :img)'
+            );
+            $defaults = [
+                ['Coca-Cola 500ml', 'cold-drinks', 'bottle', 90, '', 'Ice-cold Coca-Cola straight from the cooler.', ''],
+                ['Fanta Orange 500ml', 'cold-drinks', 'bottle', 90, 'Best Seller', 'Fizzy orange Fanta, chilled and ready to enjoy.', ''],
+                ['Sprite 500ml', 'cold-drinks', 'bottle', 90, '', 'Crisp, lemon-lime Sprite to beat the heat.', ''],
+                ['7UP 500ml', 'cold-drinks', 'bottle', 90, '', 'Refreshing lemon 7UP, served ice cold.', ''],
+                ['Fresh Mango Juice', 'cold-drinks', 'glass', 180, 'Fresh', 'Squeezed from ripe local mangoes, no added sugar.', ''],
+                ['Mixed Fruit Juice', 'cold-drinks', 'glass', 190, '', 'A bright blend of seasonal fruits, made to order.', ''],
+                ['Cold Coffee (Frappé)', 'cold-drinks', 'cup', 220, 'New!', 'Frosty blended coffee topped with cream.', ''],
+                ['Chocolate Milkshake', 'cold-drinks', 'glass', 200, '', 'Thick and creamy chocolate shake with whipped topping.', ''],
+                ['Gorkha Strong Beer 650ml', 'alcohol', 'bottle', 320, '', 'Nepal\'s favourite strong lager, chilled to perfection.', ''],
+                ['Tuborg Beer 330ml', 'alcohol', 'bottle', 210, '', 'Light and crisp Danish-style lager.', ''],
+                ['Khukuri Rum 750ml', 'alcohol', 'bottle', 1400, 'Premium', 'Smooth aged rum with a bold Nepali character.', ''],
+                ['Old Durbar Whisky 750ml', 'alcohol', 'bottle', 1850, '', 'Rich blended whisky for evenings and celebrations.', ''],
+                ['Vodka 750ml', 'alcohol', 'bottle', 1600, '', 'Clean, neutral spirit for your favourite cocktails.', ''],
+                ['Bisleri Water 1L', 'water', 'bottle', 40, '', 'Purified drinking water, sealed fresh.', ''],
+                ['Himalayan Spring Water 1L', 'water', 'bottle', 55, '', 'Natural spring water from the Himalayas.', ''],
+            ];
+            foreach ($defaults as $row) {
+                $seed->execute([
+                    ':name' => $row[0],
+                    ':cat' => $row[1],
+                    ':unit' => $row[2],
+                    ':price' => $row[3],
+                    ':tag' => $row[4],
+                    ':descr' => $row[5],
+                    ':img' => $row[6],
+                ]);
+            }
+        }
+        lyaideu_ensure_product_slugs();
+        $GLOBALS['__lyaideu_beverage_table_ready'] = true;
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 function lyaideu_slugify(string $value): string {
     $slug = strtolower(trim(html_entity_decode((string)$value, ENT_QUOTES, 'UTF-8')));
     $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
@@ -249,8 +324,9 @@ function lyaideu_ensure_categories_table(): bool {
         );
 
         lyaideu_ensure_other_table();
+        lyaideu_ensure_beverage_table();
 
-        foreach (['dishes', 'mart_items', 'other_items'] as $table) {
+        foreach (['dishes', 'mart_items', 'other_items', 'beverage_items'] as $table) {
             $col = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'category_id'")->fetchAll();
             if (!$col) {
                 $pdo->exec("ALTER TABLE `$table` ADD COLUMN category_id INT UNSIGNED NULL DEFAULT NULL, ADD KEY idx_{$table}_category (category_id)");
@@ -262,6 +338,17 @@ function lyaideu_ensure_categories_table(): bool {
         $catCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
         if ($catCount === 0) {
             lyaideu_seed_categories();
+        } else {
+            // Seed any category types added after the first setup (e.g. 'beverage').
+            $present = [];
+            foreach ($pdo->query('SELECT DISTINCT type FROM categories') as $r) {
+                $present[$r['type']] = true;
+            }
+            foreach (['menu', 'mart', 'other', 'beverage'] as $t) {
+                if (!isset($present[$t])) {
+                    lyaideu_seed_categories([$t]);
+                }
+            }
         }
         lyaideu_assign_products_to_categories();
         return true;
@@ -304,7 +391,7 @@ function lyaideu_category_id_by_slug(string $slug, string $type): int {
     return (int)$st->fetchColumn();
 }
 
-function lyaideu_seed_categories(): void {
+function lyaideu_seed_categories(array $onlyTypes = []): void {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
         return;
@@ -386,9 +473,26 @@ function lyaideu_seed_categories(): void {
                 ['Occasion Gifts', 'occasion-gifts', 'fa-champagne-glasses'],
             ]],
         ],
+        'beverage' => [
+            ['Cold Drinks', 'cold-drinks', 'fa-glass-water', [
+                ['Sodas & Colas', 'sodas', 'fa-mug-saucer'],
+                ['Juices & Shakes', 'juices', 'fa-glass-water'],
+            ]],
+            ['Alcohol', 'alcohol', 'fa-champagne-glasses', [
+                ['Beer', 'beer', 'fa-champagne-glasses'],
+                ['Spirits & Whisky', 'spirits', 'fa-whiskey-glass'],
+            ]],
+            ['Water', 'water', 'fa-faucet-drip', [
+                ['Bottled Water', 'bottled-water', 'fa-faucet-drip'],
+                ['Sparkling Water', 'sparkling', 'fa-glass-water'],
+            ]],
+        ],
     ];
 
     foreach ($tree as $type => $items) {
+        if ($onlyTypes !== [] && !in_array($type, $onlyTypes, true)) {
+            continue;
+        }
         $sort = 1;
         foreach ($items as $item) {
             [$name, $slug, $icon, $children] = $item;
@@ -433,9 +537,14 @@ function lyaideu_assign_products_to_categories(): void {
             'achar' => [['spicy-achar', ['timur', 'spicy']], ['sweet-achar', ['mango', 'sweet', 'achar']]],
             'gifts' => [['gift-boxes', ['hamper', 'box']], ['occasion-gifts', ['gift', 'celebration', 'occasion']]],
         ],
+        'beverage' => [
+            'cold-drinks' => [['sodas', ['coca', 'pepsi', 'fanta', 'sprite', '7up', 'soda water', 'soft drink']], ['juices', ['juice', 'milkshake', 'shake', 'frappe', 'coffee', 'lassi']]],
+            'alcohol' => [['beer', ['beer', 'lager', 'strong']], ['spirits', ['rum', 'whisky', 'vodka', 'gin']]],
+            'water' => [['bottled-water', ['water', 'bisleri', 'spring']], ['sparkling', ['sparkling', 'soda water']]],
+        ],
     ];
 
-    $tables = ['dishes' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items'];
+    $tables = ['dishes' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items', 'beverage' => 'beverage_items'];
     foreach ($tables as $key => $table) {
         $rows = $pdo->query("SELECT id, name, cat, category_id FROM `$table`")->fetchAll();
         $upd = $pdo->prepare("UPDATE `$table` SET category_id = :cid WHERE id = :id");
@@ -457,7 +566,7 @@ function lyaideu_assign_products_to_categories(): void {
             if ($target === '') {
                 $target = $cat !== '' ? $cat : 'category';
             }
-            $cid = lyaideu_category_id_by_slug($target, $key === 'dishes' ? 'menu' : ($key === 'other' ? 'other' : 'mart'));
+            $cid = lyaideu_category_id_by_slug($target, $key === 'dishes' ? 'menu' : $key);
             if ($cid > 0) {
                 $upd->execute([':cid' => $cid, ':id' => (int)$row['id']]);
             }
@@ -577,7 +686,7 @@ function lyaideu_ensure_product_slugs(): void {
         return;
     }
     try {
-        foreach (['dishes', 'mart_items', 'other_items'] as $table) {
+        foreach (['dishes', 'mart_items', 'other_items', 'beverage_items'] as $table) {
             $cols = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'name_slug'")->fetchAll();
             if (!$cols) {
                 $pdo->exec("ALTER TABLE `$table` ADD COLUMN name_slug VARCHAR(120) NOT NULL DEFAULT ''");
@@ -611,7 +720,7 @@ function lyaideu_ensure_product_slugs(): void {
  */
 function lyaideu_sync_item_slug(string $table, int $id, string $name): void {
     $pdo = lyaideu_load_pdo();
-    if (!$pdo instanceof PDO || !in_array($table, ['dishes', 'mart_items', 'other_items'], true) || $id <= 0) {
+    if (!$pdo instanceof PDO || !in_array($table, ['dishes', 'mart_items', 'other_items', 'beverage_items'], true) || $id <= 0) {
         return;
     }
     try {
@@ -663,6 +772,13 @@ function lyaideu_ensure_stores(): bool {
             $pdo->prepare(
                 "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (?, ?, ?, ?, ?, 'other')"
             )->execute(['LyaiDeu Others', 'Flowers, candles, achar & gifts', '', 'fa-gift', '']);
+        }
+
+        $beverageStore = (int)$pdo->query("SELECT COUNT(*) FROM hotels WHERE kind = 'beverage'")->fetchColumn();
+        if ($beverageStore === 0) {
+            $pdo->prepare(
+                "INSERT INTO hotels (name, type, phone, emoji, logo, kind) VALUES (?, ?, ?, ?, ?, 'beverage')"
+            )->execute(['LyaiDeu Beverages', 'Cold drinks, alcohol & water', '', 'fa-champagne-glasses', '']);
         }
 
         // Link each mart vendor to its mart store (matched by name) so a
@@ -1114,6 +1230,42 @@ function lyaideu_ensure_delivery_tables(): bool {
                 $defaultVendorPass,
                 'other',
                 $oid,
+                date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        // Every 'beverage' store also gets a vendor account (same rule as the
+        // other stores) so its products always reach a vendor when ordered.
+        $linkedBeverageHotelIds = [];
+        $beverageVendorByName = [];
+        foreach ($pdo->query("SELECT id, name, hotel_id FROM vendors WHERE scope = 'beverage'") as $bv) {
+            if (!empty($bv['hotel_id'])) {
+                $linkedBeverageHotelIds[(int)$bv['hotel_id']] = (int)$bv['id'];
+            }
+            $beverageVendorByName[lyaideu_normalize_name((string)$bv['name'])] = (int)$bv['id'];
+        }
+        $insBeverageVendor = $pdo->prepare(
+            'INSERT INTO vendors (name, email, phone, pass, scope, hotel_id, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
+        );
+        foreach ($pdo->query("SELECT id, name FROM hotels WHERE kind = 'beverage' ORDER BY id") as $bs) {
+            $bid = (int)$bs['id'];
+            if (isset($linkedBeverageHotelIds[$bid])) {
+                continue;
+            }
+            $bn = lyaideu_normalize_name((string)$bs['name']);
+            $existingVendorId = ($bn !== '' && isset($beverageVendorByName[$bn])) ? (int)$beverageVendorByName[$bn] : 0;
+            if ($existingVendorId > 0) {
+                $pdo->prepare('UPDATE vendors SET hotel_id = ? WHERE id = ?')->execute([$bid, $existingVendorId]);
+                continue;
+            }
+            $insBeverageVendor->execute([
+                (string)$bs['name'],
+                'beveragevendor' . $bid . '@lyaideu.local',
+                '9' . str_pad((string)$bid, 9, '0', STR_PAD_LEFT),
+                $defaultVendorPass,
+                'beverage',
+                $bid,
                 date('Y-m-d H:i:s'),
             ]);
         }
@@ -1689,6 +1841,36 @@ function lyaideu_reindex_item_vendors(): void {
             // Best-effort.
         }
 
+        // Beverage items belong to a 'beverage'-scope vendor (via the store's
+        // vendor link). Assign only items that have no owner yet.
+        try {
+            lyaideu_ensure_beverage_table();
+            $beverageVendors = $pdo->query(
+                "SELECT v.id, v.hotel_id FROM vendors v
+                 WHERE v.scope = 'beverage' AND v.is_active = 1 AND v.hotel_id IS NOT NULL
+                 ORDER BY v.id"
+            )->fetchAll();
+            if ($beverageVendors) {
+                $unassigned = $pdo->query('SELECT id, vendor_id FROM beverage_items WHERE vendor_id IS NULL')->fetchAll();
+                $byStore = [];
+                foreach ($beverageVendors as $bv) {
+                    $byStore[(int)$bv['hotel_id']] = (int)$bv['id'];
+                }
+                $upd = $pdo->prepare('UPDATE beverage_items SET vendor_id = ? WHERE id = ?');
+                foreach ($unassigned as $bi) {
+                    if (!empty($bi['vendor_id'])) {
+                        continue;
+                    }
+                    $vid = $byStore[1] ?? ($beverageVendors[0]['id'] ?? 0);
+                    if ($vid > 0) {
+                        $upd->execute([$vid, (int)$bi['id']]);
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            // Best-effort.
+        }
+
         // Backfill order items so pre-existing orders route to vendors too.
         $pdo->exec(
             'UPDATE order_items oi
@@ -1870,6 +2052,55 @@ function lyaideu_other_store_name(int $itemId): string {
         return $name !== '' ? $name : 'LyaiDeu Others';
     } catch (Throwable $e) {
         return 'LyaiDeu Others';
+    }
+}
+function lyaideu_resolve_beverage_vendor(int $itemId): int {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 0;
+    }
+    try {
+        $st = $pdo->prepare('SELECT vendor_id FROM beverage_items WHERE id = ?');
+        $st->execute([$itemId]);
+        $existing = (int)$st->fetchColumn();
+        if ($existing > 0) {
+            return $existing;
+        }
+        // Fall back to the first active 'beverage'-scope vendor (usually the
+        // default "LyaiDeu Beverages" store) so the item still reaches a vendor.
+        $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'beverage' AND is_active = 1 ORDER BY id LIMIT 1");
+        $st->execute();
+        $vendorId = (int)$st->fetchColumn();
+        $upd = $pdo->prepare('UPDATE beverage_items SET vendor_id = ? WHERE id = ?');
+        $upd->execute([$vendorId > 0 ? $vendorId : null, $itemId]);
+        return $vendorId;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Resolves the store (hotel) name that owns a beverage item, via the item's
+ * vendor and that vendor's linked store. Falls back to 'LyaiDeu Beverages'.
+ */
+function lyaideu_beverage_store_name(int $itemId): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0) {
+        return 'LyaiDeu Beverages';
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT COALESCE(h.name, \'\')
+             FROM beverage_items bi
+             LEFT JOIN vendors v ON v.id = bi.vendor_id
+             LEFT JOIN hotels h ON h.id = v.hotel_id
+             WHERE bi.id = ?'
+        );
+        $st->execute([$itemId]);
+        $name = (string)$st->fetchColumn();
+        return $name !== '' ? $name : 'LyaiDeu Beverages';
+    } catch (Throwable $e) {
+        return 'LyaiDeu Beverages';
     }
 }
 

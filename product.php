@@ -13,7 +13,10 @@ $rawType = (string)($_GET['type'] ?? 'dish');
 if ($rawType === 'others') {
     $rawType = 'other';
 }
-$type = in_array($rawType, ['mart', 'other'], true) ? $rawType : 'dish';
+if ($rawType === 'beverages') {
+    $rawType = 'beverage';
+}
+$type = in_array($rawType, ['mart', 'other', 'beverage'], true) ? $rawType : 'dish';
 $id = (int)($_GET['id'] ?? 0);
 $slug = trim((string)($_GET['slug'] ?? ''));
 if ($id <= 0 && $slug !== '') {
@@ -21,7 +24,7 @@ if ($id <= 0 && $slug !== '') {
         $id = (int)$slug;
     } else {
         try {
-            $table = $type === 'mart' ? 'mart_items' : ($type === 'other' ? 'other_items' : 'dishes');
+            $table = $type === 'mart' ? 'mart_items' : ($type === 'other' ? 'other_items' : ($type === 'beverage' ? 'beverage_items' : 'dishes'));
             $st = $pdo->prepare("SELECT id FROM `$table` WHERE name_slug = :s LIMIT 1");
             $st->execute([':s' => $slug]);
             $id = (int)$st->fetchColumn();
@@ -30,7 +33,7 @@ if ($id <= 0 && $slug !== '') {
         }
     }
 }
-$back = $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : 'menu');
+$back = $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : ($type === 'beverage' ? 'beverages' : 'menu'));
 $backLink = lyaideu_from_home() ? 'index' : $back;
 
 $item = null;
@@ -76,6 +79,26 @@ try {
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
+    } elseif ($type === 'beverage') {
+        lyaideu_ensure_beverage_table();
+        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug,
+                                    COALESCE(h.name, \'\') AS hotel
+                             FROM beverage_items bi
+                             LEFT JOIN vendors v ON v.id = bi.vendor_id
+                             LEFT JOIN hotels h ON h.id = v.hotel_id
+                             WHERE bi.id = :id');
+        $st->execute([':id' => $id]);
+        $item = $st->fetch();
+        if ($item) {
+            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug,
+                                      COALESCE(h.name, \'\') AS hotel
+                               FROM beverage_items bi
+                               LEFT JOIN vendors v ON v.id = bi.vendor_id
+                               LEFT JOIN hotels h ON h.id = v.hotel_id
+                               WHERE bi.cat = :cat AND bi.id <> :id ORDER BY bi.id LIMIT 6');
+            $r->execute([':cat' => $item['cat'], ':id' => $id]);
+            $related = $r->fetchAll();
+        }
     } else {
         $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
@@ -106,6 +129,7 @@ function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 $MART_CAT_ICONS = ['vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow', 'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie'];
 $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 'achar' => 'fa-jar', 'gifts' => 'fa-gift'];
+$BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champagne-glasses', 'water' => 'fa-faucet-drip'];
 $catPath = lyaideu_category_path((int)($item['category_id'] ?? 0));
 if (!$catPath) {
     $urlCat = trim((string)($_GET['catpath'] ?? ''), '/');
@@ -119,11 +143,12 @@ if (!$catPath) {
 }
 $leafCat = $catPath ? end($catPath) : null;
 $catName = $leafCat ? $leafCat['name'] : ucfirst((string)$item['cat']);
-$ICON = $leafCat && $leafCat['icon'] !== '' ? $leafCat['icon'] : ($type === 'mart' ? ($MART_CAT_ICONS[$item['cat']] ?? 'fa-basket-shopping') : ($type === 'other' ? ($OTHER_CAT_ICONS[$item['cat']] ?? 'fa-gift') : 'fa-utensils'));
+$ICON = $leafCat && $leafCat['icon'] !== '' ? $leafCat['icon'] : ($type === 'mart' ? ($MART_CAT_ICONS[$item['cat']] ?? 'fa-basket-shopping') : ($type === 'other' ? ($OTHER_CAT_ICONS[$item['cat']] ?? 'fa-gift') : ($type === 'beverage' ? ($BEVERAGE_CAT_ICONS[$item['cat']] ?? 'fa-glass-water') : 'fa-utensils')));
 $REL_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
     'staples' => 'fa-bowl-rice', 'oils' => 'fa-mortar-pestle', 'snacks' => 'fa-cookie',
     'flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 'achar' => 'fa-jar', 'gifts' => 'fa-gift',
+    'cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champagne-glasses', 'water' => 'fa-faucet-drip',
     'momo' => 'fa-drumstick-bite', 'pizza' => 'fa-pizza-slice', 'chowmein' => 'fa-bowl-rice',
     'snacks2' => 'fa-cookie', 'beverages' => 'fa-mug-saucer', 'dinner' => 'fa-bowl-food',
 ];
@@ -140,7 +165,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= e($item['name']) ?> | <?= $type === 'mart' ? 'LyaiDeu Mart' : ($type === 'other' ? 'LyaiDeu Others' : 'Menu') ?></title>
+<title><?= e($item['name']) ?> | <?= $type === 'mart' ? 'LyaiDeu Mart' : ($type === 'other' ? 'LyaiDeu Others' : ($type === 'beverage' ? 'LyaiDeu Beverages' : 'Menu')) ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -201,10 +226,10 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
         <a class="back-link" href="<?= $backLink ?>"><i class="fa-solid fa-arrow-left"></i> Back</a>
 
         <div class="product-breadcrumb">
-            <a href="<?= $back ?>"><?= $type === 'mart' ? 'Mart' : ($type === 'other' ? 'Others' : 'Menu') ?></a>
+            <a href="<?= $back ?>"><?= $type === 'mart' ? 'Mart' : ($type === 'other' ? 'Others' : ($type === 'beverage' ? 'Beverages' : 'Menu')) ?></a>
             <?php foreach ($catPath as $c): ?>
                 <span class="crumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
-                <a href="<?= $back ?>?<?= $type === 'mart' ? 'mcat' : ($type === 'other' ? 'ocat' : 'cat') ?>=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
+                <a href="<?= $back ?>?<?= $type === 'mart' ? 'mcat' : ($type === 'other' ? 'ocat' : ($type === 'beverage' ? 'bcat' : 'cat')) ?>=<?= e($c['slug']) ?>"><?= e($c['name']) ?></a>
             <?php endforeach; ?>
             <span class="crumb-sep"><i class="fa-solid fa-chevron-right"></i></span>
             <span class="crumb-current"><?= e($item['name']) ?></span>
@@ -226,7 +251,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <?php if ($type === 'dish' && $item['hotel'] !== ''): ?>
                     <p class="product-hotel"><i class="fa-solid fa-hotel"></i> <?= e($item['hotel']) ?></p>
                 <?php elseif ($type !== 'dish' && !empty($item['hotel'])): ?>
-                    <p class="product-hotel"><i class="fa-solid <?= $type === 'mart' ? 'fa-store' : 'fa-gift' ?>"></i> <?= e($item['hotel']) ?></p>
+                    <p class="product-hotel"><i class="fa-solid <?= $type === 'mart' ? 'fa-store' : ($type === 'other' ? 'fa-gift' : 'fa-champagne-glasses') ?>"></i> <?= e($item['hotel']) ?></p>
                 <?php endif; ?>
                 <?php if ($item['desc'] !== ''): ?>
                     <p class="product-desc"><?= e($item['desc']) ?></p>
@@ -245,6 +270,8 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                     <p class="small-note" style="margin-top:.9rem;"><i class="fa-solid fa-box"></i> Fresh groceries delivered with your khaja order.</p>
                 <?php elseif ($type === 'other'): ?>
                     <p class="small-note" style="margin-top:.9rem;"><i class="fa-solid fa-box"></i> Handmade &amp; festive finds delivered with your khaja order.</p>
+                <?php elseif ($type === 'beverage'): ?>
+                    <p class="small-note" style="margin-top:.9rem;"><i class="fa-solid fa-glass-water"></i> Chilled &amp; sealed beverages delivered with your order. Please drink responsibly.</p>
                 <?php endif; ?>
             </div>
         </div>
@@ -256,7 +283,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                     <?php foreach ($related as $rItem): ?>
                         <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
                         <div class="related-card">
-                            <a class="related-link" href="<?= $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : 'menu') ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
+                            <a class="related-link" href="<?= $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : ($type === 'beverage' ? 'beverages' : 'menu')) ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
                                 <div class="related-img">
                                     <?php if ($rItem['img'] !== ''): ?>
                                         <img src="<?= e($rItem['img']) ?>" alt="<?= e($rItem['name']) ?>" loading="lazy">
@@ -293,7 +320,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=18"></script>
+<script src="js/script.js?v=19"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>

@@ -25,8 +25,9 @@ if (!$vendor) {
 $scope = (string)($vendor['scope'] ?? 'hotel');
 $isMart = $scope === 'mart';
 $isOther = $scope === 'other';
+$isBeverage = $scope === 'beverage';
 $hotelName = '';
-if (!$isMart && !$isOther) {
+if (!$isMart && !$isOther && !$isBeverage) {
     try {
         $st = $pdo->prepare('SELECT name FROM hotels WHERE id = ?');
         $st->execute([(int)$vendor['hotel_id']]);
@@ -37,14 +38,14 @@ if (!$isMart && !$isOther) {
 }
 
 lyaideu_ensure_categories_table();
-$catType = $isMart ? 'mart' : ($isOther ? 'other' : 'menu');
+$catType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'menu'));
 $catsFlat = lyaideu_categories_flat($catType);
 $allowedCats = [];
 foreach ($catsFlat as $c) {
     $allowedCats[(int)$c['id']] = $c;
 }
 
-$table = $isMart ? 'mart_items' : ($isOther ? 'other_items' : 'dishes');
+$table = $isMart ? 'mart_items' : ($isOther ? 'other_items' : ($isBeverage ? 'beverage_items' : 'dishes'));
 $msg = $_GET['msg'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -100,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $st->execute([$id]);
                     $existing = (string)$st->fetchColumn();
                 }
-                $img = lyaideu_handle_item_image($existing, $_POST, $file, $isMart ? 'mart_img' : ($isOther ? 'other_img' : 'dish_img'));
+                $img = lyaideu_handle_item_image($existing, $_POST, $file, $isMart ? 'mart_img' : ($isOther ? 'other_img' : ($isBeverage ? 'beverage_img' : 'dish_img')));
 
                 if ($id > 0) {
                     if ($isMart) {
@@ -108,6 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
                     } elseif ($isOther) {
                         $upd = $pdo->prepare('UPDATE other_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
+                    } elseif ($isBeverage) {
+                        $upd = $pdo->prepare('UPDATE beverage_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
                         $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
                     } else {
                         $upd = $pdo->prepare('UPDATE dishes SET name = ?, hotel = ?, category_id = ?, price = ?, phone = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
@@ -120,6 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
                     } elseif ($isOther) {
                         $ins = $pdo->prepare('INSERT INTO other_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
+                    } elseif ($isBeverage) {
+                        $ins = $pdo->prepare('INSERT INTO beverage_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
                         $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
                     } else {
                         $ins = $pdo->prepare('INSERT INTO dishes (name, hotel, category_id, price, phone, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -153,11 +160,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $products = [];
 try {
     $st = $pdo->prepare(
-        $isMart
-            ? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM mart_items WHERE vendor_id = ? ORDER BY name'
-            : ($isOther
-                ? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM other_items WHERE vendor_id = ? ORDER BY name'
-                : 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img FROM dishes WHERE vendor_id = ? ORDER BY name')
+$isMart
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM mart_items WHERE vendor_id = ? ORDER BY name'
+: ($isOther
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM other_items WHERE vendor_id = ? ORDER BY name'
+: ($isBeverage
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM beverage_items WHERE vendor_id = ? ORDER BY name'
+: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img FROM dishes WHERE vendor_id = ? ORDER BY name'))
     );
     $st->execute([$vendorId]);
     $products = $st->fetchAll();
@@ -170,9 +179,9 @@ function vp_esc($v): string {
 }
 
 delivery_header(
-    $isMart ? 'My Mart Products' : ($isOther ? 'My Other Products' : 'My Products'),
-    $isMart ? 'Manage My Mart Items' : ($isOther ? 'Manage My Other Items' : 'Manage My Menu'),
-    $isMart ? 'fa-basket-shopping' : ($isOther ? 'fa-gift' : 'fa-store'),
+    $isMart ? 'My Mart Products' : ($isOther ? 'My Other Products' : ($isBeverage ? 'My Beverage Products' : 'My Products')),
+    $isMart ? 'Manage My Mart Items' : ($isOther ? 'Manage My Other Items' : ($isBeverage ? 'Manage My Beverage Items' : 'Manage My Menu')),
+    $isMart ? 'fa-basket-shopping' : ($isOther ? 'fa-gift' : ($isBeverage ? 'fa-glass-water' : 'fa-store')),
     $role
 );
 ?>
@@ -189,6 +198,8 @@ delivery_header(
             <i class="fa-solid fa-basket-shopping"></i> These items appear on the <strong>Mart</strong> page as soon as you save them.
             <?php elseif ($isOther): ?>
             <i class="fa-solid fa-gift"></i> These items appear on the <strong>Others</strong> page as soon as you save them.
+            <?php elseif ($isBeverage): ?>
+            <i class="fa-solid fa-glass-water"></i> These items appear on the <strong>Beverages</strong> page as soon as you save them.
             <?php else: ?>
             <i class="fa-solid fa-hotel"></i> Your items appear under <strong><?= vp_esc($hotelName) ?></strong> on the <strong>Menu</strong> page as soon as you save them.
             <?php endif; ?>
@@ -213,7 +224,7 @@ delivery_header(
                     <label for="a-name">Product name</label>
                     <div class="store-input">
                         <i class="fa-solid fa-tag"></i>
-                        <input type="text" id="a-name" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : ($isOther ? 'e.g. Rose Bouquet' : 'e.g. Chicken Momo') ?>" required>
+                        <input type="text" id="a-name" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : ($isOther ? 'e.g. Rose Bouquet' : ($isBeverage ? 'e.g. Coca-Cola 500ml' : 'e.g. Chicken Momo')) ?>" required>
                     </div>
                 </div>
 
@@ -237,12 +248,12 @@ delivery_header(
                 </div>
 
                 <div class="store-field-row">
-                    <?php if ($isMart || $isOther): ?>
+                    <?php if ($isMart || $isOther || $isBeverage): ?>
                     <div class="store-field">
                         <label for="a-unit">Unit</label>
                         <div class="store-input">
                             <i class="fa-solid fa-weight-hanging"></i>
-                            <input type="text" id="a-unit" name="unit" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
+                            <input type="text" id="a-unit" name="unit" placeholder="<?= $isOther ? 'piece / set / bunch' : ($isBeverage ? '500ml / bottle / can' : 'kg / litre / pack') ?>">
                         </div>
                     </div>
                     <?php else: ?>
@@ -309,7 +320,7 @@ delivery_header(
                     <?php if (!empty($p['img'])): ?>
                     <img src="<?= vp_esc($p['img']) ?>" alt="<?= vp_esc($p['name']) ?>">
                     <?php else: ?>
-                    <i class="fa-solid <?= $isMart ? 'fa-box' : ($isOther ? 'fa-gift' : 'fa-utensils') ?>"></i>
+                    <i class="fa-solid <?= $isMart ? 'fa-box' : ($isOther ? 'fa-gift' : ($isBeverage ? 'fa-glass-water' : 'fa-utensils')) ?>"></i>
                     <?php endif; ?>
                 </div>
                 <div class="product-card-info">
@@ -368,12 +379,12 @@ delivery_header(
                         </div>
 
                         <div class="store-field-row">
-                            <?php if ($isMart || $isOther): ?>
+                            <?php if ($isMart || $isOther || $isBeverage): ?>
                             <div class="store-field">
                                 <label for="p-unit-<?= $pid ?>">Unit</label>
                                 <div class="store-input">
                                     <i class="fa-solid fa-weight-hanging"></i>
-                                    <input type="text" id="p-unit-<?= $pid ?>" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
+                                    <input type="text" id="p-unit-<?= $pid ?>" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="<?= $isOther ? 'piece / set / bunch' : ($isBeverage ? '500ml / bottle / can' : 'kg / litre / pack') ?>">
                                 </div>
                             </div>
                             <?php else: ?>
@@ -389,7 +400,7 @@ delivery_header(
                                 <label for="p-tag-<?= $pid ?>">Tag</label>
                                 <div class="store-input">
                                     <i class="fa-solid fa-star"></i>
-                                    <input type="text" id="p-tag-<?= $pid ?>" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="<?= $isMart || $isOther ? 'New!' : 'Best Seller' ?>">
+                                    <input type="text" id="p-tag-<?= $pid ?>" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="<?= $isMart || $isOther || $isBeverage ? 'New!' : 'Best Seller' ?>">
                                 </div>
                             </div>
                         </div>

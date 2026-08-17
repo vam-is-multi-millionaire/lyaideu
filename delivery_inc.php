@@ -57,7 +57,7 @@ function delivery_vendor_avatar_url(int $vendorId): string {
         }
         if ($logo === '') {
             $vn = lyaideu_normalize_name((string)$v['name']);
-            $kind = (string)$v['scope'] === 'mart' ? 'mart' : 'hotel';
+            $kind = (string)$v['scope'] === 'mart' ? 'mart' : ((string)$v['scope'] === 'other' ? 'other' : ((string)$v['scope'] === 'beverage' ? 'beverage' : 'hotel'));
             $rows = $pdo->prepare('SELECT name, logo FROM hotels WHERE kind = ? ORDER BY id');
             $rows->execute([$kind]);
             foreach ($rows->fetchAll() as $h) {
