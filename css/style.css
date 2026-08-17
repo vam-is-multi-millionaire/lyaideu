@@ -901,6 +901,8 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .delivery-topbar{display:flex;align-items:center;gap:1rem;padding:.9rem 1.25rem;background:#fff;border-bottom:2px solid var(--orange-100);position:sticky;top:0;z-index:50;flex-wrap:wrap;}
 .delivery-topbar .brand{font-size:1.2rem;}
 .delivery-role-badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--orange-100);color:var(--orange-800);font-weight:900;font-size:.78rem;padding:.4rem .8rem;border-radius:999px;}
+a.delivery-role-badge{text-decoration:none;transition:background var(--fe-transition),color var(--fe-transition),transform var(--fe-transition);}
+a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950);transform:translateY(-1px);}
 .delivery-user{margin-left:auto;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;}
 .delivery-user .avatar{background:var(--orange-600);color:#fff;}
 .delivery-user strong{display:block;font-size:.85rem;line-height:1.1;}

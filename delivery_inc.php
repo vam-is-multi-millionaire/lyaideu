@@ -232,7 +232,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=27">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
-<header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><span class="delivery-role-badge"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</span>
+<header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><a class="delivery-role-badge" href="' . ($role === 'vendor' ? 'vendor' : 'rider') . '" title="' . ($role === 'vendor' ? 'Go to Your Kitchen Queue' : 'Go to Delivery Queue') . '"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</a>
 <div class="delivery-user">
   <span class="avatar"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . delivery_esc($avatarUrl) . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc(substr($user['name'] ?? '', 0, 1)) : '') . '</span>
   <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
