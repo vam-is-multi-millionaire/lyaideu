@@ -47,10 +47,7 @@ $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
     $featured['other_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'other'));
-    $fsSeed = (int)($_GET['fs'] ?? 0);
-    if ($fsSeed <= 0) {
-        $fsSeed = mt_rand(1, 2147483647);
-    }
+    $fsSeed = mt_rand(1, 2147483647);
     mt_srand($fsSeed);
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
@@ -128,7 +125,6 @@ $FEATURED_OTHER_ICONS = [
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=26">
-<script>window.LYADEU_FS=<?= (int)$fsSeed ?>;</script>
 <script>
 (function(){
   try {
@@ -517,7 +513,7 @@ $FEATURED_OTHER_ICONS = [
         </div>
     </section>
 
-    <script src="js/featured-order.js?v=3"></script>
+    <script src="js/featured-order.js?v=4"></script>
 
     <section id="faq" class="section section-white">
         <div class="container">

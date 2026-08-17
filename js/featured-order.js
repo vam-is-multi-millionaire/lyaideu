@@ -1,15 +1,14 @@
 /* index.php "Random Picks" order memory.
-   Fresh visits and manual refreshes get a brand-new random order. The order is
-   made deterministic on the server via a seed carried in the URL (?fs=...), so
-   returning to this page with the browser Back/Forward reproduces the exact
-   order the user last saw — even after navigating several pages deep. A
-   sessionStorage snapshot of the rendered order is kept as a fallback for the
-   rare cases where the seed isn't present in the URL. */
+   The server shuffles the featured grids with a fresh random seed on every
+   load, so no seed is kept in the URL (the address bar stays clean). The exact
+   order a user saw is remembered client-side in sessionStorage and re-applied
+   to the DOM whenever they return to this page with the browser Back/Forward,
+   reproducing the order they last saw — even after navigating pages deep. */
 (function () {
   'use strict';
 
   var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
-  var STORE_KEY = 'lyaideu_featured_v2:' + location.pathname.replace(/\/+$/, '');
+  var STORE_KEY = 'lyaideu_featured_v3:' + location.pathname.replace(/\/+$/, '');
 
   function navType() {
     try {
@@ -21,17 +20,6 @@
       return n === 1 ? 'reload' : (n === 2 ? 'back_forward' : 'navigate');
     }
     return 'navigate';
-  }
-
-  function currentFs() {
-    var m = /[?&]fs=(\d+)/.exec(location.search);
-    return m ? m[1] : null;
-  }
-
-  function makeUrl(seed) {
-    var u = new URL(window.location.href);
-    u.searchParams.set('fs', seed);
-    return u.toString();
   }
 
   function cardKey(card) {
@@ -82,6 +70,18 @@
     return true;
   }
 
+  /* A leftover ?fs=... from an older build would otherwise stay visible in the
+     address bar — strip it so the URL stays clean. */
+  function cleanUrl() {
+    try {
+      var u = new URL(window.location.href);
+      if (u.searchParams.has('fs')) {
+        u.searchParams.delete('fs');
+        history.replaceState(history.state, '', u.toString());
+      }
+    } catch (e) {}
+  }
+
   function init() {
     var grids = [];
     for (var i = 0; i < GRID_IDS.length; i++) {
@@ -90,32 +90,14 @@
     }
     if (!grids.length) return;
 
+    cleanUrl();
+
     var type = navType();
-    var seed = (typeof window.LYADEU_FS !== 'undefined' && window.LYADEU_FS !== null && window.LYADEU_FS !== '' && window.LYADEU_FS !== 0 && window.LYADEU_FS !== '0')
-      ? String(window.LYADEU_FS)
-      : '';
-
-    if (seed) {
-      if (currentFs() === null) {
-        /* Fresh load — the server already rendered this seed's order, so just
-           stamp it into the URL (no reload) and Back/Forward reproduces it. */
-        try { history.replaceState(history.state, '', makeUrl(seed)); } catch (e) {}
-      } else if (type === 'reload') {
-        /* Manual refresh of a seeded URL → bounce to a brand-new random order.
-           location.replace() swaps the current history entry, no extra entry.
-           The bounce loads the page again as a fresh navigation (not a reload),
-           so tell scroll-memory.js to keep the current scroll position. */
-        try { sessionStorage.setItem('lyaideu_scroll_do_restore:1', location.pathname); } catch (e) {}
-        var fresh = Math.floor(Math.random() * 2147483647) + 1;
-        try { location.replace(makeUrl(fresh)); } catch (e) {}
-        return;
-      }
-    }
-
-    /* Fallback: on Back/Forward, restore the last-rendered order from
-       sessionStorage when the seed isn't in play. Don't clobber the snapshot
-       if the freshly rendered cards can't be re-arranged back to it. */
     var overwrite = true;
+
+    /* On Back/Forward, restore the last-seen order from sessionStorage by
+       re-arranging the freshly-shuffled cards. Don't clobber the snapshot if
+       the rendered cards can't be re-arranged back to it. */
     if (type === 'back_forward') {
       var saved = loadSaved();
       if (saved) {
