@@ -116,10 +116,16 @@
      form submit that returned to this same path. Everything else (typing a
      URL, clicking a nav link like "Home") must start at the top/anchor. */
   var type = navType();
-  if (backToTop && type === 'back_forward') {
-    /* Opt-in pages must always land at the very top on Back/Forward. */
+  if (type === 'back_forward') {
+    /* On Back/Forward the browser itself restores the exact scroll position
+       (bfcache or the recorded offset), so manual restoration here only fights
+       it and causes visible jumping/glitching while the page loads. */
     restoring = false;
     target = null;
+    if (backToTop) {
+      /* Opt-in pages must instead always land at the very top on Back/Forward. */
+      window.scrollTo(0, 0);
+    }
   }
   if (type !== 'reload' && type !== 'back_forward' && !takeRestoreFlag()) {
     restoring = false;
