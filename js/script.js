@@ -21,15 +21,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     allOthers=d.others||[];
     allBeverages=d.beverages||[];
     if(d.delivery)DELIVERY_CFG=d.delivery;
-    renderCart();
-    if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
-    if($('#mart-grid')){renderMart(allMart);initMartFilters();}
-    if($('#others-grid')){renderOthers(allOthers);initOthersFilters();}
-    if($('#beverages-grid')){renderBeverages(allBeverages);initBeveragesFilters();}
-    if($('#hotels-grid')){renderHotels(d.hotels||[]);initHotelFilters();}
-    if($('#contact-grid'))renderContacts(d.contacts||[]);
-    if($('#menu-grid')||$('#mart-grid')||$('#others-grid')||$('#beverages-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
-    if($('#checkoutForm'))initCheckout();
+    try{
+      renderCart();
+      if($('#menu-grid')){renderDishes(allDishes);initMenuFilters();}
+      if($('#mart-grid')){renderMart(allMart);initMartFilters();}
+      if($('#others-grid')){renderOthers(allOthers);initOthersFilters();}
+      if($('#beverages-grid')){renderBeverages(allBeverages);initBeveragesFilters();}
+      if($('#hotels-grid')){renderHotels(d.hotels||[]);initHotelFilters();}
+      if($('#contact-grid'))renderContacts(d.contacts||[]);
+      if($('#menu-grid')||$('#mart-grid')||$('#others-grid')||$('#beverages-grid')||$('#hotels-grid')||$('#contact-grid'))startLiveCatalogSync();
+      if($('#checkoutForm'))initCheckout();
+    }catch(err){
+      console.error('Catalog render error:',err);
+      toast('<i class="fa-solid fa-triangle-exclamation"></i> Could not display catalog items.');
+    }
   }).catch(()=>toast('<i class="fa-solid fa-triangle-exclamation"></i> Could not load catalog data.'));
 });
 
@@ -322,6 +327,8 @@ function startLiveCatalogSync(){
 }
   function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;syncSubChips('menu');applyFilters()}));const s=$('#dishSearch')||$('.nav-search input[name=q]');if(s){searchQuery=(s.value||'').trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()})}$('#sortMenu')?.addEventListener('change',applyFilters);const p=new URLSearchParams(location.search);const uq=(p.get('q')||'').trim().toLowerCase();if(uq)searchQuery=uq;const cat=p.get('cat');if(cat){const t=document.querySelector('.chip[data-cat="'+cat+'"]');if(t)t.click();else applyFilters()}else applyFilters()}
 function initCheckout(){
+  const form=$('#checkoutForm');
+  let promo='';
   function update(){
     const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}

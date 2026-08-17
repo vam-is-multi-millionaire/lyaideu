@@ -1,10 +1,15 @@
 <?php
 
+ini_set('display_errors', '0');
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
+
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
+
+ob_start();
 
 try {
     lyaideu_ensure_categories_table();
@@ -93,6 +98,15 @@ try {
         'delivery' => lyaideu_delivery_config(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
+    @file_put_contents(__DIR__ . '/api_error.log', '[' . date('Y-m-d H:i:s') . '] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL, FILE_APPEND);
+    @ob_end_clean();
     http_response_code(500);
     echo json_encode(['error' => 'Could not load catalog data.']);
+}
+$stray = ob_get_clean();
+if ($stray !== '') {
+    if (substr(trim($stray), 0, 1) !== '{') {
+        @file_put_contents(__DIR__ . '/api_error.log', '[' . date('Y-m-d H:i:s') . '] STRAY OUTPUT: ' . $stray . PHP_EOL, FILE_APPEND);
+    }
+    echo $stray;
 }
