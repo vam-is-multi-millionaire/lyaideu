@@ -37,6 +37,42 @@ function delivery_user(): ?array {
     return $_SESSION['delivery_user'] ?? null;
 }
 
+function delivery_vendor_avatar_url(int $vendorId): string {
+    try {
+        $pdo = lyaideu_load_pdo();
+        if (!$pdo instanceof PDO) {
+            return '';
+        }
+        $st = $pdo->prepare('SELECT scope, hotel_id, name FROM vendors WHERE id = ? LIMIT 1');
+        $st->execute([$vendorId]);
+        $v = $st->fetch();
+        if (!$v) {
+            return '';
+        }
+        $logo = '';
+        if ((int)$v['hotel_id'] > 0) {
+            $s = $pdo->prepare('SELECT logo FROM hotels WHERE id = ? LIMIT 1');
+            $s->execute([(int)$v['hotel_id']]);
+            $logo = (string)$s->fetchColumn();
+        }
+        if ($logo === '') {
+            $vn = lyaideu_normalize_name((string)$v['name']);
+            $kind = (string)$v['scope'] === 'mart' ? 'mart' : 'hotel';
+            $rows = $pdo->prepare('SELECT name, logo FROM hotels WHERE kind = ? ORDER BY id');
+            $rows->execute([$kind]);
+            foreach ($rows->fetchAll() as $h) {
+                if ($vn !== '' && lyaideu_normalize_name((string)$h['name']) === $vn) {
+                    $logo = (string)$h['logo'];
+                    break;
+                }
+            }
+        }
+        return $logo;
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
 function delivery_require_login(string $role): void {
     if (delivery_role() !== $role) {
         delivery_show_login($role);
@@ -187,6 +223,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
     $user = delivery_user();
     $logo = delivery_esc(site_logo_url());
     $name = $user ? delivery_esc($user['name']) : '';
+    $avatarUrl = ($role === 'vendor' && $user) ? delivery_vendor_avatar_url((int)$user['id']) : '';
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo lyaideu_base_tag();
     echo '<title>' . delivery_esc($title) . ' | LyaiDeu</title>';
@@ -197,7 +234,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
 <header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><span class="delivery-role-badge"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</span>
 <div class="delivery-user">
-  <span class="avatar">' . delivery_esc(substr($user['name'] ?? '', 0, 1)) . '</span>
+  <span class="avatar"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . delivery_esc($avatarUrl) . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc(substr($user['name'] ?? '', 0, 1)) : '') . '</span>
   <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
   ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '') . '
   <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
