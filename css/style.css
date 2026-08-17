@@ -930,6 +930,14 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .delivery-customer a,.delivery-rider a{color:var(--orange-700);font-weight:900;text-decoration:none;}
 .delivery-items{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0;}
 .delivery-items span{background:var(--orange-50);border:1px solid var(--orange-200);border-radius:999px;padding:.4rem .7rem;font-size:.78rem;font-weight:800;}
+.delivery-vendors{display:grid;gap:.75rem;margin:.9rem 0 0;}
+.delivery-vendor{background:var(--orange-50);border:1px solid var(--orange-200);border-radius:14px;padding:.7rem .85rem;}
+.delivery-vendor-head{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem .7rem;margin-bottom:.4rem;}
+.delivery-vendor-name{font-weight:900;color:var(--orange-900);display:inline-flex;align-items:center;gap:.4rem;font-size:.86rem;}
+.delivery-vendor-name i{color:var(--orange-600);}
+.delivery-vendor-call{font-weight:900;color:var(--orange-700);text-decoration:none;font-size:.78rem;display:inline-flex;align-items:center;gap:.35rem;margin-left:auto;}
+.delivery-vendor .delivery-items{margin:0;}
+.delivery-vendor .delivery-items span{background:#fff;}
 .delivery-actions form{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem;}
 .delivery-waiting{margin:.8rem 0 0;padding:.6rem .8rem;background:var(--orange-50);border:1px dashed var(--orange-300);border-radius:12px;font-size:.82rem;font-weight:800;color:var(--muted);display:flex;gap:.5rem;align-items:center;}
 .admin-assign-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin:.9rem 0;}

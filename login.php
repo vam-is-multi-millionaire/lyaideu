@@ -23,13 +23,13 @@ require_once __DIR__ . '/site_config.php';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>LyaiDeu · Login / Sign Up</title>
+<title>LyaiDeu Â· Login / Sign Up</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -41,10 +41,10 @@ require_once __DIR__ . '/site_config.php';
     <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;"><i class="fa-solid fa-burger"></i></span>
     <div class="brand-mark"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></div>
     <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
-    <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in as little as 15 minutes.</p>
+    <p class="brand-sub">Momo, pizza, chowmein and more â€” delivered straight to your doorstep in as little as 15 minutes.</p>
     <ul class="brand-stats">
         <li><strong>25+</strong><span>partner hotels</span></li>
-        <li><strong>15–60 min</strong><span>delivery</span></li>
+        <li><strong>15â€“60 min</strong><span>delivery</span></li>
         </ul>
 </aside>
 
@@ -168,7 +168,7 @@ require_once __DIR__ . '/site_config.php';
             <p class="switch-line">Already have an account? <a href="#" data-show="login">Login</a></p>
         </form>
     </div>
-    <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
+    <p class="auth-foot">Â© <?= date('Y') ?> LyaiDeu Â· All rights reserved.</p>
 </main>
 </div>
 <script src="js/script.js?v=18"></script>

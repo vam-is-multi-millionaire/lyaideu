@@ -225,7 +225,7 @@ if ($post && isset($_POST['submit_kyc'])) {
 
     $errors = [];
     if (trim((string)($profile['avatar'] ?? '')) === '') {
-        $errors[] = 'Upload your profile photo (a clear photo of your face) — it is compulsory for verification.';
+        $errors[] = 'Upload your profile photo (a clear photo of your face) â€” it is compulsory for verification.';
     }
     if (!profile_valid_phone((string)$profile['phone'])) {
         $errors[] = 'Your contact number must be a valid 10-digit number starting with 97 or 98. Update it in Personal info first.';
@@ -325,7 +325,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=27">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
@@ -402,7 +402,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
         <form class="profile-card" method="POST" action="profile">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <h2><i class="fa-solid fa-house-chimney"></i> Home location</h2>
-            <p class="small-note">Drop a pin on the map for your home — or tap <b>Use my current location</b>. We'll pre-fill it at checkout and your rider will see it.</p>
+            <p class="small-note">Drop a pin on the map for your home â€” or tap <b>Use my current location</b>. We'll pre-fill it at checkout and your rider will see it.</p>
             <div id="homeMap" class="loc-map"></div>
             <input type="hidden" name="home_lat" id="homeLat" value="<?= htmlspecialchars((string)($profile['home_lat'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             <input type="hidden" name="home_lng" id="homeLng" value="<?= htmlspecialchars((string)($profile['home_lng'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
@@ -431,7 +431,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <div class="kyc-status-row">
                 <span class="order-status-pill <?= $kycPillClass ?>"><?= htmlspecialchars($kycStatusLabels[$kycStatus] ?? $kycStatus, ENT_QUOTES, 'UTF-8') ?></span>
                 <?php if ($kycStatus === 'approved'): ?>
-                    <p class="kyc-ok-note"><i class="fa-solid fa-circle-check"></i> You're verified — you can place orders.</p>
+                    <p class="kyc-ok-note"><i class="fa-solid fa-circle-check"></i> You're verified â€” you can place orders.</p>
                 <?php elseif ($kycStatus === 'pending'): ?>
                     <p class="small-note">Submitted <?= htmlspecialchars((string)$profile['kyc_submitted_at'], ENT_QUOTES, 'UTF-8') ?>. We'll review your documents shortly.</p>
                 <?php elseif ($kycStatus === 'rejected'): ?>
@@ -440,9 +440,9 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             </div>
 
             <div class="kyc-checks">
-                <div class="kyc-check <?= $avatarUrl !== '' ? 'done' : '' ?>"><i class="fa-solid fa-user"></i> Profile photo (face) — <?= $avatarUrl !== '' ? 'uploaded' : '<b>required</b>' ?></div>
-                <div class="kyc-check <?= profile_valid_phone((string)$profile['phone']) ? 'done' : '' ?>"><i class="fa-solid fa-mobile-screen"></i> Valid phone number — <?= profile_valid_phone((string)$profile['phone']) ? 'verified' : '<b>invalid</b>' ?></div>
-                <div class="kyc-check <?= count($kycDocs) > 0 ? 'done' : '' ?>"><i class="fa-solid fa-file-shield"></i> ID documents — <?= count($kycDocs) > 0 ? count($kycDocs) . ' attached' : '<b>required</b>' ?></div>
+                <div class="kyc-check <?= $avatarUrl !== '' ? 'done' : '' ?>"><i class="fa-solid fa-user"></i> Profile photo (face) â€” <?= $avatarUrl !== '' ? 'uploaded' : '<b>required</b>' ?></div>
+                <div class="kyc-check <?= profile_valid_phone((string)$profile['phone']) ? 'done' : '' ?>"><i class="fa-solid fa-mobile-screen"></i> Valid phone number â€” <?= profile_valid_phone((string)$profile['phone']) ? 'verified' : '<b>invalid</b>' ?></div>
+                <div class="kyc-check <?= count($kycDocs) > 0 ? 'done' : '' ?>"><i class="fa-solid fa-file-shield"></i> ID documents â€” <?= count($kycDocs) > 0 ? count($kycDocs) . ' attached' : '<b>required</b>' ?></div>
             </div>
 
             <h3 class="kyc-sub"><i class="fa-solid fa-paperclip"></i> Your documents</h3>
@@ -484,7 +484,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 <button type="button" class="btn btn-outline btn-sm" id="kycAddDoc"><i class="fa-solid fa-plus"></i> Add another document</button>
                 <button type="submit" name="submit_kyc" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-paper-plane"></i> Submit for review</button>
             <?php elseif ($kycStatus === 'approved'): ?>
-                <p class="kyc-ok-note"><i class="fa-solid fa-lock"></i> Verification complete — documents are locked.</p>
+                <p class="kyc-ok-note"><i class="fa-solid fa-lock"></i> Verification complete â€” documents are locked.</p>
             <?php else: ?>
                 <p class="small-note"><i class="fa-solid fa-lock"></i> Documents are locked while your KYC is under review.</p>
             <?php endif; ?>
@@ -559,7 +559,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     if (btn) btn.addEventListener('click', function () {
         var b = this;
         b.disabled = true;
-        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locating…';
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locatingâ€¦';
         window.LYAIDEU_LOC.request(function (err, pos) {
             b.disabled = false;
             b.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Use my current location';
@@ -567,7 +567,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 if (msg) msg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Could not get your location. Check the browser permission and try again.';
                 return;
             }
-            if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Current location set — drag the pin to fine-tune.';
+            if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Current location set â€” drag the pin to fine-tune.';
             setPos(pos.lat, pos.lng, true);
         });
     });

@@ -118,13 +118,13 @@ $FEATURED_OTHER_ICONS = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Food Delivery in Surkhet Valley' ?></title>
+<title><?= $user ? 'LyaiDeu Â· Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu Â· Food Delivery in Surkhet Valley' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=27">
 <script>
 (function(){
   try {
@@ -191,13 +191,13 @@ $FEATURED_OTHER_ICONS = [
             <div class="hero-split-text">
                 <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast delivery across Surkhet Valley</p>
                 <h1 class="display">Delicious food, delivered fast &amp; <em>fresh</em></h1>
-                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door — hot and on time.</p>
+                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door â€” hot and on time.</p>
                 <div class="hero-ctas">
                     <a class="btn btn-primary" href="menu">Order Now <i class="fa-solid fa-arrow-right"></i></a>
                     <a class="btn btn-outline" href="mart">Shop the Mart</a>
                 </div>
                 <div class="hero-badges">
-                    <span><i class="fa-solid fa-truck-fast"></i> 15–60 min delivery</span>
+                    <span><i class="fa-solid fa-truck-fast"></i> 15â€“60 min delivery</span>
                     <span><i class="fa-solid fa-wallet"></i> eSewa &middot; Khalti &middot; COD</span>
                     <span><i class="fa-solid fa-star"></i> Trusted hotels</span>
                 </div>
@@ -342,7 +342,7 @@ $FEATURED_OTHER_ICONS = [
         <div class="container">
             <div class="section-head">
                 <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
-                <p class="section-sub">Tasty dishes, grocery essentials, gifts &amp; decor and partner stores — shuffled fresh on every refresh.</p>
+                <p class="section-sub">Tasty dishes, grocery essentials, gifts &amp; decor and partner stores â€” shuffled fresh on every refresh.</p>
             </div>
 
             <div class="featured-stack">
@@ -524,15 +524,15 @@ $FEATURED_OTHER_ICONS = [
             <div class="faq-list">
                 <details class="faq-item" open>
                     <summary>How do I place an order?</summary>
-                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel — we'll confirm it by phone if needed.</p>
+                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel â€” we'll confirm it by phone if needed.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How long does delivery take?</summary>
-                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45–60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
+                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45â€“60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How much is delivery?</summary>
-                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
+                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> â€” and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What payment methods do you accept?</summary>
@@ -540,11 +540,11 @@ $FEATURED_OTHER_ICONS = [
                 </details>
                 <details class="faq-item">
                     <summary>Can I track my order?</summary>
-                    <p>Yes! Open the Orders page at any time to see your order status — from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
+                    <p>Yes! Open the Orders page at any time to see your order status â€” from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What if my order is late or wrong?</summary>
-                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best.</p>
+                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast â€” re-delivery, replacement or a refund, whichever fits best.</p>
                 </details>
             </div>
         </div>
@@ -559,13 +559,13 @@ $FEATURED_OTHER_ICONS = [
                     </div>
                     <div class="grid contact-grid" id="contact-grid"></div>
                     <div class="contact-map">
-                        <iframe src="https://www.google.com/maps?q=Birendranagar%2C%20Surkhet%2C%20Nepal&output=embed" width="100%" height="280" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="LyaiDeu location — Birendranagar, Surkhet, Nepal"></iframe>
+                        <iframe src="https://www.google.com/maps?q=Birendranagar%2C%20Surkhet%2C%20Nepal&output=embed" width="100%" height="280" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="LyaiDeu location â€” Birendranagar, Surkhet, Nepal"></iframe>
                     </div>
                 </div>
                 <div class="contact-split-right">
                     <div class="section-head">
                         <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
-                        <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
+                        <p class="section-sub">Questions, feedback or partnership ideas â€” drop us a line and our team will reply soon.</p>
                     </div>
                     <form action="contact_send" method="POST" class="contact-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
@@ -575,10 +575,10 @@ $FEATURED_OTHER_ICONS = [
                         </div>
                         <div class="contact-form-row">
                             <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="98XXXXXXXX"></div>
-                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
+                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedbackâ€¦"></div>
                         </div>
                         <label>Message</label>
-                        <textarea name="message" rows="5" placeholder="Tell us how we can help…" minlength="10" required></textarea>
+                        <textarea name="message" rows="5" placeholder="Tell us how we can helpâ€¦" minlength="10" required></textarea>
                         <button type="submit" class="btn btn-primary contact-submit"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
                     </form>
                 </div>
@@ -591,19 +591,19 @@ $FEATURED_OTHER_ICONS = [
 <button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
-  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">Ã—</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
   <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 <footer class="footer">
     <div class="footer-grid">
-        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
+        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service â€” connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
-        <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>Sun â€“ Fri: 7 AM â€“ 10 PM</li><li>Saturday: 8 AM â€“ 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
-    <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
+    <div class="footer-bottom">Â© <span id="year">2026</span> LyaiDeu Â· All rights reserved.</div>
 </footer>
 
 <script src="js/script.js?v=18"></script>

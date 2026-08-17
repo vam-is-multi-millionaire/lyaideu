@@ -121,13 +121,13 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $isDetail ? e($store['name']) . ' | Stores · LyaiDeu' : 'Stores | LyaiDeu' ?></title>
+<title><?= $isDetail ? e($store['name']) . ' | Stores Â· LyaiDeu' : 'Stores | LyaiDeu' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=27">
 <script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
@@ -245,7 +245,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                 <?php else: ?>
                     <div class="empty-state" style="display:block;">
                         <span class="big"><i class="fa-solid <?= e($kindIcon) ?>"></i></span>
-                        <p><?= $kind === 'other' ? 'This partner store is setting up its catalog — check back soon!' : 'No products published yet. Check back soon!' ?></p>
+                        <p><?= $kind === 'other' ? 'This partner store is setting up its catalog â€” check back soon!' : 'No products published yet. Check back soon!' ?></p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -257,7 +257,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
             <div class="section-head">
                 <p class="kicker"><i class="fa-solid fa-store"></i> Partner businesses</p>
                 <h1 class="display">Our Partner Stores <i class="fa-solid fa-store"></i></h1>
-                <p class="section-sub">Hotels, the Mart and every partner business — all in one place.</p>
+                <p class="section-sub">Hotels, the Mart and every partner business â€” all in one place.</p>
             </div>
             <div class="menu-toolbar">
                 <div class="chip-row" id="storeKinds">
@@ -279,7 +279,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
-  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">Ã—</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
   <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
@@ -288,12 +288,12 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 
 <footer class="footer">
     <div class="footer-grid">
-        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
+        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service â€” connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Lazimpat, Kathmandu</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
-        <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>Sun â€“ Fri: 7 AM â€“ 10 PM</li><li>Saturday: 8 AM â€“ 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
-    <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
+    <div class="footer-bottom">Â© <span id="year">2026</span> LyaiDeu Â· All rights reserved.</div>
 </footer>
 
 <script src="js/script.js?v=18"></script>

@@ -24,7 +24,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=26">
+<link rel="stylesheet" href="css/style.css?v=27">
 </head>
 <body>
 
@@ -86,25 +86,25 @@ require_once __DIR__ . '/site_config.php';
                 <p>By creating an account, browsing the website or placing an order on LyaiDeu, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use our service.</p>
 
                 <h3>2. Our service</h3>
-                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen — restaurants prepare and package your food.</p>
+                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen â€” restaurants prepare and package your food.</p>
 
                 <h3>3. Accounts &amp; eligibility</h3>
                 <p>You must be at least 10 years old to create an account. You agree to provide accurate information (name, phone number, email, date of birth) and to keep your login details secure. You are responsible for all activity under your account.</p>
 
                 <h3>4. Placing orders</h3>
-                <p>When you place an order you are making a real purchase request. Order details such as items, price, delivery fee and total are shown before you confirm. Once a hotel confirms your order, it cannot be changed or cancelled from your account alone — contact the hotel or our support team for help.</p>
+                <p>When you place an order you are making a real purchase request. Order details such as items, price, delivery fee and total are shown before you confirm. Once a hotel confirms your order, it cannot be changed or cancelled from your account alone â€” contact the hotel or our support team for help.</p>
 
                 <h3>5. Prices &amp; payment</h3>
                 <p>Prices are listed in Nepali Rupees and may change without notice. We accept Cash on Delivery and digital wallets (eSewa / Khalti) where supported. Promo codes are subject to their stated rules and may be discontinued at any time.</p>
 
                 <h3>6. Delivery</h3>
-                <p>We aim to deliver fast across the Surkhet Valley — Mart-only orders in as little as 15 minutes, and freshly cooked hotel orders in 45–60 minutes — but delivery times are estimates and not guaranteed. A delivery fee may apply and varies with how many vendors your order mixes in. Risk and responsibility for the food pass to you upon delivery.</p>
+                <p>We aim to deliver fast across the Surkhet Valley â€” Mart-only orders in as little as 15 minutes, and freshly cooked hotel orders in 45â€“60 minutes â€” but delivery times are estimates and not guaranteed. A delivery fee may apply and varies with how many vendors your order mixes in. Risk and responsibility for the food pass to you upon delivery.</p>
 
                 <h3>7. Refunds &amp; complaints</h3>
                 <p>If your order is late, wrong or unsatisfactory, contact our Delivery Support team as soon as possible. Depending on the situation we will offer a re-delivery, replacement or refund. Refunds are issued back the same way the payment was made.</p>
 
                 <h3>8. Acceptable use</h3>
-                <p>You agree not to misuse the website — for example, providing false information, attempting to access other users' accounts, abusing support staff, or using the service for any unlawful purpose.</p>
+                <p>You agree not to misuse the website â€” for example, providing false information, attempting to access other users' accounts, abusing support staff, or using the service for any unlawful purpose.</p>
 
                 <h3>9. Partner hotels</h3>
                 <p>Partner hotels operate independently. LyaiDeu is not liable for food quality, availability or preparation, but we will always help you resolve issues with an order.</p>
@@ -124,12 +124,12 @@ require_once __DIR__ . '/site_config.php';
 
 <footer class="footer">
     <div class="footer-grid">
-        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
+        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service â€” connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Birendranagar, Surkhet</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
-        <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>Sun â€“ Fri: 7 AM â€“ 10 PM</li><li>Saturday: 8 AM â€“ 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
-    <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
+    <div class="footer-bottom">Â© <span id="year">2026</span> LyaiDeu Â· All rights reserved.</div>
 </footer>
 
 <script src="js/script.js?v=18"></script>

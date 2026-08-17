@@ -102,9 +102,8 @@ if ($user) {
     try {
         $rows = $pdo->prepare(
             'SELECT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
-                    o.created_at, o.rider_id, o.delivery_lat, o.delivery_lng, v.name AS vendor_name, v.phone AS vendor_phone
+                    o.created_at, o.rider_id, o.delivery_lat, o.delivery_lng
              FROM orders o
-             LEFT JOIN vendors v ON v.id = o.vendor_id
              WHERE (o.rider_id = :rid AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery"))
                 OR (o.rider_id IS NULL AND o.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup"))
              ORDER BY FIELD(o.status, "Pending", "Accepted", "Preparing", "Ready for pickup", "Out for delivery"), o.created_at ASC'
@@ -112,10 +111,39 @@ if ($user) {
         $rows->execute([':rid' => $riderId]);
         $orders = $rows->fetchAll();
 
-        $itemStmt = $pdo->prepare('SELECT name, qty, line_total FROM order_items WHERE order_id = ? ORDER BY id');
+        $itemStmt = $pdo->prepare(
+            'SELECT oi.vendor_id, v.name AS vendor_name, v.phone AS vendor_phone,
+                    ovs.status AS vendor_status, oi.hotel, oi.name, oi.qty, oi.line_total
+             FROM order_items oi
+             LEFT JOIN vendors v ON v.id = oi.vendor_id
+             LEFT JOIN order_vendor_status ovs ON ovs.order_id = oi.order_id AND ovs.vendor_id = oi.vendor_id
+             WHERE oi.order_id = ?
+             ORDER BY oi.vendor_id IS NULL, oi.vendor_id, oi.id'
+        );
         foreach ($orders as $row) {
             $itemStmt->execute([(int)$row['id']]);
-            $row['items'] = $itemStmt->fetchAll();
+            $vendors = [];
+            $otherItems = [];
+            foreach ($itemStmt->fetchAll() as $it) {
+                $vid = (int)$it['vendor_id'];
+                $line = ['name' => (string)$it['name'], 'qty' => (int)$it['qty'], 'line_total' => (int)$it['line_total']];
+                if ($vid > 0) {
+                    if (!isset($vendors[$vid])) {
+                        $vendors[$vid] = [
+                            'vendor_id' => $vid,
+                            'name' => (string)$it['vendor_name'] !== '' ? (string)$it['vendor_name'] : (string)$it['hotel'],
+                            'phone' => (string)$it['vendor_phone'],
+                            'status' => (string)$it['vendor_status'],
+                            'items' => [],
+                        ];
+                    }
+                    $vendors[$vid]['items'][] = $line;
+                } else {
+                    $otherItems[] = $line;
+                }
+            }
+            $row['vendors'] = array_values($vendors);
+            $row['other_items'] = $otherItems;
             $unassigned = (int)$row['rider_id'] === 0 || $row['rider_id'] === null;
             $claimable = $unassigned && $row['status'] === 'Ready for pickup';
             $row['claimable'] = $claimable;
@@ -155,20 +183,46 @@ if ($user) {
                 </div>
                 <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
             </div>
-            <?php if ($o['vendor_name']): ?>
-            <p class="delivery-rider"><i class="fa-solid fa-store"></i> <?= delivery_esc($o['vendor_name']) ?> · <a href="tel:+977<?= delivery_esc($o['vendor_phone'] ?? '') ?>">+977 <?= delivery_esc($o['vendor_phone'] ?? '') ?></a></p>
-            <?php endif; ?>
             <p class="delivery-customer"><i class="fa-solid fa-user"></i> <?= delivery_esc($o['customer_name']) ?> · <a href="tel:+977<?= delivery_esc($o['phone']) ?>">+977 <?= delivery_esc($o['phone']) ?></a></p>
             <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= delivery_esc($o['note']) ?><?php endif; ?></p>
+            <?php if ($o['vendors']): ?>
+            <div class="delivery-vendors">
+                <?php foreach ($o['vendors'] as $v): ?>
+                <div class="delivery-vendor">
+                    <div class="delivery-vendor-head">
+                        <span class="delivery-vendor-name"><i class="fa-solid <?= lyaideu_order_vendor_icon($v['name']) ?>"></i> <?= delivery_esc($v['name'] !== '' ? $v['name'] : 'Vendor') ?></span>
+                        <?php if ($v['status'] !== ''): ?>
+                        <span class="order-status-pill status-<?= $v['status'] === 'Rejected' ? 'cancelled' : lyaideu_order_pill_class($v['status']) ?>"><?= delivery_esc($v['status']) ?></span>
+                        <?php endif; ?>
+                        <?php if ($v['phone'] !== ''): ?>
+                        <a class="delivery-vendor-call" href="tel:+977<?= delivery_esc($v['phone']) ?>"><i class="fa-solid fa-phone"></i> +977 <?= delivery_esc($v['phone']) ?></a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="delivery-items">
+                        <?php foreach ($v['items'] as $it): ?>
+                        <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php if ($o['other_items']): ?>
+                <div class="delivery-vendor">
+                    <div class="delivery-vendor-head">
+                        <span class="delivery-vendor-name"><i class="fa-solid fa-box"></i> Other items</span>
+                    </div>
+                    <div class="delivery-items">
+                        <?php foreach ($o['other_items'] as $it): ?>
+                        <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             <?php if ($o['delivery_lat'] !== null && $o['delivery_lat'] !== '' && $o['delivery_lng'] !== null && $o['delivery_lng'] !== ''): ?>
             <div class="rider-map" data-lat="<?= delivery_esc($o['delivery_lat']) ?>" data-lng="<?= delivery_esc($o['delivery_lng']) ?>"></div>
             <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= delivery_esc($o['delivery_lat']) ?>,<?= delivery_esc($o['delivery_lng']) ?>" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>
             <?php endif; ?>
-            <div class="delivery-items">
-                <?php foreach ($o['items'] as $it): ?>
-                <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
-                <?php endforeach; ?>
-            </div>
             <div class="delivery-actions">
                 <?php if ($claimable): ?>
                 <p class="delivery-waiting"><i class="fa-solid fa-bullhorn"></i> This order is ready — be the first rider to accept it.</p>
