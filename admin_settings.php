@@ -201,6 +201,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         settings_redirect(true);
     }
 
+    if (isset($_POST['save_footer'])) {
+        $fields = [
+            'footer_blurb' => $_POST['footer_blurb'] ?? '',
+            'footer_address' => $_POST['footer_address'] ?? '',
+            'footer_email' => $_POST['footer_email'] ?? '',
+            'footer_phone' => $_POST['footer_phone'] ?? '',
+            'footer_hours_weekday' => $_POST['footer_hours_weekday'] ?? '',
+            'footer_hours_saturday' => $_POST['footer_hours_saturday'] ?? '',
+            'footer_hours_note' => $_POST['footer_hours_note'] ?? '',
+            'footer_copyright' => $_POST['footer_copyright'] ?? '',
+        ];
+        try {
+            $update = $pdo->prepare(
+                'INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                 ON DUPLICATE KEY UPDATE sval = VALUES(sval)'
+            );
+            foreach ($fields as $key => $value) {
+                $update->execute([':skey' => $key, ':sval' => trim($value)]);
+            }
+        } catch (Throwable $e) {
+            settings_redirect(false, 'Could not save the footer settings.');
+        }
+
+        lyaideu_settings_clear();
+        settings_redirect(true);
+    }
+
     settings_redirect(false, 'Unknown action.');
 }
 
@@ -218,6 +245,14 @@ $deliveryTimeStr = implode(', ', $deliveryCfg['time_schedule']);
 $deliveryMartMinutes = (int)$deliveryCfg['mart_minutes'];
 $deliveryTimeMin = (int)$deliveryCfg['time_min'];
 $deliveryTimeMax = (int)$deliveryCfg['time_max'];
+$footerBlurb = site_setting('footer_blurb', "Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.");
+$footerAddress = site_setting('footer_address', 'Lazimpat, Kathmandu');
+$footerEmail = site_setting('footer_email', 'hello@lyaideu.com.np');
+$footerPhone = site_setting('footer_phone', '9800000001');
+$footerHoursWeekday = site_setting('footer_hours_weekday', 'Sun – Fri: 7 AM – 10 PM');
+$footerHoursSaturday = site_setting('footer_hours_saturday', 'Saturday: 8 AM – 10 PM');
+$footerHoursNote = site_setting('footer_hours_note', 'Deliveries every day!');
+$footerCopyright = site_setting('footer_copyright', '© {{year}} LyaiDeu · All rights reserved.');
 
 admin_page_start('Settings', 'settings', 'Settings');
 ?>
@@ -228,6 +263,7 @@ admin_page_start('Settings', 'settings', 'Settings');
         <button type="button" class="admin-tab" data-settings-tab="hero" aria-selected="false"><i class="fa-solid fa-images"></i> Hero Slider</button>
         <button type="button" class="admin-tab" data-settings-tab="credentials" aria-selected="false"><i class="fa-solid fa-user-shield"></i> Login &amp; Security</button>
         <button type="button" class="admin-tab" data-settings-tab="delivery" aria-selected="false"><i class="fa-solid fa-motorcycle"></i> Delivery</button>
+        <button type="button" class="admin-tab" data-settings-tab="footer" aria-selected="false"><i class="fa-solid fa-address-card"></i> Footer</button>
     </nav>
 
     <form action="admin_settings" method="POST" enctype="multipart/form-data">
@@ -240,7 +276,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-palette"></i> Branding</h2>
                     <p class="section-sub">Upload a new logo or favicon — changes apply instantly across the whole website. Everything is optional; leave a field blank to keep the current image.</p>
                 </div>
-                <span class="admin-count-badge">1 of 4</span>
+                <span class="admin-count-badge">1 of 5</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -288,7 +324,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-images"></i> Hero Slider</h2>
                     <p class="section-sub">Change the images that slide on the homepage banner. Upload up to 4 images — leave a slot blank to keep the current slide. Recommended size: <strong>1200×900 px (4:3)</strong>.</p>
                 </div>
-                <span class="admin-count-badge">2 of 4</span>
+                <span class="admin-count-badge">2 of 5</span>
             </div>
             <div class="admin-grid">
                 <?php for ($i = 1; $i <= 4; $i++):
@@ -320,7 +356,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-user-shield"></i> Login &amp; Security</h2>
                     <p class="section-sub">Change the username and password used to sign in to this admin panel. Default: <strong>admin</strong> / <strong>admin123</strong>.</p>
                 </div>
-                <span class="admin-count-badge">3 of 4</span>
+                <span class="admin-count-badge">3 of 5</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -364,7 +400,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-motorcycle"></i> Delivery &amp; Fees</h2>
                     <p class="section-sub">Delivery fee and estimated delivery time by vendor count. Entry #1 = 1 vendor, #2 = 2 vendors, and so on. When customers mix items from several hotels / the Mart, the fee and time scale up automatically and they are shown a notice before checkout.</p>
                 </div>
-                <span class="admin-count-badge">4 of 4</span>
+                <span class="admin-count-badge">4 of 5</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -397,6 +433,48 @@ admin_page_start('Settings', 'settings', 'Settings');
             </div>
 
             <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-motorcycle"></i> Save Delivery Settings</button>
+        </section>
+    </form>
+
+    <form action="admin_settings" method="POST">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="save_footer" value="1">
+
+        <section class="admin-section settings-pane" data-settings-pane="footer">
+            <div class="admin-section-top">
+                <div>
+                    <h2 class="settings-section-title"><i class="fa-solid fa-address-card"></i> Footer</h2>
+                    <p class="section-sub">Edit the information shown in the website footer — the about text, contact details, opening hours and the copyright line. Changes apply instantly across every page.</p>
+                </div>
+                <span class="admin-count-badge">5 of 5</span>
+            </div>
+            <div class="admin-grid">
+                <div class="admin-card settings-card">
+                    <h3><i class="fa-solid fa-quote-left"></i> About &amp; Contact</h3>
+                    <label for="footer_blurb">Footer about text</label>
+                    <textarea name="footer_blurb" id="footer_blurb" rows="3"><?= htmlspecialchars($footerBlurb, ENT_QUOTES, 'UTF-8') ?></textarea>
+                    <label for="footer_address">Address</label>
+                    <input type="text" name="footer_address" id="footer_address" value="<?= htmlspecialchars($footerAddress, ENT_QUOTES, 'UTF-8') ?>" placeholder="Lazimpat, Kathmandu">
+                    <label for="footer_email">Email</label>
+                    <input type="email" name="footer_email" id="footer_email" value="<?= htmlspecialchars($footerEmail, ENT_QUOTES, 'UTF-8') ?>" placeholder="hello@lyaideu.com.np">
+                    <label for="footer_phone">Phone</label>
+                    <input type="text" name="footer_phone" id="footer_phone" value="<?= htmlspecialchars($footerPhone, ENT_QUOTES, 'UTF-8') ?>" placeholder="9800000001">
+                </div>
+                <div class="admin-card settings-card">
+                    <h3><i class="fa-solid fa-clock"></i> Opening Hours &amp; Copyright</h3>
+                    <label for="footer_hours_weekday">Weekday hours</label>
+                    <input type="text" name="footer_hours_weekday" id="footer_hours_weekday" value="<?= htmlspecialchars($footerHoursWeekday, ENT_QUOTES, 'UTF-8') ?>" placeholder="Sun – Fri: 7 AM – 10 PM">
+                    <label for="footer_hours_saturday">Saturday hours</label>
+                    <input type="text" name="footer_hours_saturday" id="footer_hours_saturday" value="<?= htmlspecialchars($footerHoursSaturday, ENT_QUOTES, 'UTF-8') ?>" placeholder="Saturday: 8 AM – 10 PM">
+                    <label for="footer_hours_note">Extra note</label>
+                    <input type="text" name="footer_hours_note" id="footer_hours_note" value="<?= htmlspecialchars($footerHoursNote, ENT_QUOTES, 'UTF-8') ?>" placeholder="Deliveries every day!">
+                    <label for="footer_copyright">Copyright line</label>
+                    <input type="text" name="footer_copyright" id="footer_copyright" value="<?= htmlspecialchars($footerCopyright, ENT_QUOTES, 'UTF-8') ?>">
+                    <small class="small-note">Use <code>{{year}}</code> in the copyright to print the current year automatically.</small>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Footer</button>
         </section>
     </form>
 

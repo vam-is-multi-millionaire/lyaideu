@@ -2089,6 +2089,35 @@ function site_logo_url(): string {
     return site_setting('site_logo', 'logo.png');
 }
 
+/**
+ * Renders the shared website footer. All of the contact info, opening hours,
+ * blurb and copyright text come from the `settings` table (editable from the
+ * admin panel) and fall back to sensible defaults. Use {{year}} inside the
+ * copyright to print the current year automatically.
+ */
+function lyaideu_footer_html(): string {
+    $esc = static fn ($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    $logo = $esc(site_logo_url());
+    $blurb = $esc(site_setting('footer_blurb', "Nepal's friendliest food delivery service — connecting you to the best hotels in the valley."));
+    $address = $esc(site_setting('footer_address', 'Lazimpat, Kathmandu'));
+    $email = $esc(site_setting('footer_email', 'hello@lyaideu.com.np'));
+    $phone = $esc(site_setting('footer_phone', '9800000001'));
+    $hoursWeekday = $esc(site_setting('footer_hours_weekday', 'Sun – Fri: 7 AM – 10 PM'));
+    $hoursSaturday = $esc(site_setting('footer_hours_saturday', 'Saturday: 8 AM – 10 PM'));
+    $hoursNote = $esc(site_setting('footer_hours_note', 'Deliveries every day!'));
+    $copyright = str_replace('{{year}}', date('Y'), site_setting('footer_copyright', '© {{year}} LyaiDeu · All rights reserved.'));
+
+    return '<footer class="footer">
+    <div class="footer-grid">
+        <div><p class="footer-brand"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></p><p class="footer-blurb">' . $blurb . '</p></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> ' . $address . '</li><li><i class="fa-solid fa-envelope"></i> ' . $email . '</li><li><i class="fa-solid fa-phone"></i> ' . $phone . '</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>' . $hoursWeekday . '</li><li>' . $hoursSaturday . '</li><li><i class="fa-solid fa-motorcycle"></i> ' . $hoursNote . '</li></ul></div>
+    </div>
+    <div class="footer-bottom">' . $copyright . '</div>
+</footer>';
+}
+
 function lyaideu_base_url(): string {
     static $base = null;
     if ($base !== null) {
