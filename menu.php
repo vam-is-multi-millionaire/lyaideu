@@ -47,9 +47,9 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
             <li><a href="menu" class="nav-a active">Menu</a></li>
-            <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
+            <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>

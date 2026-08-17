@@ -147,9 +147,9 @@ $FEATURED_OTHER_ICONS = [
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
-            <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="others" class="nav-a">Others</a></li>
+            <li><a href="store" class="nav-a">Stores</a></li>
             <li><a href="orders" class="nav-a">Orders</a></li>
             <?php if ($user): ?>
             <li>
