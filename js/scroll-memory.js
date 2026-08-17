@@ -20,6 +20,16 @@
   var autoScrolling = false;
   var timer = null;
 
+  /* Pages that must always open at the very top when the user returns to them
+     with the browser Back/Forward button (e.g. index.php after browsing a
+     product) opt in with <script>window.LYADEU_BACK_TO_TOP=1;</script>. This
+     disables the browser's own scroll restoration and forces the top. */
+  var backToTop = false;
+  try { backToTop = window.LYADEU_BACK_TO_TOP === 1; } catch (e) {}
+  if (backToTop) {
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+  }
+
   function navType() {
     try {
       var entries = performance.getEntriesByType('navigation');
@@ -89,7 +99,14 @@
 
   /* On back/forward the browser already keeps the exact scroll position. */
   window.addEventListener('pageshow', function (e) {
-    if (e.persisted) stopRestoring();
+    if (e.persisted) {
+      if (backToTop) {
+        window.scrollTo(0, 0);
+        stopRestoring();
+      } else {
+        stopRestoring();
+      }
+    }
   });
 
   window.addEventListener('beforeunload', saveNow);
@@ -99,6 +116,11 @@
      form submit that returned to this same path. Everything else (typing a
      URL, clicking a nav link like "Home") must start at the top/anchor. */
   var type = navType();
+  if (backToTop && type === 'back_forward') {
+    /* Opt-in pages must always land at the very top on Back/Forward. */
+    restoring = false;
+    target = null;
+  }
   if (type !== 'reload' && type !== 'back_forward' && !takeRestoreFlag()) {
     restoring = false;
   }

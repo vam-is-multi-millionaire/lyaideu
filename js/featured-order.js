@@ -1,13 +1,15 @@
 /* index.php "Random Picks" order memory.
-   A fresh visit or a manual refresh gets a brand-new random order (rendered by
-   PHP). Returning to this page via the browser Back/Forward keeps the exact
-   order the user last saw: the freshly rendered cards are re-arranged back to
-   the order saved in sessionStorage. */
+   Fresh visits and manual refreshes get a brand-new random order. The order is
+   made deterministic on the server via a seed carried in the URL (?fs=...), so
+   returning to this page with the browser Back/Forward reproduces the exact
+   order the user last saw — even after navigating several pages deep. A
+   sessionStorage snapshot of the rendered order is kept as a fallback for the
+   rare cases where the seed isn't present in the URL. */
 (function () {
   'use strict';
 
-  var KEY = 'lyaideu_featured_v1:' + location.pathname + location.search;
   var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
+  var STORE_KEY = 'lyaideu_featured_v2:' + location.pathname.replace(/\/+$/, '');
 
   function navType() {
     try {
@@ -18,7 +20,18 @@
       var n = window.performance.navigation.type; /* 0 navigate, 1 reload, 2 back_forward */
       return n === 1 ? 'reload' : (n === 2 ? 'back_forward' : 'navigate');
     }
-    return null;
+    return 'navigate';
+  }
+
+  function currentFs() {
+    var m = /[?&]fs=(\d+)/.exec(location.search);
+    return m ? m[1] : null;
+  }
+
+  function makeUrl(seed) {
+    var u = new URL(window.location.href);
+    u.searchParams.set('fs', seed);
+    return u.toString();
   }
 
   function cardKey(card) {
@@ -39,13 +52,13 @@
   }
 
   function loadSaved() {
-    try { return JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
+    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
   }
 
   function saveOrders(grids) {
     var data = {};
     for (var i = 0; i < grids.length; i++) data[grids[i].id] = readOrder(grids[i]);
-    try { sessionStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+    try { sessionStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (e) {}
   }
 
   /* Re-arrange the grid's children into the saved order. Returns false if the
@@ -76,15 +89,42 @@
       if (g) grids.push(g);
     }
     if (!grids.length) return;
-    var saved = loadSaved();
-    var backForward = navType() === 'back_forward';
-    for (var j = 0; j < grids.length; j++) {
-      var keys = (saved && saved[grids[j].id]) || [];
-      if (backForward && keys.length && grids[j].children.length) {
-        applyOrder(grids[j], keys);
+
+    var type = navType();
+    var seed = (typeof window.LYADEU_FS !== 'undefined' && window.LYADEU_FS !== null && window.LYADEU_FS !== '' && window.LYADEU_FS !== 0 && window.LYADEU_FS !== '0')
+      ? String(window.LYADEU_FS)
+      : '';
+
+    if (seed) {
+      if (currentFs() === null) {
+        /* Fresh load — the server already rendered this seed's order, so just
+           stamp it into the URL (no reload) and Back/Forward reproduces it. */
+        try { history.replaceState(history.state, '', makeUrl(seed)); } catch (e) {}
+      } else if (type === 'reload') {
+        /* Manual refresh of a seeded URL → bounce to a brand-new random order.
+           location.replace() swaps the current history entry, no extra entry. */
+        var fresh = Math.floor(Math.random() * 2147483647) + 1;
+        try { location.replace(makeUrl(fresh)); } catch (e) {}
+        return;
       }
     }
-    saveOrders(grids);
+
+    /* Fallback: on Back/Forward, restore the last-rendered order from
+       sessionStorage when the seed isn't in play. Don't clobber the snapshot
+       if the freshly rendered cards can't be re-arranged back to it. */
+    var overwrite = true;
+    if (type === 'back_forward') {
+      var saved = loadSaved();
+      if (saved) {
+        for (var j = 0; j < grids.length; j++) {
+          var keys = saved[grids[j].id];
+          if (keys && keys.length && grids[j].children.length && !applyOrder(grids[j], keys)) {
+            overwrite = false;
+          }
+        }
+      }
+    }
+    if (overwrite) saveOrders(grids);
   }
 
   try {

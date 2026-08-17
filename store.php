@@ -128,6 +128,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=25">
+<script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
 
@@ -180,7 +181,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <?php if ($isDetail): ?>
     <section id="store" class="section section-white">
         <div class="container">
-            <a class="back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>" data-back-home="<?= lyaideu_from_home() ? '1' : '0' ?>"><i class="fa-solid fa-arrow-left"></i> <?= lyaideu_from_home() ? 'Back to Home' : 'Back to Stores' ?></a>
+            <a class="back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>"><i class="fa-solid fa-arrow-left"></i> Back</a>
 
             <div class="store-hero">
                 <div class="store-hero-avatar">
@@ -296,18 +297,18 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=3"></script>
+<script src="js/scroll-memory.js?v=4"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
 (function(){
-  var backHome = document.querySelector('.back-link[data-back-home="1"]');
-  if (!backHome || !window.history) return;
-  backHome.addEventListener('click', function (e) {
-    if (window.history.length > 1) {
+  var backLink = document.querySelector('.back-link');
+  if (!backLink || !window.history) return;
+  if (window.history.length > 1) {
+    backLink.addEventListener('click', function (e) {
       e.preventDefault();
       window.history.back();
-    }
-  });
+    });
+  }
 })();
 </script>
 <?php if ($isDetail): ?>

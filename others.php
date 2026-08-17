@@ -130,7 +130,7 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=3"></script>
+<script src="js/scroll-memory.js?v=4"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

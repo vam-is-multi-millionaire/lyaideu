@@ -17,12 +17,13 @@ require_once __DIR__ . '/site_config.php';
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
+$fsSeed = 0;
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
     try {
         lyaideu_ensure_stores();
         lyaideu_ensure_other_table();
-        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes')->fetchAll();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes ORDER BY id')->fetchAll();
         $featured['mart']   = $featuredPdo->query(
             'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
                     COALESCE(h.name, \'\') AS hotel
@@ -39,13 +40,18 @@ if ($featuredPdo instanceof PDO) {
              LEFT JOIN hotels h ON h.id = v.hotel_id
              ORDER BY oi.id'
         )->fetchAll();
-        $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels')->fetchAll();
+        $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels ORDER BY id')->fetchAll();
     } catch (Throwable $e) {
 $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
     }
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
     $featured['other_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'other'));
+    $fsSeed = (int)($_GET['fs'] ?? 0);
+    if ($fsSeed <= 0) {
+        $fsSeed = mt_rand(1, 2147483647);
+    }
+    mt_srand($fsSeed);
     shuffle($featured['dishes']);
     shuffle($featured['mart']);
     shuffle($featured['others']);
@@ -122,6 +128,7 @@ $FEATURED_OTHER_ICONS = [
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=25">
+<script>window.LYADEU_FS=<?= (int)$fsSeed ?>;</script>
 </head>
 <body>
 
@@ -499,7 +506,7 @@ $FEATURED_OTHER_ICONS = [
         </div>
     </section>
 
-    <script src="js/featured-order.js?v=1"></script>
+    <script src="js/featured-order.js?v=2"></script>
 
     <section id="faq" class="section section-white">
         <div class="container">
@@ -593,7 +600,7 @@ $FEATURED_OTHER_ICONS = [
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=3"></script>
+<script src="js/scroll-memory.js?v=4"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>
