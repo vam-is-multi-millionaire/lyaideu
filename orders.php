@@ -101,11 +101,11 @@ foreach ($rows as $row) {
     <div class="flash-banner flash-<?= $flash['type'] ?>"><?= $flash['msg'] ?></div>
 <?php endif; ?>
 <main class="orders-page container" data-live-orders>
-<span data-live-indicator class="live-indicator" title="Checks for updates automatically">â— Live updates</span>
+<span data-live-indicator class="live-indicator" title="Checks for updates automatically">● Live updates</span>
 <div class="section-head">
     <p class="kicker"><i class="fa-solid fa-box"></i> Your activity</p>
     <h1 class="display">My Orders</h1>
-    <p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">â— Live updates</span></p>
+    <p class="section-sub">Track current orders and revisit previous ones. <span class="live-badge">● Live updates</span></p>
 </div>
 <?php if (!$orders): ?>
 <div class="empty-state" style="display:block"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>You haven't placed an order yet.</p><a class="btn btn-primary" href="menu">Start Ordering</a></div>
@@ -124,10 +124,10 @@ foreach ($rows as $row) {
     <div class="summary-row"><span>Subtotal</span><strong>Rs. <?= (int)$o['subtotal'] ?></strong></div>
     <div class="summary-row"><span>Delivery</span><strong>Rs. <?= max(0, (int)$o['delivery_fee'] - (int)$o['discount']) ?></strong></div>
     <?php if (!empty($o['eta_minutes'])): ?>
-    <div class="summary-row"><span>Estimated delivery</span><strong>about <?= (int)$o['eta_minutes'] ?> min<?= (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) > 1 ? ' Â· ' . (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) . ' vendors' : '' ?></strong></div>
+    <div class="summary-row"><span>Estimated delivery</span><strong>about <?= (int)$o['eta_minutes'] ?> min<?= (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) > 1 ? ' · ' . (count($o['vendors']) + (!empty($o['other_items']) ? 1 : 0)) . ' vendors' : '' ?></strong></div>
     <?php endif; ?>
     <div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$o['total'] ?></strong></div>
-    <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?> Â· <i class="fa-solid fa-credit-card"></i> <?= htmlspecialchars($o['payment']) ?></p>
+    <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($o['address']) ?> · <i class="fa-solid fa-credit-card"></i> <?= htmlspecialchars($o['payment']) ?></p>
 </article>
 <?php endforeach; ?>
 </div>

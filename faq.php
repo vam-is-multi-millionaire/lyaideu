@@ -85,15 +85,15 @@ require_once __DIR__ . '/site_config.php';
             <div class="faq-list">
                 <details class="faq-item" open>
                     <summary>How do I place an order?</summary>
-                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel â€” we'll confirm it by phone if needed.</p>
+                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel — we'll confirm it by phone if needed.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How long does delivery take?</summary>
-                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45â€“60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
+                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45–60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How much is delivery?</summary>
-                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> â€” and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
+                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What payment methods do you accept?</summary>
@@ -101,7 +101,7 @@ require_once __DIR__ . '/site_config.php';
                 </details>
                 <details class="faq-item">
                     <summary>Can I track my order?</summary>
-                    <p>Yes! Open the Orders page at any time to see your order status â€” from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
+                    <p>Yes! Open the Orders page at any time to see your order status — from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
                 </details>
                 <details class="faq-item">
                     <summary>Can I cancel or change my order?</summary>
@@ -109,7 +109,7 @@ require_once __DIR__ . '/site_config.php';
                 </details>
                 <details class="faq-item">
                     <summary>What if my order is late or wrong?</summary>
-                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast â€” re-delivery, replacement or a refund, whichever fits best.</p>
+                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How do I keep my account secure?</summary>
@@ -124,7 +124,7 @@ require_once __DIR__ . '/site_config.php';
             <div class="section-head">
                 <p class="kicker"><i class="fa-solid fa-shield-halved"></i> Privacy first</p>
                 <h2 class="display">Privacy Policy <i class="fa-solid fa-shield-halved"></i></h2>
-                <p class="section-sub">Last updated: <?= date('F Y') ?>. Your trust matters â€” here's how we handle your data.</p>
+                <p class="section-sub">Last updated: <?= date('F Y') ?>. Your trust matters — here's how we handle your data.</p>
             </div>
             <div class="policy-body">
                 <h3>1. Information we collect</h3>
@@ -137,7 +137,7 @@ require_once __DIR__ . '/site_config.php';
                 <p>Cash is collected on delivery. Where digital wallets are used, payments are processed securely and we never store your wallet PIN or full payment credentials on our servers.</p>
 
                 <h3>4. Data sharing</h3>
-                <p>We share only what is needed â€” your name, address and order details â€” with the partner hotel preparing and delivering your order. We may share data with trusted service providers for fraud prevention or as required by law.</p>
+                <p>We share only what is needed — your name, address and order details — with the partner hotel preparing and delivering your order. We may share data with trusted service providers for fraud prevention or as required by law.</p>
 
                 <h3>5. Cookies &amp; storage</h3>
                 <p>We use a small session cookie to keep you signed in and remember preferences. Sensitive data like your password is stored using strong encryption, never in plain text.</p>
@@ -176,12 +176,12 @@ require_once __DIR__ . '/site_config.php';
 </aside>
 <footer class="footer">
     <div class="footer-grid">
-        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service â€” connecting you to the best hotels in the valley.</p></div>
+        <div><p class="footer-brand"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></p><p class="footer-blurb">Nepal's friendliest food delivery service — connecting you to the best hotels in the valley.</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> Birendranagar, Surkhet</li><li><i class="fa-solid fa-envelope"></i> hello@lyaideu.com.np</li><li><i class="fa-solid fa-phone"></i> 9800000001</li></ul></div>
-        <div><h4>Opening Hours</h4><ul><li>Sun â€“ Fri: 7 AM â€“ 10 PM</li><li>Saturday: 8 AM â€“ 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
+        <div><h4>Opening Hours</h4><ul><li>Sun – Fri: 7 AM – 10 PM</li><li>Saturday: 8 AM – 10 PM</li><li><i class="fa-solid fa-motorcycle"></i> Deliveries every day!</li></ul></div>
     </div>
-    <div class="footer-bottom">Â© <span id="year">2026</span> LyaiDeu Â· All rights reserved.</div>
+    <div class="footer-bottom">© <span id="year">2026</span> LyaiDeu · All rights reserved.</div>
 </footer>
 
 <script src="js/script.js?v=18"></script>

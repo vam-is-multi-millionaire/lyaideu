@@ -202,7 +202,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
   ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '') . '
   <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
 </div></header>
-<main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>â— Live updates</span> New orders appear here automatically.</p></div>';
+<main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>● Live updates</span> New orders appear here automatically.</p></div>';
 }
 
 function delivery_footer(): void {
