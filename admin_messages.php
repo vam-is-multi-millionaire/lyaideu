@@ -86,7 +86,13 @@ admin_page_start('Messages', 'messages', 'Contact Messages');
     <section class="admin-section">
         <div class="admin-section-top">
             <p class="section-sub">Messages sent through the Contact page. Reply or get in touch with the sender when they need help.</p>
-            <span class="admin-count-badge"><?= count($messages) ?> messages</span>
+            <span class="admin-count-badge" id="messageShown"><?= count($messages) ?> messages</span>
+        </div>
+        <div class="admin-order-tools">
+            <div class="admin-order-search">
+                <span><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="search" id="messageSearch" placeholder="Search by sender, subject or message…" autocomplete="off">
+            </div>
         </div>
         <div class="admin-order-list">
             <?php if (!$messages): ?>
@@ -96,8 +102,10 @@ admin_page_start('Messages', 'messages', 'Contact Messages');
             </div>
             <?php endif; ?>
 
-            <?php foreach ($messages as $m): ?>
-            <article class="admin-order-card message-card <?= $m['status'] === 'unread' ? 'message-unread' : '' ?>">
+            <?php foreach ($messages as $m):
+                $searchTxt = mb_strtolower(implode(' ', [$m['name'], $m['email'], $m['phone'], $m['subject'], $m['body'], $m['status']]));
+            ?>
+            <article class="admin-order-card message-card <?= $m['status'] === 'unread' ? 'message-unread' : '' ?>" data-search="<?= htmlspecialchars($searchTxt, ENT_QUOTES, 'UTF-8') ?>">
                 <div class="order-card-head">
                     <div>
                         <h2><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($m['subject']) ?>
@@ -122,7 +130,30 @@ admin_page_start('Messages', 'messages', 'Contact Messages');
                 <div class="message-body"><?= nl2br(htmlspecialchars($m['body'])) ?></div>
             </article>
             <?php endforeach; ?>
+            <div class="admin-card" id="messageSearchEmpty" style="display:none"><h3>No messages match your search.</h3><p class="small-note">Try a different name, subject or keyword.</p></div>
         </div>
     </section>
+<script>
+(function () {
+    var input = document.getElementById('messageSearch');
+    if (!input) return;
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.message-card'));
+    var shown = document.getElementById('messageShown');
+    var emptyEl = document.getElementById('messageSearchEmpty');
+    function apply() {
+        var q = input.value.trim().toLowerCase();
+        var n = 0;
+        cards.forEach(function (card) {
+            var hay = (card.getAttribute('data-search') || '').toLowerCase();
+            var show = !q || hay.indexOf(q) !== -1;
+            card.style.display = show ? '' : 'none';
+            if (show) n++;
+        });
+        if (shown) shown.textContent = n + ' messages';
+        if (emptyEl) emptyEl.style.display = (cards.length > 0 && n === 0) ? '' : 'none';
+    }
+    input.addEventListener('input', apply);
+})();
+</script>
 <?php
 admin_page_end();

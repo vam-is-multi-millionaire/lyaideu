@@ -105,7 +105,14 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
 <section class="admin-section">
     <div class="admin-section-top">
         <p class="section-sub">Customers must be verified before they can place orders. Review their identity documents and approve or reject them.</p>
-        <span class="admin-count-badge"><?= count($users) ?> shown</span>
+        <span class="admin-count-badge" id="kycShown"><?= count($users) ?> shown</span>
+    </div>
+
+    <div class="admin-order-tools">
+        <div class="admin-order-search">
+            <span><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="search" id="kycSearch" placeholder="Search by name, email, phone or status…" autocomplete="off">
+        </div>
     </div>
 
     <div class="admin-tabs">
@@ -126,8 +133,12 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
             $parts = preg_split('/\s+/', trim((string)$u['name']));
             $ini = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
             $docs = $docsByUser[$uid] ?? [];
+            $searchTxt = mb_strtolower(implode(' ', [
+                (string)$u['name'], (string)$u['email'], (string)$u['phone'], (string)$u['dob'], (string)$u['address'],
+                (string)($statusLabels[$st] ?? $st), (string)$u['kyc_reviewer'],
+            ]));
         ?>
-        <div class="admin-card admin-kyc-card">
+        <div class="admin-card admin-kyc-card" data-search="<?= htmlspecialchars($searchTxt, ENT_QUOTES, 'UTF-8') ?>">
             <div class="kyc-card-head">
                 <div class="avatar-preview"<?= $av !== '' ? ' style="background-image:url(\'' . $av . '\')" data-lightbox="' . $av . '" data-lightbox-caption="' . htmlspecialchars($u['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $av === '' ? htmlspecialchars($ini) : '' ?></div>
                 <div>
@@ -193,8 +204,31 @@ admin_page_start('KYC', 'kyc', 'KYC Verification');
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
+        <p class="admin-empty-note" id="kycSearchEmpty" style="display:none">No users match your search.</p>
     </div>
 </section>
+<script>
+(function () {
+    var input = document.getElementById('kycSearch');
+    if (!input) return;
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.admin-kyc-card'));
+    var shown = document.getElementById('kycShown');
+    var emptyEl = document.getElementById('kycSearchEmpty');
+    function apply() {
+        var q = input.value.trim().toLowerCase();
+        var n = 0;
+        cards.forEach(function (card) {
+            var hay = (card.getAttribute('data-search') || '').toLowerCase();
+            var show = !q || hay.indexOf(q) !== -1;
+            card.style.display = show ? '' : 'none';
+            if (show) n++;
+        });
+        if (shown) shown.textContent = n + ' shown';
+        if (emptyEl) emptyEl.style.display = (cards.length > 0 && n === 0) ? '' : 'none';
+    }
+    input.addEventListener('input', apply);
+})();
+</script>
 <script src="js/lightbox.js?v=2"></script>
 <?php
 admin_page_end();
