@@ -69,9 +69,26 @@
     return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
   }
 
+  /* Scroll instantly even though the site uses css `scroll-behavior:smooth`,
+     otherwise restoring the position animates across the whole page. */
+  function jumpTo(y) {
+    var doc = document.documentElement;
+    var prev = doc.style.scrollBehavior;
+    doc.style.scrollBehavior = 'auto';
+    window.scrollTo(0, y);
+    doc.style.scrollBehavior = prev;
+  }
+
+  /* Some pages add the `lyai-restoring` class in <head> to hide the page until
+     the saved scroll position has been applied, so reloading never flashes the
+     top of the page first. Remove it as soon as we are done (or give up). */
+  function reveal() {
+    try { document.documentElement.classList.remove('lyai-restoring'); } catch (e) {}
+  }
+
   function doScroll(y) {
     autoScrolling = true;
-    window.scrollTo(0, y);
+    jumpTo(y);
     setTimeout(function () { autoScrolling = false; }, 120);
   }
 
@@ -81,10 +98,12 @@
     if (!maxY) return;
     var y = Math.min(target, maxY);
     if (Math.abs(currentY() - y) > 2) doScroll(y);
+    reveal();
   }
 
   function stopRestoring() {
     restoring = false;
+    reveal();
     if (timer) { clearInterval(timer); timer = null; }
   }
 
@@ -101,7 +120,7 @@
   window.addEventListener('pageshow', function (e) {
     if (e.persisted) {
       if (backToTop) {
-        window.scrollTo(0, 0);
+        jumpTo(0);
         stopRestoring();
       } else {
         stopRestoring();
@@ -124,7 +143,7 @@
     target = null;
     if (backToTop) {
       /* Opt-in pages must instead always land at the very top on Back/Forward. */
-      window.scrollTo(0, 0);
+      jumpTo(0);
     }
   }
   if (type !== 'reload' && type !== 'back_forward' && !takeRestoreFlag()) {

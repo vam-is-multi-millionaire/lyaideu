@@ -325,7 +325,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=25">
+<link rel="stylesheet" href="css/style.css?v=26">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
@@ -575,7 +575,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 </script>
 <script src="js/lightbox.js?v=2"></script>
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=4"></script>
+<script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>
 </html>

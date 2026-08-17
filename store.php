@@ -127,7 +127,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=25">
+<link rel="stylesheet" href="css/style.css?v=26">
 <script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
@@ -297,7 +297,7 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
 </footer>
 
 <script src="js/script.js?v=18"></script>
-<script src="js/scroll-memory.js?v=4"></script>
+<script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
 (function(){

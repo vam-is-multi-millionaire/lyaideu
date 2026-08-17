@@ -27,6 +27,7 @@
 
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
+html.lyai-restoring body{visibility:hidden;}
 html{overflow-x:clip;}
 body{overflow-x:clip;}
 img{max-width:100%;}
