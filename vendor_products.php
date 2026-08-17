@@ -38,6 +38,7 @@ if (!$isMart && !$isOther && !$isBeverage) {
 }
 
 lyaideu_ensure_categories_table();
+lyaideu_ensure_variant_tables();
 $catType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'menu'));
 $catsFlat = lyaideu_categories_flat($catType);
 $allowedCats = [];
@@ -46,6 +47,7 @@ foreach ($catsFlat as $c) {
 }
 
 $table = $isMart ? 'mart_items' : ($isOther ? 'other_items' : ($isBeverage ? 'beverage_items' : 'dishes'));
+$itemType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'dish'));
 $msg = $_GET['msg'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -118,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $upd->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $id, $vendorId]);
                     }
                     lyaideu_sync_item_slug($table, $id, $name);
+                    lyaideu_save_item_variants($pdo, $itemType, $id, !empty($_POST['product'][$id]['has_variants'] ?? []), $_POST['product'][$id]['variants'] ?? []);
                 } else {
                     if ($isMart) {
                         $ins = $pdo->prepare('INSERT INTO mart_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -133,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $vendorId]);
                     }
                     lyaideu_sync_item_slug($table, (int)$pdo->lastInsertId(), $name);
+                    lyaideu_save_item_variants($pdo, $itemType, (int)$pdo->lastInsertId(), !empty($_POST['new_product']['has_variants'] ?? []), $_POST['new_product']['variants'] ?? []);
                 }
                 header('Location: vendor_products?msg=' . urlencode('Product saved. It is now live on the website.'));
                 exit;
@@ -149,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $del = $pdo->prepare("DELETE FROM `$table` WHERE id = ? AND vendor_id = ?");
             $del->execute([$id, $vendorId]);
+            lyaideu_delete_item_variants($pdo, $itemType, $id);
             header('Location: vendor_products?msg=' . urlencode('Product deleted.'));
             exit;
         } catch (Throwable $e) {
@@ -161,12 +166,12 @@ $products = [];
 try {
     $st = $pdo->prepare(
 $isMart
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM mart_items WHERE vendor_id = ? ORDER BY name'
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY name'
 : ($isOther
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM other_items WHERE vendor_id = ? ORDER BY name'
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM other_items WHERE vendor_id = ? ORDER BY name'
 : ($isBeverage
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img FROM beverage_items WHERE vendor_id = ? ORDER BY name'
-: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img FROM dishes WHERE vendor_id = ? ORDER BY name'))
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY name'
+: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img, has_variants FROM dishes WHERE vendor_id = ? ORDER BY name'))
     );
     $st->execute([$vendorId]);
     $products = $st->fetchAll();
@@ -290,6 +295,8 @@ delivery_header(
                     <textarea id="a-desc" name="desc" rows="2" placeholder="Short description..."></textarea>
                 </div>
 
+                <?= lyaideu_variants_editor_html('new_product') ?>
+
                 <div class="store-form-actions">
                     <button type="submit" name="product_save" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Publish Product</button>
                 </div>
@@ -313,6 +320,7 @@ delivery_header(
                 $catName = $allowedCats[(int)$p['category_id']]['name'];
             }
             $searchText = strtolower((string)$p['name'] . ' ' . (int)$p['price'] . ' ' . (string)($p['unit'] ?? '') . ' ' . $catName . ' ' . (string)($p['tag'] ?? '') . ' ' . (string)($p['desc'] ?? ''));
+            $itemVariants = lyaideu_item_variants($itemType, $pid);
         ?>
         <article class="product-card" data-search="<?= vp_esc($searchText) ?>">
             <div class="product-card-main">
@@ -430,6 +438,8 @@ delivery_header(
                             <textarea id="p-desc-<?= $pid ?>" name="desc" rows="2"><?= vp_esc($p['desc']) ?></textarea>
                         </div>
 
+                        <?= lyaideu_variants_editor_html('product[' . $pid . ']', $itemVariants, (bool)($p['has_variants'] ?? false)) ?>
+
                         <div class="store-form-actions">
                             <button type="submit" name="product_save" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Product</button>
                         </div>
@@ -482,5 +492,6 @@ delivery_header(
   });
 })();
 </script>
+<script src="js/admin-variants.js?v=1"></script>
 <?php
 delivery_footer();
