@@ -176,111 +176,271 @@ delivery_header(
     $role
 );
 ?>
-<a class="btn btn-outline" href="vendor" style="margin-bottom:1rem;"><i class="fa-solid fa-arrow-left"></i> Back to Order Queue</a>
+<a class="btn btn-outline" href="vendor" style="margin-bottom:1.2rem;"><i class="fa-solid fa-arrow-left"></i> Back to Order Queue</a>
 
 <?php if ($msg): ?>
 <div class="flash-banner flash-success delivery-flash"><i class="fa-solid fa-circle-check"></i> <?= vp_esc($msg) ?></div>
 <?php endif; ?>
 
-<div class="delivery-section">
-    <p class="small-note" style="margin-bottom:1rem;">
-        <?php if ($isMart): ?>
-        <i class="fa-solid fa-basket-shopping"></i> These items appear on the <strong>Mart</strong> page as soon as you save them.
-        <?php elseif ($isOther): ?>
-        <i class="fa-solid fa-gift"></i> These items appear on the <strong>Others</strong> page as soon as you save them.
-        <?php else: ?>
-        <i class="fa-solid fa-hotel"></i> Your items appear under <strong><?= vp_esc($hotelName) ?></strong> on the <strong>Menu</strong> page as soon as you save them.
-        <?php endif; ?>
-    </p>
+<div class="delivery-section products-manage">
+    <div class="products-toolbar">
+        <p class="small-note">
+            <?php if ($isMart): ?>
+            <i class="fa-solid fa-basket-shopping"></i> These items appear on the <strong>Mart</strong> page as soon as you save them.
+            <?php elseif ($isOther): ?>
+            <i class="fa-solid fa-gift"></i> These items appear on the <strong>Others</strong> page as soon as you save them.
+            <?php else: ?>
+            <i class="fa-solid fa-hotel"></i> Your items appear under <strong><?= vp_esc($hotelName) ?></strong> on the <strong>Menu</strong> page as soon as you save them.
+            <?php endif; ?>
+        </p>
+        <span class="delivery-count"><b><?= count($products) ?></b> product<?= count($products) === 1 ? '' : 's' ?> live</span>
+        <button type="button" class="btn btn-primary btn-sm" data-open-add><i class="fa-solid fa-plus"></i> Add Product</button>
+    </div>
 
-    <div class="admin-grid">
+    <details class="product-add-card"<?= $products ? '' : ' open' ?> data-add-panel>
+        <summary><span class="add-plus"><i class="fa-solid fa-plus"></i></span> Add a new product <i class="fa-solid fa-chevron-down chev"></i></summary>
+        <div class="product-add-inner">
+            <form action="vendor_products" method="POST" enctype="multipart/form-data" class="delivery-form">
+                <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
+                <input type="hidden" name="id" value="0">
+
+                <div class="store-field">
+                    <label for="a-name">Product name</label>
+                    <div class="store-input">
+                        <i class="fa-solid fa-tag"></i>
+                        <input type="text" id="a-name" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : ($isOther ? 'e.g. Rose Bouquet' : 'e.g. Chicken Momo') ?>" required>
+                    </div>
+                </div>
+
+                <div class="store-field-row">
+                    <div class="store-field">
+                        <label for="a-price">Price (Rs.)</label>
+                        <div class="store-input">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <input type="number" min="1" step="1" id="a-price" name="price" placeholder="250" required>
+                        </div>
+                    </div>
+                    <div class="store-field">
+                        <label for="a-cat">Category</label>
+                        <select id="a-cat" name="category_id">
+                            <option value="0">— No category —</option>
+                            <?php foreach ($catsFlat as $c): ?>
+                            <option value="<?= (int)$c['id'] ?>"><?= str_repeat('— ', $c['depth']) ?><?= vp_esc($c['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="store-field-row">
+                    <?php if ($isMart || $isOther): ?>
+                    <div class="store-field">
+                        <label for="a-unit">Unit</label>
+                        <div class="store-input">
+                            <i class="fa-solid fa-weight-hanging"></i>
+                            <input type="text" id="a-unit" name="unit" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div class="store-field">
+                        <label for="a-phone">Phone</label>
+                        <div class="store-input">
+                            <i class="fa-solid fa-phone"></i>
+                            <input type="text" id="a-phone" name="phone" placeholder="98XXXXXXXX">
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    <div class="store-field">
+                        <label for="a-tag">Tag</label>
+                        <div class="store-input">
+                            <i class="fa-solid fa-star"></i>
+                            <input type="text" id="a-tag" name="tag" placeholder="New! / Best Seller">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="store-field">
+                    <label for="a-img">Image <span class="muted">(optional)</span></label>
+                    <div class="product-img-upload">
+                        <div class="img-preview"><i class="fa-solid fa-image"></i></div>
+                        <div>
+                            <input type="file" id="a-img" name="img_file" class="settings-file-input" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                        </div>
+                    </div>
+                    <p class="field-hint">A square image looks best. PNG, JPG, WebP, GIF or SVG.</p>
+                </div>
+
+                <div class="store-field">
+                    <label for="a-desc">Description</label>
+                    <textarea id="a-desc" name="desc" rows="2" placeholder="Short description..."></textarea>
+                </div>
+
+                <div class="store-form-actions">
+                    <button type="submit" name="product_save" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Publish Product</button>
+                </div>
+            </form>
+        </div>
+    </details>
+
+    <div class="product-list">
         <?php if (!$products): ?>
         <div class="admin-card">
             <h3>No products yet.</h3>
-            <p class="small-note">Use the "Add Product" form to publish your first item.</p>
+            <p class="small-note">Use the "Add Product" form below to publish your first item.</p>
         </div>
         <?php endif; ?>
 
         <?php foreach ($products as $p): ?>
-        <form action="vendor_products" method="POST" enctype="multipart/form-data" class="admin-card">
-            <h3><?= vp_esc($p['name']) ?></h3>
-            <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
-            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-            <label>Product Name</label>
-            <input type="text" name="name" value="<?= vp_esc($p['name']) ?>" required>
-            <div class="admin-field-row">
-                <div><label>Price (Rs.)</label>
-                    <input type="number" min="1" step="1" name="price" value="<?= (int)$p['price'] ?>" required>
+        <?php
+            $pid = (int)$p['id'];
+            $catName = '';
+            if ((int)$p['category_id'] > 0 && isset($allowedCats[(int)$p['category_id']])) {
+                $catName = $allowedCats[(int)$p['category_id']]['name'];
+            }
+        ?>
+        <article class="product-card">
+            <div class="product-card-main">
+                <div class="product-thumb">
+                    <?php if (!empty($p['img'])): ?>
+                    <img src="<?= vp_esc($p['img']) ?>" alt="<?= vp_esc($p['name']) ?>">
+                    <?php else: ?>
+                    <i class="fa-solid <?= $isMart ? 'fa-box' : ($isOther ? 'fa-gift' : 'fa-utensils') ?>"></i>
+                    <?php endif; ?>
                 </div>
-                <div><label>Category</label>
-                    <select name="category_id">
-                        <option value="0">— No category —</option>
-                        <?php foreach ($catsFlat as $c): ?>
-                        <option value="<?= (int)$c['id'] ?>" <?= (int)$p['category_id'] === (int)$c['id'] ? 'selected' : '' ?>><?= str_repeat('— ', $c['depth']) ?><?= vp_esc($c['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="product-card-info">
+                    <h3><?= vp_esc($p['name']) ?></h3>
+                    <div class="product-meta">
+                        <span class="product-price">Rs. <?= (int)$p['price'] ?></span>
+                        <?php if (!empty($p['unit'])): ?><span><?= vp_esc($p['unit']) ?></span><?php endif; ?>
+                        <?php if ($catName !== ''): ?><span class="product-cat"><i class="fa-solid fa-layer-group"></i> <?= vp_esc($catName) ?></span><?php endif; ?>
+                        <?php if (!empty($p['tag'])): ?><span class="product-tag"><?= vp_esc($p['tag']) ?></span><?php endif; ?>
+                    </div>
+                    <?php if (!empty($p['desc'])): ?>
+                    <p class="product-desc"><?= vp_esc($p['desc']) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="product-card-actions">
+                    <form action="vendor_products" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
+                        <input type="hidden" name="id" value="<?= $pid ?>">
+                        <button type="submit" name="product_delete" value="1" class="btn btn-outline btn-del" data-confirm="Delete <?= vp_esc($p['name']) ?>? This cannot be undone."><i class="fa-solid fa-trash-can"></i> Delete</button>
+                    </form>
                 </div>
             </div>
-            <?php if ($isMart || $isOther): ?>
-            <div class="admin-field-row">
-                <div><label>Unit</label>
-                    <input type="text" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
-                </div>
-                <div><label>Tag</label>
-                    <input type="text" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="New!">
-                </div>
-            </div>
-            <?php else: ?>
-            <div class="admin-field-row">
-                <div><label>Phone</label>
-                    <input type="text" name="phone" value="<?= vp_esc($p['phone']) ?>" placeholder="98XXXXXXXX">
-                </div>
-                <div><label>Tag</label>
-                    <input type="text" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="Best Seller">
-                </div>
-            </div>
-            <?php endif; ?>
-            <label>Image <span class="muted">(optional)</span></label>
-            <input type="file" name="img_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-            <?php if (!empty($p['img'])): ?>
-            <div class="img-preview"><img src="<?= vp_esc($p['img']) ?>" alt="Current image"></div>
-            <label class="delete-check"><input type="checkbox" name="remove_img" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
-            <?php endif; ?>
-            <label>Description</label>
-            <textarea name="desc" rows="2"><?= vp_esc($p['desc']) ?></textarea>
-            <button type="submit" name="product_save" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save Product</button>
-            <label class="delete-check"><input type="checkbox" name="product_delete" value="1" onchange="if(confirm('Delete this product?'))this.form.submit()"> <i class="fa-solid fa-trash-can"></i> Delete this product</label>
-        </form>
-        <?php endforeach; ?>
 
-        <form action="vendor_products" method="POST" enctype="multipart/form-data" class="admin-card admin-add-card">
-            <h3><i class="fa-solid fa-plus"></i> Add New Product</h3>
-            <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
-            <input type="hidden" name="id" value="0">
-            <label>Product Name</label><input type="text" name="name" placeholder="<?= $isMart ? 'e.g. Fresh Apples' : ($isOther ? 'e.g. Rose Bouquet' : 'e.g. Chicken Momo') ?>" required>
-            <div class="admin-field-row">
-                <div><label>Price (Rs.)</label><input type="number" min="1" step="1" name="price" placeholder="250" required></div>
-                <div><label>Category</label>
-                    <select name="category_id">
-                        <option value="0">— No category —</option>
-                        <?php foreach ($catsFlat as $c): ?>
-                        <option value="<?= (int)$c['id'] ?>"><?= str_repeat('— ', $c['depth']) ?><?= vp_esc($c['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+            <details class="product-edit">
+                <summary><i class="fa-solid fa-pen-to-square"></i> Edit product details <i class="fa-solid fa-chevron-down chev"></i></summary>
+                <div class="product-edit-inner">
+                    <form action="vendor_products" method="POST" enctype="multipart/form-data" class="delivery-form">
+                        <input type="hidden" name="csrf_token" value="<?= vp_esc(delivery_csrf_token()) ?>">
+                        <input type="hidden" name="id" value="<?= $pid ?>">
+
+                        <div class="store-field">
+                            <label for="p-name-<?= $pid ?>">Product name</label>
+                            <div class="store-input">
+                                <i class="fa-solid fa-tag"></i>
+                                <input type="text" id="p-name-<?= $pid ?>" name="name" value="<?= vp_esc($p['name']) ?>" required>
+                            </div>
+                        </div>
+
+                        <div class="store-field-row">
+                            <div class="store-field">
+                                <label for="p-price-<?= $pid ?>">Price (Rs.)</label>
+                                <div class="store-input">
+                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                    <input type="number" min="1" step="1" id="p-price-<?= $pid ?>" name="price" value="<?= (int)$p['price'] ?>" required>
+                                </div>
+                            </div>
+                            <div class="store-field">
+                                <label for="p-cat-<?= $pid ?>">Category</label>
+                                <select id="p-cat-<?= $pid ?>" name="category_id">
+                                    <option value="0">— No category —</option>
+                                    <?php foreach ($catsFlat as $c): ?>
+                                    <option value="<?= (int)$c['id'] ?>" <?= (int)$p['category_id'] === (int)$c['id'] ? 'selected' : '' ?>><?= str_repeat('— ', $c['depth']) ?><?= vp_esc($c['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="store-field-row">
+                            <?php if ($isMart || $isOther): ?>
+                            <div class="store-field">
+                                <label for="p-unit-<?= $pid ?>">Unit</label>
+                                <div class="store-input">
+                                    <i class="fa-solid fa-weight-hanging"></i>
+                                    <input type="text" id="p-unit-<?= $pid ?>" name="unit" value="<?= vp_esc($p['unit']) ?>" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
+                                </div>
+                            </div>
+                            <?php else: ?>
+                            <div class="store-field">
+                                <label for="p-phone-<?= $pid ?>">Phone</label>
+                                <div class="store-input">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <input type="text" id="p-phone-<?= $pid ?>" name="phone" value="<?= vp_esc($p['phone']) ?>" placeholder="98XXXXXXXX">
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <div class="store-field">
+                                <label for="p-tag-<?= $pid ?>">Tag</label>
+                                <div class="store-input">
+                                    <i class="fa-solid fa-star"></i>
+                                    <input type="text" id="p-tag-<?= $pid ?>" name="tag" value="<?= vp_esc($p['tag']) ?>" placeholder="<?= $isMart || $isOther ? 'New!' : 'Best Seller' ?>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="store-field">
+                            <label for="p-img-<?= $pid ?>">Image <span class="muted">(optional)</span></label>
+                            <div class="product-img-upload">
+                                <div class="img-preview">
+                                    <?php if (!empty($p['img'])): ?>
+                                    <img src="<?= vp_esc($p['img']) ?>" alt="Current image">
+                                    <?php else: ?>
+                                    <i class="fa-solid fa-image"></i>
+                                    <?php endif; ?>
+                                </div>
+                                <div>
+                                    <input type="file" id="p-img-<?= $pid ?>" name="img_file" class="settings-file-input" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                                    <?php if (!empty($p['img'])): ?>
+                                    <label class="delete-check"><input type="checkbox" name="remove_img" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <p class="field-hint">A square image looks best. PNG, JPG, WebP, GIF or SVG.</p>
+                        </div>
+
+                        <div class="store-field">
+                            <label for="p-desc-<?= $pid ?>">Description</label>
+                            <textarea id="p-desc-<?= $pid ?>" name="desc" rows="2"><?= vp_esc($p['desc']) ?></textarea>
+                        </div>
+
+                        <div class="store-form-actions">
+                            <button type="submit" name="product_save" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Product</button>
+                        </div>
+                    </form>
                 </div>
-            </div>
-            <?php if ($isMart || $isOther): ?>
-            <label>Unit</label><input type="text" name="unit" placeholder="<?= $isOther ? 'piece / set / bunch' : 'kg / litre / pack' ?>">
-            <?php else: ?>
-            <label>Phone</label><input type="text" name="phone" placeholder="98XXXXXXXX">
-            <?php endif; ?>
-            <label>Tag</label><input type="text" name="tag" placeholder="New! / Best Seller">
-            <label>Image <span class="muted">(optional)</span></label>
-            <input type="file" name="img_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
-            <label>Description</label><textarea name="desc" rows="2" placeholder="Short description..."></textarea>
-            <button type="submit" name="product_save" class="btn btn-primary btn-block"><i class="fa-solid fa-plus"></i> Publish Product</button>
-        </form>
+            </details>
+        </article>
+        <?php endforeach; ?>
     </div>
 </div>
+
+<script>
+(function(){
+  document.addEventListener("click", function(e){
+    var addBtn = e.target && e.target.closest ? e.target.closest("[data-open-add]") : null;
+    if (addBtn) {
+      var panel = document.querySelector("[data-add-panel]");
+      if (!panel) return;
+      if (!panel.open) panel.open = true;
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      var f = panel.querySelector("input[name='name']");
+      if (f) setTimeout(function(){ f.focus(); }, 350);
+      return;
+    }
+    var del = e.target && e.target.closest ? e.target.closest("[data-confirm]") : null;
+    if (del && !window.confirm(del.getAttribute("data-confirm") || "Are you sure?")) e.preventDefault();
+  });
+})();
+</script>
 <?php
 delivery_footer();
