@@ -241,9 +241,6 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 
-                <?php if ($type === 'dish' && $item['phone'] !== ''): ?>
-                    <p class="small-note" style="margin-top:.9rem;"><i class="fa-solid fa-phone"></i> Confirm your order with the hotel: <a class="product-call" href="tel:+977<?= e($item['phone']) ?>">+977 <?= e($item['phone']) ?></a></p>
-                <?php endif; ?>
                 <?php if ($type === 'mart'): ?>
                     <p class="small-note" style="margin-top:.9rem;"><i class="fa-solid fa-box"></i> Fresh groceries delivered with your khaja order.</p>
                 <?php elseif ($type === 'other'): ?>

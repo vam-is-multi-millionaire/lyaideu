@@ -320,9 +320,6 @@ $FEATURED_OTHER_ICONS = [
                         </div>
                         <div class="hotel-info"><h3><?= lyaideu_featured_e($sHotel['name']) ?></h3><p><?= lyaideu_featured_e($sHotel['type']) ?></p></div>
                         <div class="hotel-call-row">
-                            <?php if ($sHotel['phone'] !== ''): ?>
-                            <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($sHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
-                            <?php endif; ?>
                             <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$sHotel['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                         </div>
                     </div>
@@ -441,9 +438,6 @@ $FEATURED_OTHER_ICONS = [
                             </div>
                             <div class="hotel-info"><h3><?= lyaideu_featured_e($fHotel['name']) ?></h3><p><?= lyaideu_featured_e($fHotel['type']) ?></p></div>
                             <div class="hotel-call-row">
-                                <?php if ($fHotel['phone'] !== ''): ?>
-                                <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fHotel['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
-                                <?php endif; ?>
                                 <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fHotel['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>
@@ -470,9 +464,6 @@ $FEATURED_OTHER_ICONS = [
                             </div>
                             <div class="hotel-info"><h3><?= lyaideu_featured_e($fMartStore['name']) ?></h3><p><?= lyaideu_featured_e($fMartStore['type']) ?></p></div>
                             <div class="hotel-call-row">
-                                <?php if ($fMartStore['phone'] !== ''): ?>
-                                <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fMartStore['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
-                                <?php endif; ?>
                                 <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fMartStore['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>
@@ -499,9 +490,6 @@ $FEATURED_OTHER_ICONS = [
                             </div>
                             <div class="hotel-info"><h3><?= lyaideu_featured_e($fOtherStore['name']) ?></h3><p><?= lyaideu_featured_e($fOtherStore['type']) ?></p></div>
                             <div class="hotel-call-row">
-                                <?php if ($fOtherStore['phone'] !== ''): ?>
-                                <a class="hotel-call" href="tel:+977<?= lyaideu_featured_e($fOtherStore['phone']) ?>"><i class="fa-solid fa-phone"></i> Call</a>
-                                <?php endif; ?>
                                 <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fOtherStore['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
                             </div>
                         </div>

@@ -201,9 +201,6 @@ $OTHER_CAT_ICONS = ['flowers' => 'fa-bouquet', 'candles' => 'fa-candle-holder', 
                         <p class="store-hero-desc"><?= nl2br(e($store['desc'])) ?></p>
                     <?php endif; ?>
                     <div class="store-hero-actions">
-                        <?php if ($store['phone'] !== ''): ?>
-                            <a class="btn btn-outline" href="tel:+977<?= e($store['phone']) ?>"><i class="fa-solid fa-phone"></i> +977 <?= e($store['phone']) ?></a>
-                        <?php endif; ?>
                         <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                     </div>
                 </div>
