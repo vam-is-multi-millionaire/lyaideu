@@ -106,8 +106,10 @@ function delivery_login_attempt(string $role): void {
     }
 
     try {
+        $cols = $role === 'rider' ? 'id, name, email, phone, vehicle, avatar, pass, is_active'
+                                  : 'id, name, email, phone, pass, is_active';
         $stmt = $pdo->prepare(
-            "SELECT id, name, email, phone, vehicle, avatar, pass, is_active FROM `$table`
+            "SELECT $cols FROM `$table`
              WHERE LOWER(name) = LOWER(:n) OR phone = :p OR LOWER(email) = LOWER(:e) LIMIT 1"
         );
         $stmt->execute([
