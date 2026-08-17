@@ -102,7 +102,10 @@
         try { history.replaceState(history.state, '', makeUrl(seed)); } catch (e) {}
       } else if (type === 'reload') {
         /* Manual refresh of a seeded URL → bounce to a brand-new random order.
-           location.replace() swaps the current history entry, no extra entry. */
+           location.replace() swaps the current history entry, no extra entry.
+           The bounce loads the page again as a fresh navigation (not a reload),
+           so tell scroll-memory.js to keep the current scroll position. */
+        try { sessionStorage.setItem('lyaideu_scroll_do_restore:1', location.pathname); } catch (e) {}
         var fresh = Math.floor(Math.random() * 2147483647) + 1;
         try { location.replace(makeUrl(fresh)); } catch (e) {}
         return;

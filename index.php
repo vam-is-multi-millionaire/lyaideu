@@ -506,7 +506,7 @@ $FEATURED_OTHER_ICONS = [
         </div>
     </section>
 
-    <script src="js/featured-order.js?v=2"></script>
+    <script src="js/featured-order.js?v=3"></script>
 
     <section id="faq" class="section section-white">
         <div class="container">
