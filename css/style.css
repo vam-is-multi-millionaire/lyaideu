@@ -942,6 +942,47 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .delivery-waiting{margin:.8rem 0 0;padding:.6rem .8rem;background:var(--orange-50);border:1px dashed var(--orange-300);border-radius:12px;font-size:.82rem;font-weight:800;color:var(--muted);display:flex;gap:.5rem;align-items:center;}
 .btn-sm{padding:.4rem .8rem;font-size:.78rem;}
 
+/* Vendor queue — filter stats, search toolbar, richer cards */
+.delivery-stats button.delivery-stat{
+  appearance:none;-webkit-appearance:none;display:block;width:100%;text-align:center;cursor:pointer;
+  font:inherit;color:inherit;background:#fff;border:1px solid var(--orange-100);border-top:5px solid transparent;
+  border-radius:16px;padding:1rem;box-shadow:var(--shadow-sm);
+  transition:transform var(--fe-transition),box-shadow var(--fe-transition),border-color var(--fe-transition),background var(--fe-transition);
+}
+.delivery-stats button.delivery-stat:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(90,40,10,.12);}
+.delivery-stats button.delivery-stat:focus-visible{outline:none;box-shadow:var(--fe-focus);}
+.delivery-stats button.delivery-stat .stat-ico{display:block;font-size:1.1rem;margin-bottom:.15rem;}
+.delivery-stats button.delivery-stat.stat-all .stat-ico{color:var(--orange-600);}
+.delivery-stats button.delivery-stat.stat-pending .stat-ico{color:#eab308;}
+.delivery-stats button.delivery-stat.stat-progress .stat-ico{color:#175a8a;}
+.delivery-stats button.delivery-stat.stat-ready .stat-ico{color:#5440c4;}
+.delivery-stats button.delivery-stat.stat-all{border-top-color:var(--orange-600);}
+.delivery-stats button.delivery-stat.stat-pending{border-top-color:#eab308;}
+.delivery-stats button.delivery-stat.stat-progress{border-top-color:#175a8a;}
+.delivery-stats button.delivery-stat.stat-ready{border-top-color:#5440c4;}
+.delivery-stats button.delivery-stat.active{background:var(--orange-50);border-color:var(--orange-400);box-shadow:0 0 0 4px rgba(231,102,8,.12);}
+.delivery-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin:0 0 1.2rem;}
+.delivery-toolbar .admin-order-search{flex:1 1 280px;min-width:0;}
+.delivery-count{font-size:.82rem;font-weight:900;color:var(--muted);white-space:nowrap;}
+.delivery-count b{color:var(--orange-700);}
+.delivery-card.is-new{position:relative;background:#fffdf3;border-color:#f7d9a8;border-left-color:#eab308;box-shadow:var(--shadow-sm),0 0 0 3px rgba(234,179,8,.14);}
+.delivery-card.is-new::after{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;animation:new-pulse 2s ease-out infinite;}
+@keyframes new-pulse{0%{box-shadow:0 0 0 0 rgba(234,179,8,.35)}70%{box-shadow:0 0 0 12px rgba(234,179,8,0)}100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}}
+.delivery-total-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;}
+.delivery-pay{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:900;border-radius:999px;padding:.28rem .65rem;white-space:nowrap;}
+.delivery-pay.cash{background:#e0f7e7;color:#166534;border:1px solid #bfe8cd;}
+.delivery-pay.wallet{background:#e0f0ff;color:#175a8a;border:1px solid #bfe0f5;}
+.delivery-item-count{background:#fff!important;border-style:dashed!important;color:var(--muted)!important;}
+.btn-accept{background:#166534!important;border-color:#166534!important;color:#fff!important;box-shadow:0 4px 0 #0f5132;}
+.btn-accept:hover{background:#1e7d3c!important;border-color:#1e7d3c!important;box-shadow:0 6px 0 #0f5132;}
+.btn-reject{background:#fff!important;border-color:#f4c7c7!important;color:#a02a2a!important;box-shadow:0 2px 0 rgba(160,42,42,.08);}
+.btn-reject:hover{background:#ffe1e1!important;border-color:#a02a2a!important;color:#a02a2a!important;box-shadow:0 4px 0 #f4c7c7;}
+.delivery-toast{position:fixed;left:50%;bottom:22px;margin:0;z-index:99999;max-width:min(92vw,540px);opacity:0;transform:translate(-50%,10px);transition:opacity .25s ease,transform .25s ease;cursor:default;}
+.delivery-toast.show{opacity:1;transform:translate(-50%,0);}
+.delivery-toast.hide{opacity:0;transform:translate(-50%,14px);}
+.delivery-body .empty-state{display:block;}
+.empty-state h3{font-family:var(--font-display);font-weight:400;font-size:1.4rem;color:var(--orange-950);margin-bottom:.35rem;}
+
 /* Admin orders — live process view */
 .admin-stats-orders>div{position:relative;overflow:hidden;padding-left:1rem;}
 .admin-stats-orders>div::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--orange-300);}
