@@ -124,7 +124,7 @@ require_once __DIR__ . '/site_config.php';
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=19"></script>
+<script src="js/script.js?v=20"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>

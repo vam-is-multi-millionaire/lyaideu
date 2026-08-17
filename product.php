@@ -41,7 +41,7 @@ $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug,
+        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM mart_items m
                              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -50,7 +50,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug,
+            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM mart_items m
                                LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -61,7 +61,7 @@ try {
         }
     } elseif ($type === 'other') {
         lyaideu_ensure_other_table();
-        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug,
+        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM other_items oi
                              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -70,7 +70,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug,
+            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM other_items oi
                                LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -81,7 +81,7 @@ try {
         }
     } elseif ($type === 'beverage') {
         lyaideu_ensure_beverage_table();
-        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug,
+        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM beverage_items bi
                              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -90,7 +90,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug,
+            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM beverage_items bi
                                LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -100,11 +100,11 @@ try {
             $related = $r->fetchAll();
         }
     } else {
-        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -158,6 +158,25 @@ $relIcon = function ($cat) use ($REL_ICONS) {
 };
 $unitHtml = ($type !== 'dish' && $item['unit'] !== '') ? ' <span class="unit">/ ' . e($item['unit']) . '</span>' : '';
 $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '</span>' : '';
+
+$hasVariants = !empty($item['has_variants']);
+$variants = [];
+$defaultVariant = null;
+if ($hasVariants) {
+    $variants = lyaideu_item_variants($type, (int)$item['id']);
+    foreach ($variants as $v) {
+        if (!empty($v['is_default'])) {
+            $defaultVariant = $v;
+            break;
+        }
+    }
+    if ($defaultVariant === null && $variants) {
+        $defaultVariant = $variants[0];
+    }
+    if (!$variants) {
+        $hasVariants = false;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -258,11 +277,29 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
                 <?php endif; ?>
 
                 <div class="product-price-row">
-                    <span class="product-price"><small>Rs.</small> <?= (int)$item['price'] ?><?= $unitHtml ?></span>
+                    <span class="product-price"><small>Rs.</small> <span id="productPrice"><?= $hasVariants && $defaultVariant ? (int)$defaultVariant['price'] : (int)$item['price'] ?></span><?= $unitHtml ?></span>
                 </div>
 
+                <?php if ($hasVariants && $variants): ?>
+                <div class="variant-picker">
+                    <label class="variant-label"><i class="fa-solid fa-layer-group"></i> Select option</label>
+                    <div class="variant-options" id="variantOptions">
+                        <?php foreach ($variants as $vi => $v): $selected = $defaultVariant && $v['id'] == $defaultVariant['id']; ?>
+                        <label class="variant-option<?= $selected ? ' selected' : '' ?><?= $selected ? '' : '' ?>">
+                            <input type="radio" name="product_variant" value="<?= (int)$v['id'] ?>" data-label="<?= e($v['label']) ?>" data-price="<?= (int)$v['price'] ?>"<?= $selected ? ' checked' : '' ?>>
+                            <span class="variant-option-body">
+                                <span class="variant-option-label"><?= e($v['label']) ?></span>
+                                <span class="variant-option-price"><small>Rs.</small> <?= (int)$v['price'] ?></span>
+                                <?php if ($v['info'] !== ''): ?><span class="variant-option-info"><?= e($v['info']) ?></span><?php endif; ?>
+                            </span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <div class="product-actions">
-                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
+                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-price="' . (int)$defaultVariant['price'] . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 
@@ -320,7 +357,7 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=19"></script>
+<script src="js/script.js?v=20"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
@@ -333,6 +370,27 @@ $tagHtml = $item['tag'] !== '' ? '<span class="dish-tag">' . e($item['tag']) . '
       window.history.back();
     });
   }
+})();
+(function(){
+  var opts = document.querySelectorAll('#variantOptions input[type="radio"]');
+  var priceEl = document.getElementById('productPrice');
+  var addBtn = document.querySelector('.product-actions .add-cart');
+  if (!opts.length || !addBtn) return;
+  function apply(){
+    var sel = document.querySelector('#variantOptions input[type="radio"]:checked');
+    if (!sel) return;
+    document.querySelectorAll('#variantOptions .variant-option').forEach(function(o){
+      var r = o.querySelector('input[type="radio"]');
+      o.classList.toggle('selected', !!r && r.checked);
+    });
+    var label = sel.getAttribute('data-label') || '';
+    var price = Number(sel.getAttribute('data-price')) || 0;
+    if (priceEl) priceEl.textContent = price;
+    addBtn.setAttribute('data-variant', label);
+    addBtn.setAttribute('data-price', price);
+  }
+  opts.forEach(function(r){ r.addEventListener('change', apply); });
+  apply();
 })();
 </script>
 </body>

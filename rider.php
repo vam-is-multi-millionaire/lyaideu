@@ -319,7 +319,7 @@ if ($user) {
 
         $itemStmt = $pdo->prepare(
             'SELECT oi.vendor_id, v.name AS vendor_name, v.phone AS vendor_phone,
-                    ovs.status AS vendor_status, oi.hotel, oi.name, oi.qty, oi.line_total
+                    ovs.status AS vendor_status, oi.hotel, oi.name, oi.qty, oi.line_total, oi.variant
              FROM order_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
              LEFT JOIN order_vendor_status ovs ON ovs.order_id = oi.order_id AND ovs.vendor_id = oi.vendor_id
@@ -332,7 +332,7 @@ if ($user) {
             $otherItems = [];
             foreach ($itemStmt->fetchAll() as $it) {
                 $vid = (int)$it['vendor_id'];
-                $line = ['name' => (string)$it['name'], 'qty' => (int)$it['qty'], 'line_total' => (int)$it['line_total']];
+                $line = ['name' => (string)$it['name'], 'qty' => (int)$it['qty'], 'line_total' => (int)$it['line_total'], 'variant' => (string)($it['variant'] ?? '')];
                 if ($vid > 0) {
                     if (!isset($vendors[$vid])) {
                         $vendors[$vid] = [
@@ -415,12 +415,12 @@ if ($user) {
             $itemNames[] = $v['name'];
             $itemCount += count($v['items']);
             foreach ($v['items'] as $it) {
-                $itemNames[] = $it['name'];
+                $itemNames[] = $it['name'] . (!empty($it['variant']) ? ' (' . $it['variant'] . ')' : '');
             }
         }
         $itemCount += count($o['other_items']);
         foreach ($o['other_items'] as $it) {
-            $itemNames[] = $it['name'];
+            $itemNames[] = $it['name'] . (!empty($it['variant']) ? ' (' . $it['variant'] . ')' : '');
         }
         $searchText = (int)$o['id'] . ' ' . $o['customer_name'] . ' ' . $o['phone'] . ' ' . $o['address'] . ' ' . $o['note'] . ' ' . $o['payment'] . ' ' . implode(' ', $itemNames);
         ?>
@@ -457,7 +457,7 @@ if ($user) {
                     </div>
                     <div class="delivery-items">
                         <?php foreach ($v['items'] as $it): ?>
-                        <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
+                        <span><?= delivery_esc($it['name']) ?><?php if (!empty($it['variant'])): ?> <em class="vp-variant">(<?= delivery_esc($it['variant']) ?>)</em><?php endif; ?> × <?= (int)$it['qty'] ?></span>
                         <?php endforeach; ?>
                         <span class="delivery-item-count"><i class="fa-solid fa-receipt"></i> <?= $itemCount ?> item<?= $itemCount === 1 ? '' : 's' ?></span>
                     </div>
@@ -470,7 +470,7 @@ if ($user) {
                     </div>
                     <div class="delivery-items">
                         <?php foreach ($o['other_items'] as $it): ?>
-                        <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
+                        <span><?= delivery_esc($it['name']) ?><?php if (!empty($it['variant'])): ?> <em class="vp-variant">(<?= delivery_esc($it['variant']) ?>)</em><?php endif; ?> × <?= (int)$it['qty'] ?></span>
                         <?php endforeach; ?>
                     </div>
                 </div>

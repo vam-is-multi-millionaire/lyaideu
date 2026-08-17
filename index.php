@@ -24,9 +24,9 @@ if ($featuredPdo instanceof PDO) {
         lyaideu_ensure_stores();
         lyaideu_ensure_other_table();
         lyaideu_ensure_beverage_table();
-        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes ORDER BY id')->fetchAll();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes ORDER BY id')->fetchAll();
         $featured['mart']   = $featuredPdo->query(
-            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM mart_items m
              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -34,7 +34,7 @@ if ($featuredPdo instanceof PDO) {
              ORDER BY m.id'
         )->fetchAll();
         $featured['others'] = $featuredPdo->query(
-            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug,
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM other_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -42,7 +42,7 @@ if ($featuredPdo instanceof PDO) {
              ORDER BY oi.id'
         )->fetchAll();
         $featured['beverages'] = $featuredPdo->query(
-            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug,
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM beverage_items bi
              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -79,11 +79,11 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
     $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
-        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
         $searchResults['dishes'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug,
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM mart_items m
              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -94,7 +94,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug,
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM other_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -105,7 +105,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['others'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug,
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM beverage_items bi
              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -270,7 +270,7 @@ $FEATURED_BEVERAGE_ICONS = [
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sDish['name']) ?></h3></div>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sDish['price'] ?></span>
-                        <button class="btn-order add-cart" data-id="<?= (int)$sDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($sDish['name']) ?>" data-price="<?= (int)$sDish['price'] ?>" data-unit="" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($sDish['name']) ?>" data-price="<?= (int)$sDish['price'] ?>" data-unit=""<?= !empty($sDish['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                     </article>
                     <?php endforeach; ?>
                 </div>
@@ -296,7 +296,7 @@ $FEATURED_BEVERAGE_ICONS = [
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sMart['price'] ?><?= $sMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sMart['unit']) . '</span>' : '' ?></span>
-                        <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= (int)$sMart['price'] ?>" data-unit="<?= lyaideu_featured_e($sMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sMart['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= (int)$sMart['price'] ?>" data-unit="<?= lyaideu_featured_e($sMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sMart['hotel'] ?? '') ?>"<?= !empty($sMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                     </article>
                     <?php endforeach; ?>
                 </div>
@@ -322,7 +322,7 @@ $FEATURED_BEVERAGE_ICONS = [
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sOther['name']) ?></h3></div>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sOther['price'] ?><?= $sOther['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sOther['unit']) . '</span>' : '' ?></span>
-                        <button class="btn-order add-cart" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-price="<?= (int)$sOther['price'] ?>" data-unit="<?= lyaideu_featured_e($sOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sOther['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-price="<?= (int)$sOther['price'] ?>" data-unit="<?= lyaideu_featured_e($sOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sOther['hotel'] ?? '') ?>"<?= !empty($sOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                     </article>
                     <?php endforeach; ?>
                 </div>
@@ -348,7 +348,7 @@ $FEATURED_BEVERAGE_ICONS = [
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sBev['name']) ?></h3></div>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$sBev['price'] ?><?= $sBev['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($sBev['unit']) . '</span>' : '' ?></span>
-                        <button class="btn-order add-cart" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-price="<?= (int)$sBev['price'] ?>" data-unit="<?= lyaideu_featured_e($sBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sBev['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                        <button class="btn-order add-cart" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-price="<?= (int)$sBev['price'] ?>" data-unit="<?= lyaideu_featured_e($sBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($sBev['hotel'] ?? '') ?>"<?= !empty($sBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                     </article>
                     <?php endforeach; ?>
                 </div>
@@ -414,7 +414,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fDish['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fDish['price'] ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($fDish['name']) ?>" data-price="<?= (int)$fDish['price'] ?>" data-unit="" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($fDish['name']) ?>" data-price="<?= (int)$fDish['price'] ?>" data-unit=""<?= !empty($fDish['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -440,7 +440,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fMart['price'] ?><?= $fMart['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fMart['unit']) . '</span>' : '' ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= (int)$fMart['price'] ?>" data-unit="<?= lyaideu_featured_e($fMart['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>"<?= !empty($fMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -466,7 +466,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fOther['price'] ?><?= $fOther['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fOther['unit']) . '</span>' : '' ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= (int)$fOther['price'] ?>" data-unit="<?= lyaideu_featured_e($fOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= (int)$fOther['price'] ?>" data-unit="<?= lyaideu_featured_e($fOther['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>"<?= !empty($fOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -492,7 +492,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fBev['name']) ?></h3></div>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= (int)$fBev['price'] ?><?= $fBev['unit'] !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e($fBev['unit']) . '</span>' : '' ?></span>
-                            <button class="btn-order add-cart" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-price="<?= (int)$fBev['price'] ?>" data-unit="<?= lyaideu_featured_e($fBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fBev['hotel'] ?? '') ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
+                            <button class="btn-order add-cart" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-price="<?= (int)$fBev['price'] ?>" data-unit="<?= lyaideu_featured_e($fBev['unit']) ?>" data-hotel="<?= lyaideu_featured_e($fBev['hotel'] ?? '') ?>"<?= !empty($fBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div>
                         </article>
                         <?php endforeach; ?>
                     </div>
@@ -665,7 +665,7 @@ $FEATURED_BEVERAGE_ICONS = [
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=19"></script>
+<script src="js/script.js?v=20"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>

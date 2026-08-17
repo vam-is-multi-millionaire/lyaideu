@@ -6,11 +6,12 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_categories_table();
+lyaideu_ensure_variant_tables();
 $dishCatsFlat = lyaideu_categories_flat('menu');
 
 try {
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id FROM dishes ORDER BY id'
+        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, has_variants FROM dishes ORDER BY id'
     )->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
@@ -78,6 +79,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
         </div>
         <label>Description</label>
         <textarea name="new_dish[desc]" placeholder="Short tasty description..."></textarea>
+        <?= lyaideu_variants_editor_html('new_dish') ?>
         <div class="pm-add-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Dish</button>
             <button type="button" class="btn btn-outline" id="addDishCancel">Cancel</button>
@@ -89,6 +91,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
     <div class="pm-list" id="dishList">
         <?php foreach ($dishes as $i => $d): $id = (int)$d['id']; ?>
         <?php $catName = $catNameById[(int)$d['category_id']] ?? ''; ?>
+        <?php $itemVariants = lyaideu_item_variants('dish', $id); ?>
         <div class="pm-row" data-search="<?= $ce(strtolower((string)$d['name'] . ' ' . $d['hotel'] . ' ' . $d['tag'])) ?>">
             <div class="pm-item">
                 <?= dish_thumb_html((string)$d['img']) ?>
@@ -136,6 +139,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                 <?php endif; ?>
                 <label>Description</label>
                 <textarea name="dishes[<?= $i ?>][desc]"><?= $ce($d['desc']) ?></textarea>
+                <?= lyaideu_variants_editor_html('dishes[' . $i . ']', $itemVariants, (bool)$d['has_variants']) ?>
                 <div class="pm-edit-actions">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Dish</button>
                     <button type="button" class="btn btn-outline pm-cancel">Cancel</button>
@@ -218,5 +222,6 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
   });
 })();
 </script>
+<script src="js/admin-variants.js?v=1"></script>
 <?php
 admin_page_end();

@@ -164,7 +164,10 @@ if ($section === 'categories') {
     lyaideu_ensure_categories_table();
 } elseif ($section === 'others') {
     lyaideu_ensure_other_table();
+} elseif ($section === 'beverages') {
+    lyaideu_ensure_beverage_table();
 }
+lyaideu_ensure_variant_tables();
 
 try {
     $pdo->beginTransaction();
@@ -190,6 +193,7 @@ try {
 
             if (!empty($d['delete'])) {
                 $deleteDish->execute([$id]);
+                lyaideu_delete_item_variants($pdo, 'dish', $id);
                 continue;
             }
 
@@ -216,6 +220,7 @@ try {
             ]);
             lyaideu_sync_item_slug('dishes', $id, $name);
             lyaideu_resolve_dish_vendor($id);
+            lyaideu_save_item_variants($pdo, 'dish', $id, !empty($d['has_variants']), $d['variants'] ?? []);
         }
 
         $newDish = $_POST['new_dish'] ?? [];
@@ -246,6 +251,7 @@ try {
             ]);
             lyaideu_sync_item_slug('dishes', (int)$pdo->lastInsertId(), clean_text($newDish['name'] ?? ''));
             lyaideu_resolve_dish_vendor((int)$pdo->lastInsertId());
+            lyaideu_save_item_variants($pdo, 'dish', (int)$pdo->lastInsertId(), !empty($newDish['has_variants']), $newDish['variants'] ?? []);
         }
     }
 
@@ -286,6 +292,7 @@ try {
 
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
+                lyaideu_delete_item_variants($pdo, 'mart', $id);
                 continue;
             }
 
@@ -315,6 +322,7 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('mart_items', $id, $name);
+            lyaideu_save_item_variants($pdo, 'mart', $id, !empty($m['has_variants']), $m['variants'] ?? []);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
@@ -348,6 +356,7 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_mart_vendor((int)$pdo->lastInsertId());
             }
+            lyaideu_save_item_variants($pdo, 'mart', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 
@@ -389,6 +398,7 @@ try {
 
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
+                lyaideu_delete_item_variants($pdo, 'other', $id);
                 continue;
             }
 
@@ -418,6 +428,7 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('other_items', $id, $name);
+            lyaideu_save_item_variants($pdo, 'other', $id, !empty($m['has_variants']), $m['variants'] ?? []);
         }
 
         $newItem = $_POST['new_others'] ?? [];
@@ -451,6 +462,7 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_other_vendor((int)$pdo->lastInsertId());
             }
+            lyaideu_save_item_variants($pdo, 'other', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 
@@ -492,6 +504,7 @@ try {
 
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
+                lyaideu_delete_item_variants($pdo, 'beverage', $id);
                 continue;
             }
 
@@ -521,6 +534,7 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('beverage_items', $id, $name);
+            lyaideu_save_item_variants($pdo, 'beverage', $id, !empty($m['has_variants']), $m['variants'] ?? []);
         }
 
         $newItem = $_POST['new_beverages'] ?? [];
@@ -554,6 +568,7 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_beverage_vendor((int)$pdo->lastInsertId());
             }
+            lyaideu_save_item_variants($pdo, 'beverage', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 

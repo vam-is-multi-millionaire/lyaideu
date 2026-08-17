@@ -1386,7 +1386,7 @@ function lyaideu_order_vendor_summary(int $orderId, ?int $onlyVendorId = null): 
     }
     try {
         $st = $pdo->prepare(
-            'SELECT oi.vendor_id, v.name AS vendor_name, oi.hotel, oi.name, oi.qty
+            'SELECT oi.vendor_id, v.name AS vendor_name, oi.hotel, oi.name, oi.variant, oi.qty
              FROM order_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
              WHERE oi.order_id = ?
@@ -1397,7 +1397,8 @@ function lyaideu_order_vendor_summary(int $orderId, ?int $onlyVendorId = null): 
         $other = [];
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $it) {
             $vid = (int)$it['vendor_id'];
-            $part = (string)$it['name'] . ' ×' . (int)$it['qty'];
+            $variant = (string)($it['variant'] ?? '');
+            $part = (string)$it['name'] . ($variant !== '' ? ' (' . $variant . ')' : '') . ' ×' . (int)$it['qty'];
             if ($onlyVendorId !== null && $vid !== $onlyVendorId) {
                 continue;
             }
@@ -1597,7 +1598,7 @@ function lyaideu_order_tracking(int $orderId): array {
             ];
         }
 
-        $items = $pdo->prepare('SELECT name, price, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
+        $items = $pdo->prepare('SELECT name, price, qty, line_total, variant, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
         $items->execute([$orderId]);
         $other = [];
         foreach ($items->fetchAll(PDO::FETCH_ASSOC) as $it) {
@@ -1686,9 +1687,10 @@ function lyaideu_order_vendor_html(array $v): string {
         . '<span class="vendor-updated">updated ' . lyaideu_reltime($v['updated_at']) . '</span>'
         . '</div><div class="vendor-products">';
     foreach ($v['items'] as $it) {
+        $variant = (string)($it['variant'] ?? '');
         $h .= '<div class="vendor-product"><div class="vp-main">'
             . '<span class="vp-vendor"><i class="fa-solid ' . $ico . '"></i> ' . htmlspecialchars($v['name'], ENT_QUOTES, 'UTF-8') . '</span>'
-            . '<span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ' × ' . (int)$it['qty'] . '</span>'
+            . '<span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ($variant !== '' ? ' <em class="vp-variant">(' . htmlspecialchars($variant, ENT_QUOTES, 'UTF-8') . ')</em>' : '') . ' × ' . (int)$it['qty'] . '</span>'
             . '<span class="vp-line">Rs. ' . (int)$it['line_total'] . '</span>'
             . '</div>' . lyaideu_order_vendor_progress_html($v['status']) . '</div>';
     }
@@ -1698,7 +1700,8 @@ function lyaideu_order_vendor_html(array $v): string {
 function lyaideu_order_other_html(array $items): string {
     $h = '<div class="order-vendor-row other"><div class="vendor-row-head"><strong class="vendor-name">Other items</strong><span class="order-status-pill status-cancelled">Not fulfilled</span></div><div class="vendor-products">';
     foreach ($items as $it) {
-        $h .= '<div class="vendor-product"><div class="vp-main"><span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ' × ' . (int)$it['qty'] . '</span><span class="vp-line">Rs. ' . (int)$it['line_total'] . '</span></div></div>';
+        $variant = (string)($it['variant'] ?? '');
+        $h .= '<div class="vendor-product"><div class="vp-main"><span class="vp-name">' . htmlspecialchars($it['name'], ENT_QUOTES, 'UTF-8') . ($variant !== '' ? ' <em class="vp-variant">(' . htmlspecialchars($variant, ENT_QUOTES, 'UTF-8') . ')</em>' : '') . ' × ' . (int)$it['qty'] . '</span><span class="vp-line">Rs. ' . (int)$it['line_total'] . '</span></div></div>';
     }
     return $h . '</div></div>';
 }
@@ -1735,6 +1738,215 @@ function lyaideu_ensure_column(PDO $pdo, string $table, string $column, string $
         return false;
     }
     return false;
+}
+
+/**
+ * Ensures the variant system exists: the `product_variants` table, a
+ * `has_variants` toggle on every product table, and the `variant` snapshot
+ * column on `order_items`. Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_variant_tables(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS product_variants (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                item_type VARCHAR(20) NOT NULL,
+                item_id INT UNSIGNED NOT NULL,
+                label VARCHAR(150) NOT NULL,
+                price INT UNSIGNED NOT NULL DEFAULT 0,
+                info VARCHAR(255) NOT NULL DEFAULT \'\',
+                is_default TINYINT(1) NOT NULL DEFAULT 0,
+                sort_order INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (id),
+                KEY idx_variants_item (item_type, item_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        lyaideu_ensure_column($pdo, 'dishes', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'mart_items', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'other_items', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'beverage_items', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'order_items', 'variant', "VARCHAR(255) NOT NULL DEFAULT ''");
+
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Ordered variant options for a single product. Empty when the product has none.
+ */
+function lyaideu_item_variants(string $type, int $itemId): array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $itemId <= 0 || !in_array($type, ['dish', 'mart', 'other', 'beverage'], true)) {
+        return [];
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT id, label, price, info, is_default
+             FROM product_variants
+             WHERE item_type = ? AND item_id = ?
+             ORDER BY sort_order, id'
+        );
+        $st->execute([$type, $itemId]);
+        return array_map(static function (array $v): array {
+            $v['price'] = (int)$v['price'];
+            $v['is_default'] = (int)$v['is_default'];
+            return $v;
+        }, $st->fetchAll(PDO::FETCH_ASSOC));
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * Attaches `has_variants` + `variants` to an array of product rows in place
+ * using a single grouped query per product type. Expects each row to already
+ * carry `has_variants` from its SELECT.
+ */
+function lyaideu_attach_variants(array &$rows, string $type): void {
+    if (!$rows || !in_array($type, ['dish', 'mart', 'other', 'beverage'], true)) {
+        return;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT item_id, label, price, info, is_default
+             FROM product_variants
+             WHERE item_type = ?
+             ORDER BY item_id, sort_order, id'
+        );
+        $st->execute([$type]);
+        $byItem = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $v) {
+            $byItem[(int)$v['item_id']][] = [
+                'label' => (string)$v['label'],
+                'price' => (int)$v['price'],
+                'info' => (string)$v['info'],
+                'is_default' => (int)$v['is_default'],
+            ];
+        }
+        foreach ($rows as &$row) {
+            $id = (int)($row['id'] ?? 0);
+            $row['has_variants'] = !empty($row['has_variants']) ? 1 : 0;
+            $row['variants'] = $byItem[$id] ?? [];
+        }
+        unset($row);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Saves a product's variant configuration: sets its `has_variants` toggle and
+ * replaces all option rows (delete + re-insert). Options without a label are
+ * skipped. The first row marked `default` becomes the preselected option.
+ */
+function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVariants, array $options): void {
+    if ($itemId <= 0 || !in_array($type, ['dish', 'mart', 'other', 'beverage'], true)) {
+        return;
+    }
+    $table = $type === 'mart' ? 'mart_items' : ($type === 'other' ? 'other_items' : ($type === 'beverage' ? 'beverage_items' : 'dishes'));
+    try {
+        $pdo->prepare("UPDATE `$table` SET has_variants = ? WHERE id = ?")->execute([$hasVariants ? 1 : 0, $itemId]);
+        $del = $pdo->prepare('DELETE FROM product_variants WHERE item_type = ? AND item_id = ?');
+        $del->execute([$type, $itemId]);
+
+        $ins = $pdo->prepare(
+            'INSERT INTO product_variants (item_type, item_id, label, price, info, is_default, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $sort = 0;
+        $defaultSet = false;
+        foreach ($options as $opt) {
+            $label = trim(strip_tags((string)($opt['label'] ?? '')));
+            if ($label === '') {
+                continue;
+            }
+            $price = max(0, (int)($opt['price'] ?? 0));
+            $info = trim(strip_tags((string)($opt['info'] ?? '')));
+            $isDefault = (!$defaultSet && !empty($opt['default'])) ? 1 : 0;
+            if ($isDefault) {
+                $defaultSet = true;
+            }
+            $ins->execute([$type, $itemId, $label, $price, $info, $isDefault, $sort]);
+            $sort++;
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Removes all variant rows for a product (used when a product is deleted).
+ */
+function lyaideu_delete_item_variants(PDO $pdo, string $type, int $itemId): void {
+    if ($itemId <= 0 || !in_array($type, ['dish', 'mart', 'other', 'beverage'], true)) {
+        return;
+    }
+    try {
+        $pdo->prepare('DELETE FROM product_variants WHERE item_type = ? AND item_id = ?')->execute([$type, $itemId]);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Admin editor markup for the variant system: a toggle checkbox plus a
+ * repeatable list of option rows (label, price, optional info, default marker,
+ * reorder + remove). Rows are named under `$prefix` so the whole editor drops
+ * into any product add/edit form. Repeater behaviour lives in
+ * js/admin-variants.js.
+ */
+function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool $hasVariants = false): string {
+    $p = htmlspecialchars($prefix, ENT_QUOTES, 'UTF-8');
+    $h = '<div class="pm-variants">'
+        . '<label class="pm-variant-toggle">'
+        . '<input type="checkbox" class="pv-toggle" name="' . $p . '[has_variants]" value="1"' . ($hasVariants ? ' checked' : '') . '>'
+        . '<span><i class="fa-solid fa-layer-group"></i> Enable size / quantity options</span>'
+        . '<small>Customers pick an option (e.g. 0.5 kg / 1 kg) with its own price. Add at least one option below.</small>'
+        . '</label>'
+        . '<div class="pv-list"' . ($hasVariants ? '' : ' style="display:none"') . '>';
+    $variants = array_values($variants);
+    if (!$variants) {
+        $h .= lyaideu_variant_row_html($p, 0, null);
+    } else {
+        foreach ($variants as $i => $v) {
+            $h .= lyaideu_variant_row_html($p, $i, $v);
+        }
+    }
+    $h .= '<button type="button" class="btn btn-outline pv-add"><i class="fa-solid fa-plus"></i> Add option</button>';
+    return $h . '</div></div>';
+}
+
+/**
+ * Single option row used by lyaideu_variants_editor_html().
+ */
+function lyaideu_variant_row_html(string $p, int $i, ?array $v): string {
+    $label = $v ? htmlspecialchars((string)($v['label'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
+    $price = $v ? (int)($v['price'] ?? 0) : '';
+    $info = $v ? htmlspecialchars((string)($v['info'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
+    $def = $v && !empty($v['is_default']) ? ' checked' : '';
+    return '<div class="pv-row">'
+        . '<div class="pv-fields">'
+        . '<input type="text" class="pv-label" name="' . $p . '[variants][' . $i . '][label]" placeholder="Option, e.g. 0.5 kg" value="' . $label . '" required>'
+        . '<input type="number" min="0" step="1" class="pv-price" name="' . $p . '[variants][' . $i . '][price]" placeholder="Price (Rs.)" value="' . $price . '" required>'
+        . '<input type="text" class="pv-info" name="' . $p . '[variants][' . $i . '][info]" placeholder="Info (optional)" value="' . $info . '">'
+        . '</div>'
+        . '<div class="pv-tools">'
+        . '<label class="pv-default" title="Preselect this option by default"><input type="checkbox" class="pv-default-input" name="' . $p . '[variants][' . $i . '][default]" value="1"' . $def . '> Default</label>'
+        . '<button type="button" class="pm-act pv-up" title="Move up"><i class="fa-solid fa-arrow-up"></i></button>'
+        . '<button type="button" class="pm-act pv-down" title="Move down"><i class="fa-solid fa-arrow-down"></i></button>'
+        . '<button type="button" class="pm-act pm-del-btn pv-del" title="Remove option"><i class="fa-solid fa-trash-can"></i></button>'
+        . '</div></div>';
 }
 
 /**

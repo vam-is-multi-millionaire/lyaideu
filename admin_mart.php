@@ -8,11 +8,12 @@ require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_mart_table();
 lyaideu_ensure_categories_table();
 lyaideu_ensure_stores();
+lyaideu_ensure_variant_tables();
 $martCatsFlat = lyaideu_categories_flat('mart');
 
 try {
     $items = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, vendor_id FROM mart_items ORDER BY id'
+        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, vendor_id, has_variants FROM mart_items ORDER BY id'
     )->fetchAll();
     $martVendors = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'mart' AND is_active = 1 ORDER BY id")->fetchAll();
 } catch (Throwable $e) {
@@ -95,6 +96,7 @@ admin_page_start('Mart', 'mart', 'Mart');
         </div>
         <label>Description</label>
         <textarea name="new_mart[desc]" placeholder="Short description..."></textarea>
+        <?= lyaideu_variants_editor_html('new_mart') ?>
         <div class="pm-add-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Item</button>
             <button type="button" class="btn btn-outline" id="addItemCancel">Cancel</button>
@@ -106,6 +108,7 @@ admin_page_start('Mart', 'mart', 'Mart');
     <div class="pm-list" id="martList">
         <?php foreach ($items as $i => $m): $id = (int)$m['id']; ?>
         <?php $catName = $catNameById[(int)$m['category_id']] ?? ''; $vendorName = $vendorNameById[(int)$m['vendor_id']] ?? ''; ?>
+        <?php $itemVariants = lyaideu_item_variants('mart', $id); ?>
         <div class="pm-row" data-search="<?= $ce(strtolower((string)$m['name'] . ' ' . $vendorName . ' ' . $catName . ' ' . $m['unit'] . ' ' . $m['tag'])) ?>">
             <div class="pm-item">
                 <?= mart_thumb_html((string)$m['img']) ?>
@@ -153,6 +156,7 @@ admin_page_start('Mart', 'mart', 'Mart');
                 <?php endif; ?>
                 <label>Description</label>
                 <textarea name="mart[<?= $i ?>][desc]"><?= $ce($m['desc']) ?></textarea>
+                <?= lyaideu_variants_editor_html('mart[' . $i . ']', $itemVariants, (bool)$m['has_variants']) ?>
                 <div class="pm-edit-actions">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Item</button>
                     <button type="button" class="btn btn-outline pm-cancel">Cancel</button>
@@ -235,5 +239,6 @@ admin_page_start('Mart', 'mart', 'Mart');
   });
 })();
 </script>
+<script src="js/admin-variants.js?v=1"></script>
 <?php
 admin_page_end();

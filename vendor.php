@@ -102,7 +102,7 @@ if ($user) {
         $rows->execute([':vid' => $vendorId]);
         $orders = $rows->fetchAll();
 
-        $itemStmt = $pdo->prepare('SELECT name, qty, line_total, vendor_id FROM order_items WHERE order_id = ? ORDER BY id');
+        $itemStmt = $pdo->prepare('SELECT name, qty, line_total, vendor_id, variant FROM order_items WHERE order_id = ? ORDER BY id');
         foreach ($orders as $row) {
             $itemStmt->execute([(int)$row['id']]);
             $items = $itemStmt->fetchAll();
@@ -224,7 +224,7 @@ if ($flash) {
                 <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= delivery_esc($o['note']) ?><?php endif; ?></p>
                 <div class="delivery-items">
                     <?php foreach ($o['items'] as $it): ?>
-                    <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
+                    <span><?= delivery_esc($it['name']) ?><?php if (!empty($it['variant'])): ?> <em class="vp-variant">(<?= delivery_esc($it['variant']) ?>)</em><?php endif; ?> × <?= (int)$it['qty'] ?></span>
                     <?php endforeach; ?>
                     <span class="delivery-item-count"><i class="fa-solid fa-receipt"></i> <?= count($o['items']) ?> item<?= count($o['items']) === 1 ? '' : 's' ?></span>
                 </div>

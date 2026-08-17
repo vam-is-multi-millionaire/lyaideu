@@ -10,6 +10,7 @@ require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_delivery_tables();
 lyaideu_ensure_kyc_tables();
 lyaideu_ensure_location_columns();
+lyaideu_ensure_variant_tables();
 
 function clean_text($v): string { return trim(strip_tags((string)$v)); }
 function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v); }
@@ -37,20 +38,29 @@ if (!is_array($cart) || empty($cart)) {
 
 $items = [];
 $subtotal = 0;
-$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, vendor_id FROM dishes WHERE id = ? LIMIT 1');
-$martStmt = $pdo->prepare('SELECT id, name, price FROM mart_items WHERE id = ? LIMIT 1');
-$otherStmt = $pdo->prepare('SELECT id, name, price FROM other_items WHERE id = ? LIMIT 1');
-$beverageStmt = $pdo->prepare('SELECT id, name, price FROM beverage_items WHERE id = ? LIMIT 1');
+$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, vendor_id, has_variants FROM dishes WHERE id = ? LIMIT 1');
+$martStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM mart_items WHERE id = ? LIMIT 1');
+$otherStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM other_items WHERE id = ? LIMIT 1');
+$beverageStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM beverage_items WHERE id = ? LIMIT 1');
+
+function resolve_variant_price(PDO $pdo, string $type, int $id, string $variant): ?int {
+    $st = $pdo->prepare('SELECT price FROM product_variants WHERE item_type = ? AND item_id = ? AND label = ? LIMIT 1');
+    $st->execute([$type, $id, $variant]);
+    $price = $st->fetchColumn();
+    return ($price === false) ? null : (int)$price;
+}
 
 foreach ($cart as $row) {
     $id = (int)($row['id'] ?? 0);
     $qty = max(1, min(20, (int)($row['qty'] ?? 1)));
     $rawType = (string)($row['type'] ?? 'dish');
     $type = in_array($rawType, ['mart', 'other', 'beverage'], true) ? $rawType : 'dish';
+    $variant = trim(strip_tags((string)($row['variant'] ?? '')));
     if ($id <= 0) {
         continue;
     }
 
+    $item = null;
     if ($type === 'mart') {
         $martStmt->execute([$id]);
         $d = $martStmt->fetch();
@@ -63,6 +73,7 @@ foreach ($cart as $row) {
             'hotel' => lyaideu_mart_store_name($id),
             'price' => (int)$d['price'],
             'vendor_id' => lyaideu_resolve_mart_vendor($id),
+            'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } elseif ($type === 'other') {
         lyaideu_ensure_other_table();
@@ -77,6 +88,7 @@ foreach ($cart as $row) {
             'hotel' => lyaideu_other_store_name($id),
             'price' => (int)$d['price'],
             'vendor_id' => lyaideu_resolve_other_vendor($id),
+            'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } elseif ($type === 'beverage') {
         lyaideu_ensure_beverage_table();
@@ -91,6 +103,7 @@ foreach ($cart as $row) {
             'hotel' => lyaideu_beverage_store_name($id),
             'price' => (int)$d['price'],
             'vendor_id' => lyaideu_resolve_beverage_vendor($id),
+            'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } else {
         $dishStmt->execute([$id]);
@@ -108,19 +121,33 @@ foreach ($cart as $row) {
             'hotel' => $d['hotel'],
             'price' => (int)$d['price'],
             'vendor_id' => $vid,
+            'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     }
 
-    $line = $item['price'] * $qty;
+    $price = (int)$item['price'];
+    if (!empty($item['has_variants'])) {
+        if ($variant === '') {
+            flash_checkout('Please choose a size / quantity option for "' . $item['name'] . '" before placing your order.');
+        }
+        $variantPrice = resolve_variant_price($pdo, $type, $id, $variant);
+        if ($variantPrice === null) {
+            flash_checkout('"' . $item['name'] . '" no longer has the selected option. Please pick an available option in your cart.');
+        }
+        $price = $variantPrice;
+    }
+
+    $line = $price * $qty;
     $subtotal += $line;
     $items[] = [
         'dish_id' => $item['dish_id'],
         'name' => $item['name'],
         'hotel' => $item['hotel'],
-        'price' => $item['price'],
+        'price' => $price,
         'qty' => $qty,
         'line_total' => $line,
         'vendor_id' => $item['vendor_id'] ?? 0,
+        'variant' => $variant,
     ];
 }
 
@@ -209,8 +236,8 @@ try {
 
     $orderId = (int)$pdo->lastInsertId();
     $itemStmt = $pdo->prepare(
-        'INSERT INTO order_items (order_id, dish_id, name, hotel, price, qty, line_total, vendor_id)
-         VALUES (:order_id, :dish_id, :name, :hotel, :price, :qty, :line_total, :vendor_id)'
+        'INSERT INTO order_items (order_id, dish_id, name, hotel, price, qty, line_total, vendor_id, variant)
+         VALUES (:order_id, :dish_id, :name, :hotel, :price, :qty, :line_total, :vendor_id, :variant)'
     );
 
     foreach ($items as $item) {
@@ -223,6 +250,7 @@ try {
             ':qty' => $item['qty'],
             ':line_total' => $item['line_total'],
             ':vendor_id' => $item['vendor_id'] > 0 ? $item['vendor_id'] : null,
+            ':variant' => $item['variant'] ?? '',
         ]);
     }
 

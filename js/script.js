@@ -50,7 +50,7 @@ function renderDishes(dishes){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(d.price)||0}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
@@ -85,7 +85,7 @@ function renderMart(items){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
@@ -103,7 +103,7 @@ function renderOthers(items){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#others-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('other',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyOthersFilters();
@@ -140,7 +140,7 @@ function renderBeverages(items){
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${Number(m.price)||0}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${Number(m.price)||0}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
   }).join('');
   $$('#beverages-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('beverage',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyBeveragesFilters();
@@ -207,8 +207,8 @@ function showVendorModal(n,fee,eta){
   o.classList.add('show');
 }
 function hideVendorModal(){const o=$('#vendorModalOverlay');if(o)o.classList.remove('show')}
-function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:(type==='other'?allOthers:allDishes)).push(d);}if(!d)return;id=Number(id);type=type||'dish';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(d.price)||0,unit:d.unit||'',shop});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n,cartHasHotel(c)));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n,cartHasHotel(c))+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
-function changeQty(id,type,delta){type=type||'dish';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type));saveCart(c)}
+function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:(type==='other'?allOthers:allDishes)).push(d);}if(!d)return;id=Number(id);type=type||'dish';const variant=(btn&&btn.dataset.variant)||'';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type&&(x.variant||'')===variant);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(btn&&btn.dataset.price?btn.dataset.price:d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(btn&&btn.dataset.price?btn.dataset.price:d.price)||0,unit:d.unit||'',shop,variant});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n,cartHasHotel(c)));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n,cartHasHotel(c))+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
+function changeQty(id,type,delta,variant){type=type||'dish';variant=variant||'';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type&&(x.variant||'')===variant);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type&&(x.variant||'')===variant));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.length;countEls.forEach(e=>e.textContent=count);if(!box)return;
   if(!c.length){box.innerHTML='';empty?.classList.add('show');$('#checkoutBtn')?.classList.add('disabled')}
@@ -219,13 +219,13 @@ function renderCart(){
     if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> — about <b>'+deliveryEtaFor(shops.length,cartHasHotel(c))+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
     Object.keys(groups).forEach(s=>{
       html+='<div class="cart-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>';
-      html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');return `<div class="cart-item"><div><strong>${esc(d.name)}</strong><small>Rs. ${d.price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" type="button">+</button></div><strong>Rs. ${d.price*r.qty}</strong></div>`}).join('');
+      html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');const price=Number(r.variant?r.price:d.price)||0;const variant=r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:'';return `<div class="cart-item"><div><strong>${esc(d.name)}${variant}</strong><small>Rs. ${price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">+</button></div><strong>Rs. ${price*r.qty}</strong></div>`}).join('');
     });
     box.innerHTML=html;
-    $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q))));
+    $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q),b.dataset.variant)));
     $('#checkoutBtn')?.classList.remove('disabled');
   }
-  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||r;return a+(d?Number(d.price)*r.qty:0)},0);
+  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||r;return a+(d?Number(r.variant?r.price:d.price)*r.qty:0)},0);
   const fee=c.length?deliveryFeeFor(cartShops(c).length):0;
   if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;
   if($('#cartDelivery'))$('#cartDelivery').textContent='Rs. '+fee;
@@ -234,7 +234,7 @@ function renderCart(){
 function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open')}}
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open')}
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
-function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;addToCart(Number(b.dataset.id),b.dataset.type||'dish',undefined,b)})}
+function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;const id=Number(b.dataset.id),type=b.dataset.type||'dish';const d=findItem(id,type);const hasVariants=!!(b.dataset.hasVariants||(d&&d.has_variants));if(hasVariants&&!b.dataset.variant){const card=b.closest('.dish-card')||b.closest('.related-card');const cardUrl=card?card.dataset.url:'';let url=cardUrl;if(!url){const slug=(d&&d.slug)||b.dataset.slug||slugify(b.dataset.name||'item');url=productUrl(type,slug,(d&&d.cats)||(b.dataset.cats||'').split(','));}if(url){window.location.href=url;return;}}addToCart(id,type,undefined,b)})}
 function initFeaturedGrid(){document.addEventListener('click',e=>{const card=e.target.closest('.home-grid .dish-card');if(!card)return;if(e.target.closest('.add-cart')||e.target.closest('a'))return;window.location.href=productUrl(card.dataset.type||'dish',card.dataset.slug||slugify(card.dataset.name),(card.dataset.cats||'').split(','))})}
 function initHeroSlider(){
   const wrap=$('#heroSlides');if(!wrap)return;
@@ -336,7 +336,7 @@ function initCheckout(){
     const shops=cartShops(c);
     const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
     let html='';
-    Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
+    Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(r.variant?r.price:d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)}${r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:''} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
     box.innerHTML=html;
     const hasHotel=cartHasHotel(c);
     const delivery=deliveryFeeFor(shops.length),discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?delivery:0;
@@ -512,7 +512,7 @@ function vendorHtml(v){
   (v.items||[]).forEach(function(it){
     h+='<div class="vendor-product"><div class="vp-main">'
       +'<span class="vp-vendor"><i class="fa-solid '+ico+'"></i> '+esc(v.name)+'</span>'
-      +'<span class="vp-name">'+esc(it.name)+' × '+(it.qty||0)+'</span>'
+      +'<span class="vp-name">'+esc(it.name)+(it.variant?' <em class="vp-variant">('+esc(it.variant)+')</em>':'')+' × '+(it.qty||0)+'</span>'
       +'<span class="vp-line">Rs. '+(it.line_total||0)+'</span>'
       +'</div>'+vpProgress(status)+'</div>';
   });
@@ -521,7 +521,7 @@ function vendorHtml(v){
 function otherHtml(items){
   var h='<div class="order-vendor-row other"><div class="vendor-row-head"><strong class="vendor-name">Other items</strong><span class="order-status-pill status-cancelled">Not fulfilled</span></div><div class="vendor-products">';
   items.forEach(function(it){
-    h+='<div class="vendor-product"><div class="vp-main"><span class="vp-name">'+esc(it.name)+' × '+(it.qty||0)+'</span><span class="vp-line">Rs. '+(it.line_total||0)+'</span></div></div>';
+    h+='<div class="vendor-product"><div class="vp-main"><span class="vp-name">'+esc(it.name)+(it.variant?' <em class="vp-variant">('+esc(it.variant)+')</em>':'')+' × '+(it.qty||0)+'</span><span class="vp-line">Rs. '+(it.line_total||0)+'</span></div></div>';
   });
   return h+'</div></div>';
 }

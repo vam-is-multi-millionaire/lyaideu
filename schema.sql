@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS dishes (
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
   vendor_id INT UNSIGNED NULL DEFAULT NULL,
+  has_variants TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY idx_dishes_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -117,11 +118,25 @@ CREATE TABLE IF NOT EXISTS order_items (
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
   qty INT UNSIGNED NOT NULL DEFAULT 1,
   line_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  variant VARCHAR(255) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   KEY idx_items_order (order_id),
   KEY idx_items_dish (dish_id),
   CONSTRAINT fk_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   CONSTRAINT fk_items_dish FOREIGN KEY (dish_id) REFERENCES dishes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_variants (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_type VARCHAR(20) NOT NULL,
+  item_id INT UNSIGNED NOT NULL,
+  label VARCHAR(150) NOT NULL,
+  price INT UNSIGNED NOT NULL DEFAULT 0,
+  info VARCHAR(255) NOT NULL DEFAULT '',
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_variants_item (item_type, item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS mart_items (
@@ -136,6 +151,7 @@ CREATE TABLE IF NOT EXISTS mart_items (
   `desc` TEXT NOT NULL,
   img VARCHAR(500) NOT NULL DEFAULT '',
   vendor_id INT UNSIGNED NULL DEFAULT NULL,
+  has_variants TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
   KEY idx_mart_items_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

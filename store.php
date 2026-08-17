@@ -78,7 +78,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM mart_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -93,7 +93,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM other_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -108,7 +108,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug FROM beverage_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -116,7 +116,7 @@ if ($isDetail) {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
             $vendorId = (int)$st->fetchColumn();
-            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
+            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
             $st->execute([$vendorId > 0 ? $vendorId : 0, $storeName]);
             $products = $st->fetchAll();
         }
@@ -254,7 +254,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
                                 <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $price ?><?= $unitHtml ?></span>
-                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
                             </div>
                         </article>
                         <?php endforeach; ?>
@@ -306,7 +306,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=19"></script>
+<script src="js/script.js?v=20"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 <script>
