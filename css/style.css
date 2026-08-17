@@ -1036,6 +1036,10 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 .products-manage{margin-top:1.6rem;}
 .products-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.9rem;margin-bottom:1.2rem;}
 .products-toolbar .small-note{flex:1 1 260px;min-width:0;margin:0;}
+.products-search{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-bottom:1.1rem;}
+.products-search .admin-order-search{flex:1 1 260px;min-width:0;}
+.products-search .delivery-count{font-size:.82rem;font-weight:900;color:var(--muted);white-space:nowrap;}
+.products-search .delivery-count b{color:var(--orange-700);}
 .product-list{display:grid;gap:1rem;}
 .product-card{background:#fff;border:1px solid var(--orange-100);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden;}
 .product-card-main{display:flex;align-items:flex-start;gap:1.1rem;padding:1.1rem 1.2rem;flex-wrap:wrap;}

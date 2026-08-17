@@ -197,6 +197,11 @@ delivery_header(
         <button type="button" class="btn btn-primary btn-sm" data-open-add><i class="fa-solid fa-plus"></i> Add Product</button>
     </div>
 
+    <div class="products-search">
+        <div class="admin-order-search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" placeholder="Search by name, price, category, tag or description…" aria-label="Search products" data-product-search></div>
+        <span class="delivery-count" data-result-count aria-live="polite"></span>
+    </div>
+
     <details class="product-add-card"<?= $products ? '' : ' open' ?> data-add-panel>
         <summary><span class="add-plus"><i class="fa-solid fa-plus"></i></span> Add a new product <i class="fa-solid fa-chevron-down chev"></i></summary>
         <div class="product-add-inner">
@@ -296,8 +301,9 @@ delivery_header(
             if ((int)$p['category_id'] > 0 && isset($allowedCats[(int)$p['category_id']])) {
                 $catName = $allowedCats[(int)$p['category_id']]['name'];
             }
+            $searchText = strtolower((string)$p['name'] . ' ' . (int)$p['price'] . ' ' . (string)($p['unit'] ?? '') . ' ' . $catName . ' ' . (string)($p['tag'] ?? '') . ' ' . (string)($p['desc'] ?? ''));
         ?>
-        <article class="product-card">
+        <article class="product-card" data-search="<?= vp_esc($searchText) ?>">
             <div class="product-card-main">
                 <div class="product-thumb">
                     <?php if (!empty($p['img'])): ?>
@@ -421,11 +427,34 @@ delivery_header(
             </details>
         </article>
         <?php endforeach; ?>
+
+        <div class="empty-state" id="productSearchEmpty" style="display:none"><span class="big"><i class="fa-solid fa-filter-circle-xmark"></i></span><h3>No matching products</h3><p>No products match your search. Try a different term or clear the search.</p></div>
     </div>
 </div>
 
 <script>
 (function(){
+  var search = document.querySelector("[data-product-search]");
+  function applySearch(){
+    if (!search) return;
+    var q = (search.value || "").trim().toLowerCase();
+    var total = 0, visible = 0;
+    document.querySelectorAll(".product-card").forEach(function(card){
+      total++;
+      var show = !q || (card.getAttribute("data-search") || "").indexOf(q) !== -1;
+      card.style.display = show ? "" : "none";
+      if (show) visible++;
+    });
+    var none = document.getElementById("productSearchEmpty");
+    if (none) none.style.display = (total > 0 && visible === 0) ? "" : "none";
+    var cnt = document.querySelector(".products-search [data-result-count]");
+    if (cnt) cnt.innerHTML = q
+      ? "Showing <b>" + visible + "</b> of <b>" + total + "</b>"
+      : "<b>" + total + "</b> product" + (total === 1 ? "" : "s");
+  }
+  if (search) search.addEventListener("input", applySearch);
+  applySearch();
+
   document.addEventListener("click", function(e){
     var addBtn = e.target && e.target.closest ? e.target.closest("[data-open-add]") : null;
     if (addBtn) {
