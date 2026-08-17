@@ -962,6 +962,12 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .delivery-stats button.delivery-stat.stat-pending{border-top-color:#eab308;}
 .delivery-stats button.delivery-stat.stat-progress{border-top-color:#175a8a;}
 .delivery-stats button.delivery-stat.stat-ready{border-top-color:#5440c4;}
+.delivery-stats button.delivery-stat.stat-available{border-top-color:#166534;}
+.delivery-stats button.delivery-stat.stat-available .stat-ico{color:#166534;}
+.delivery-stats button.delivery-stat.stat-incoming{border-top-color:#eab308;}
+.delivery-stats button.delivery-stat.stat-incoming .stat-ico{color:#eab308;}
+.delivery-stats button.delivery-stat.stat-mine{border-top-color:#a03c07;}
+.delivery-stats button.delivery-stat.stat-mine .stat-ico{color:#a03c07;}
 .delivery-stats button.delivery-stat.stat-history{border-top-color:#8a6a3b;}
 .delivery-stats button.delivery-stat.stat-history .stat-ico{color:#8a6a3b;}
 .delivery-section.flash-history{animation:history-flash 1.8s ease;}

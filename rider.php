@@ -149,11 +149,14 @@ if ($user) {
             $row['claimable'] = $claimable;
             if ($unassigned) {
                 if ($claimable) {
+                    $row['bucket'] = 'available';
                     $pool[] = $row;
                 } else {
+                    $row['bucket'] = 'incoming';
                     $incoming[] = $row;
                 }
             } else {
+                $row['bucket'] = 'mine';
                 $queue[] = $row;
             }
         }
@@ -165,6 +168,21 @@ if ($user) {
 
     delivery_header('Rider Dashboard', 'Your Delivery Queue', 'fa-motorcycle', $role);
 
+    $historyCount = 0;
+    try {
+        $st = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE rider_id = ? AND status = "Delivered"');
+        $st->execute([$riderId]);
+        $historyCount = (int)$st->fetchColumn();
+    } catch (Throwable $e) {
+        $historyCount = 0;
+    }
+
+    if ($flash) {
+        $ftype = ($flash['type'] ?? 'success') === 'error' ? 'error' : 'success';
+        $ficon = $ftype === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
+        echo '<div class="delivery-toast flash-banner flash-' . $ftype . '" data-auto-dismiss="1" role="status"><i class="fa-solid ' . $ficon . '"></i> ' . delivery_esc($flash['msg']) . '</div>';
+    }
+
     $card = function (array $o) use ($riderId): void {
         $pill = match ($o['status']) {
             'Pending' => 'pending',
@@ -174,14 +192,47 @@ if ($user) {
             default => 'delivery',
         };
         $claimable = !empty($o['claimable']);
+        $statusFilter = (string)($o['bucket'] ?? 'mine');
+        $statusIcon = match ($o['status']) {
+            'Pending' => 'fa-bell',
+            'Accepted' => 'fa-circle-check',
+            'Preparing' => 'fa-fire-burner',
+            'Ready for pickup' => 'fa-bag-shopping',
+            default => 'fa-motorcycle',
+        };
+        $payIcon = $o['payment'] === 'Cash on Delivery' ? 'fa-money-bill-wave' : 'fa-wallet';
+        $payClass = $o['payment'] === 'Cash on Delivery' ? 'cash' : 'wallet';
+        $payLabel = $o['payment'] === 'Cash on Delivery' ? 'Cash on delivery' : 'Digital wallet';
+        $itemCount = 0;
+        $itemNames = [];
+        foreach ($o['vendors'] as $v) {
+            $itemNames[] = $v['name'];
+            $itemCount += count($v['items']);
+            foreach ($v['items'] as $it) {
+                $itemNames[] = $it['name'];
+            }
+        }
+        $itemCount += count($o['other_items']);
+        foreach ($o['other_items'] as $it) {
+            $itemNames[] = $it['name'];
+        }
+        $searchText = (int)$o['id'] . ' ' . $o['customer_name'] . ' ' . $o['phone'] . ' ' . $o['address'] . ' ' . $o['note'] . ' ' . $o['payment'] . ' ' . implode(' ', $itemNames);
         ?>
-        <article class="delivery-card status-<?= $pill ?><?= $claimable ? ' claimable' : '' ?>" data-order-id="<?= (int)$o['id'] ?>">
+        <article class="delivery-card status-<?= $pill ?><?= $claimable ? ' claimable' : '' ?>"
+                 data-order-id="<?= (int)$o['id'] ?>"
+                 data-status="<?= $statusFilter ?>"
+                 data-search="<?= delivery_esc(strtolower($searchText)) ?>">
             <div class="delivery-card-head">
                 <div>
-                    <h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-<?= $pill ?>"><?= delivery_esc($o['status']) ?></span></h2>
-                    <p><?= delivery_esc($o['created_at']) ?></p>
+                    <h2>Order #<?= (int)$o['id'] ?>
+                        <span class="order-status-pill status-<?= $pill ?>"><i class="fa-solid <?= $statusIcon ?>"></i> <?= delivery_esc($o['status']) ?></span>
+                    </h2>
+                    <p><span data-rel-time data-ts="<?= (int)strtotime((string)$o['created_at']) ?>"></span> · <?= delivery_esc($o['created_at']) ?></p>
                 </div>
-                <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
+                <div class="delivery-total-wrap">
+                    <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
+                    <span class="delivery-pay <?= $payClass ?>"><i class="fa-solid <?= $payIcon ?>"></i> <?= $payLabel ?></span>
+                </div>
             </div>
             <p class="delivery-customer"><i class="fa-solid fa-user"></i> <?= delivery_esc($o['customer_name']) ?> · <a href="tel:+977<?= delivery_esc($o['phone']) ?>">+977 <?= delivery_esc($o['phone']) ?></a></p>
             <p class="small-note"><i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?><?php if ($o['note']): ?> · <i class="fa-solid fa-note-sticky"></i> <?= delivery_esc($o['note']) ?><?php endif; ?></p>
@@ -202,6 +253,7 @@ if ($user) {
                         <?php foreach ($v['items'] as $it): ?>
                         <span><?= delivery_esc($it['name']) ?> × <?= (int)$it['qty'] ?></span>
                         <?php endforeach; ?>
+                        <span class="delivery-item-count"><i class="fa-solid fa-receipt"></i> <?= $itemCount ?> item<?= $itemCount === 1 ? '' : 's' ?></span>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -248,40 +300,37 @@ if ($user) {
         <?php
     };
 
+    echo '<div class="delivery-toolbar">';
+    echo '<div class="admin-order-search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" placeholder="Search order #, customer, phone, address or item…" aria-label="Search orders" data-order-search></div>';
+    echo '<span class="delivery-count" data-result-count aria-live="polite"></span>';
+    echo '</div>';
+
     echo '<div id="deliveryQueue">';
-    echo '<div class="delivery-stats">';
-    $available = count($pool);
-    $incomingCount = count($incoming);
-    $out = count(array_filter($queue, fn($q) => $q['status'] === 'Out for delivery'));
-    echo '<div><strong>' . $available . '</strong><span>Available to pick up</span></div>';
-    echo '<div><strong>' . $incomingCount . '</strong><span>Incoming</span></div>';
-    echo '<div><strong>' . $out . '</strong><span>On the way</span></div>';
+    echo '<div class="delivery-stats" role="group" aria-label="Filter orders by status">';
+    $allCount = count($pool) + count($incoming) + count($queue);
+    echo '<button type="button" class="delivery-stat stat-all active" data-stat-filter="all" aria-pressed="true"><span class="stat-ico"><i class="fa-solid fa-layer-group"></i></span><strong>' . $allCount . '</strong><span>All orders</span></button>';
+    echo '<button type="button" class="delivery-stat stat-available" data-stat-filter="available" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-bullhorn"></i></span><strong>' . count($pool) . '</strong><span>Available</span></button>';
+    echo '<button type="button" class="delivery-stat stat-incoming" data-stat-filter="incoming" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-clock"></i></span><strong>' . count($incoming) . '</strong><span>Incoming</span></button>';
+    echo '<button type="button" class="delivery-stat stat-mine" data-stat-filter="mine" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-motorcycle"></i></span><strong>' . count($queue) . '</strong><span>My deliveries</span></button>';
+    echo '<button type="button" class="delivery-stat stat-history" data-history-scroll aria-label="View delivered orders"><span class="stat-ico"><i class="fa-solid fa-clock-rotate-left"></i></span><strong>' . $historyCount . '</strong><span>History</span></button>';
     echo '</div>';
 
     if (!$pool && !$incoming && !$queue) {
-        echo '<div class="empty-state"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><p>No orders right now. As soon as a customer orders, every rider is notified instantly — and the first to accept a ready order picks it up.</p></div>';
+        echo '<div class="empty-state"><span class="big"><i class="fa-solid fa-motorcycle"></i></span><h3>Nothing on your plate</h3><p>No orders right now. As soon as a vendor marks an order ready, every rider is notified instantly — and the first to accept it picks it up.</p></div>';
     } else {
-        if ($pool) {
-            echo '<section class="delivery-section"><h2><i class="fa-solid fa-bullhorn"></i> Available to pick up <span class="small-note">— first rider to accept takes it</span></h2><div class="delivery-list">';
-            foreach ($pool as $o) {
-                $card($o);
-            }
-            echo '</div></section>';
+        echo '<div class="delivery-list-wrap"><div class="delivery-list">';
+        foreach ($pool as $o) {
+            $card($o);
         }
-        if ($incoming) {
-            echo '<section class="delivery-section"><h2><i class="fa-solid fa-clock"></i> Incoming orders <span class="small-note">— you can accept these once they are ready</span></h2><div class="delivery-list">';
-            foreach ($incoming as $o) {
-                $card($o);
-            }
-            echo '</div></section>';
+        foreach ($incoming as $o) {
+            $card($o);
         }
-        if ($queue) {
-            echo '<section class="delivery-section"><h2><i class="fa-solid fa-motorcycle"></i> My deliveries</h2><div class="delivery-list">';
-            foreach ($queue as $o) {
-                $card($o);
-            }
-            echo '</div></section>';
+        foreach ($queue as $o) {
+            $card($o);
         }
+        echo '</div>';
+        echo '<div class="empty-state delivery-none" data-no-results style="display:none"><span class="big"><i class="fa-solid fa-filter-circle-xmark"></i></span><h3>No matching orders</h3><p>No orders match your filter or search. Try another status or clear your search.</p></div>';
+        echo '</div>';
     }
     echo '</div>';
 
@@ -300,7 +349,7 @@ if ($user) {
     }
 
     if ($completed) {
-        echo '<section class="delivery-section"><h2><i class="fa-solid fa-circle-check"></i> Recently Delivered</h2><div class="delivery-list">';
+        echo '<section class="delivery-section" id="deliveryHistory"><h2><i class="fa-solid fa-clock-rotate-left"></i> Recently Delivered</h2><div class="delivery-list">';
         foreach ($completed as $o):
             ?>
             <article class="delivery-card status-delivered">
@@ -316,6 +365,112 @@ if ($user) {
         <?php endforeach;
         echo '</div></section>';
     }
+
+    echo '<script>
+(function(){
+  var activeFilter = "all";
+  try { var saved = localStorage.getItem("lyaidu_rider_filter"); if (saved) activeFilter = saved; } catch(e){}
+
+  function searchValue(){
+    var el = document.querySelector("[data-order-search]");
+    return el ? (el.value || "").trim().toLowerCase() : "";
+  }
+  function timeAgo(ts){
+    var s = Math.floor(Date.now()/1000) - ts;
+    if (s < 45) return "just now";
+    if (s < 90) return "1 min ago";
+    if (s < 3600) return Math.floor(s/60) + " min ago";
+    if (s < 86400) return Math.floor(s/3600) + " hr ago";
+    return Math.floor(s/86400) + " days ago";
+  }
+  function showToast(msg){
+    var el = document.createElement("div");
+    el.className = "delivery-toast flash-banner flash-success delivery-flash";
+    el.innerHTML = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.classList.add("show"); }); });
+    setTimeout(function(){ el.classList.add("hide"); setTimeout(function(){ el.remove(); }, 350); }, 3500);
+  }
+  function tickTimes(){
+    document.querySelectorAll("[data-rel-time]").forEach(function(el){
+      var ts = parseInt(el.getAttribute("data-ts") || "0", 10);
+      if (ts) el.textContent = timeAgo(ts);
+    });
+  }
+  function applyFilter(){
+    var queue = document.getElementById("deliveryQueue");
+    if (!queue) return;
+    var cards = queue.querySelectorAll(".delivery-list .delivery-card[data-status]");
+    var total = cards.length, visible = 0;
+    var q = searchValue();
+    cards.forEach(function(card){
+      var show = activeFilter === "all" || card.getAttribute("data-status") === activeFilter;
+      if (show && q) show = (card.getAttribute("data-search") || "").toLowerCase().indexOf(q) !== -1;
+      card.style.display = show ? "" : "none";
+      if (show) visible++;
+    });
+    var none = queue.querySelector("[data-no-results]");
+    if (none) none.style.display = (total > 0 && visible === 0) ? "" : "none";
+    var cnt = document.querySelector("[data-result-count]");
+    if (cnt) cnt.innerHTML = visible === total
+      ? "<b>" + total + "</b> order" + (total === 1 ? "" : "s")
+      : "Showing <b>" + visible + "</b> of <b>" + total + "</b>";
+    queue.querySelectorAll("[data-stat-filter]").forEach(function(b){
+      var on = b.getAttribute("data-stat-filter") === activeFilter;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    var hbtn = e.target && e.target.closest ? e.target.closest("[data-history-scroll]") : null;
+    if (hbtn) {
+      var sec = document.getElementById("deliveryHistory");
+      if (sec) {
+        sec.scrollIntoView({ behavior: "smooth", block: "start" });
+        sec.classList.remove("history-flash");
+        void sec.offsetWidth;
+        sec.classList.add("history-flash");
+        setTimeout(function(){ sec.classList.remove("history-flash"); }, 2200);
+      } else {
+        showToast(\'<i class="fa-solid fa-clock-rotate-left"></i> No delivered orders yet.\');
+      }
+      return;
+    }
+    var btn = e.target && e.target.closest ? e.target.closest("[data-stat-filter]") : null;
+    if (btn) {
+      activeFilter = btn.getAttribute("data-stat-filter") || "all";
+      try { localStorage.setItem("lyaidu_rider_filter", activeFilter); } catch(err){}
+      applyFilter();
+      return;
+    }
+    var rj = e.target && e.target.closest ? e.target.closest("[data-confirm]") : null;
+    if (rj && !window.confirm(rj.getAttribute("data-confirm") || "Are you sure?")) e.preventDefault();
+  });
+  document.addEventListener("input", function(e){
+    if (e.target && e.target.hasAttribute && e.target.hasAttribute("data-order-search")) applyFilter();
+  });
+
+  if (window.MutationObserver) {
+    var queueEl = document.getElementById("deliveryQueue");
+    var mo = new MutationObserver(function(){
+      var cur = document.getElementById("deliveryQueue");
+      if (cur !== queueEl) { queueEl = cur; applyFilter(); tickTimes(); }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  var toast = document.querySelector("[data-auto-dismiss]");
+  if (toast) {
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ toast.classList.add("show"); }); });
+    setTimeout(function(){ toast.classList.add("hide"); setTimeout(function(){ toast.remove(); }, 350); }, 5000);
+  }
+
+  applyFilter();
+  tickTimes();
+  setInterval(tickTimes, 30000);
+})();
+</script>';
 
     delivery_footer();
     exit;
