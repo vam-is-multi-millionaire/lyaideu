@@ -1221,6 +1221,61 @@ function lyaideu_notify_riders(int $orderId, string $message, string $link = '')
 }
 
 /**
+ * Human-readable per-vendor summary of an order's items, e.g.
+ * "4 to 9 cafe: Chicken Momo ×2, Veg Thukpa ×1 · Subodh Mart: Coke ×1".
+ * Pass $onlyVendorId to describe just that vendor's portion (used for the
+ * vendor's own new-order notification). Always returns a safe, capped string.
+ */
+function lyaideu_order_vendor_summary(int $orderId, ?int $onlyVendorId = null): string {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $orderId <= 0) {
+        return '';
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT oi.vendor_id, v.name AS vendor_name, oi.hotel, oi.name, oi.qty
+             FROM order_items oi
+             LEFT JOIN vendors v ON v.id = oi.vendor_id
+             WHERE oi.order_id = ?
+             ORDER BY oi.vendor_id IS NULL, oi.vendor_id, oi.id'
+        );
+        $st->execute([$orderId]);
+        $groups = [];
+        $other = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $it) {
+            $vid = (int)$it['vendor_id'];
+            $part = (string)$it['name'] . ' ×' . (int)$it['qty'];
+            if ($onlyVendorId !== null && $vid !== $onlyVendorId) {
+                continue;
+            }
+            if ($vid > 0) {
+                $label = (string)$it['vendor_name'] !== '' ? (string)$it['vendor_name'] : (string)$it['hotel'];
+                if (!isset($groups[$vid])) {
+                    $groups[$vid] = ['label' => $label, 'parts' => []];
+                }
+                $groups[$vid]['parts'][] = $part;
+            } else {
+                $other[] = $part;
+            }
+        }
+        $chunks = [];
+        foreach ($groups as $g) {
+            $chunks[] = ($g['label'] !== '' ? $g['label'] : 'Vendor') . ': ' . implode(', ', $g['parts']);
+        }
+        if ($other) {
+            $chunks[] = 'Other: ' . implode(', ', $other);
+        }
+        $summary = implode(' · ', $chunks);
+        if (mb_strlen($summary) > 180) {
+            $summary = mb_substr($summary, 0, 180) . '…';
+        }
+        return $summary;
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+/**
  * Distinct vendor ids that own an order (via orders.vendor_id or order_items.vendor_id).
  */
 function lyaideu_order_vendor_ids(int $orderId): array {

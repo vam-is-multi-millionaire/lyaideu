@@ -223,15 +223,11 @@ try {
 lyaideu_auto_assign_vendor($orderId);
 lyaideu_seed_order_vendor_status($orderId);
 
-$firstItem = $items[0] ?? null;
-$itemSummary = ($firstItem ? $firstItem['name'] . ' × ' . $firstItem['qty'] : 'items');
-if (count($items) > 1) {
-    $itemSummary .= ' +' . (count($items) - 1) . ' more';
-}
+$vendorSummary = lyaideu_order_vendor_summary($orderId);
 foreach (lyaideu_order_vendor_ids($orderId) as $vid) {
-    lyaideu_notify($orderId, 'vendor', $vid, 'New order #' . $orderId . ' — ' . $itemSummary . ' · Rs. ' . $total, 'vendor');
+    lyaideu_notify($orderId, 'vendor', $vid, 'New order #' . $orderId . ' — ' . lyaideu_order_vendor_summary($orderId, (int)$vid) . ' · Rs. ' . $total, 'vendor');
 }
-lyaideu_notify_riders($orderId, 'New order #' . $orderId . ' — ' . $itemSummary . ' · Rs. ' . $total . '. Check your queue.', 'rider');
+lyaideu_notify_riders($orderId, 'New order #' . $orderId . ' — ' . $vendorSummary . ' · Rs. ' . $total . '. Check your queue.', 'rider');
 
 $_SESSION['last_order_id'] = $orderId;
 header('Location: order_success?id=' . $orderId);
