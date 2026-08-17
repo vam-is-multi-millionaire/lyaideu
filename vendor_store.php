@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 delivery_header('My Store', 'Edit Your Store Information', 'fa-store', $role);
 ?>
-<a class="btn btn-outline" href="vendor" style="margin-bottom:1rem;"><i class="fa-solid fa-arrow-left"></i> Back to Order Queue</a>
+<a class="btn btn-outline" href="vendor" style="margin-bottom:1.2rem;"><i class="fa-solid fa-arrow-left"></i> Back to Order Queue</a>
 
 <?php if ($msg): ?>
 <div class="flash-banner flash-success delivery-flash"><i class="fa-solid fa-circle-check"></i> <?= delivery_esc($msg) ?></div>
@@ -107,40 +107,98 @@ delivery_header('My Store', 'Edit Your Store Information', 'fa-store', $role);
 <div class="flash-banner flash-error delivery-flash"><i class="fa-solid fa-circle-xmark"></i> <?= delivery_esc($error) ?></div>
 <?php endif; ?>
 
-<div class="delivery-section">
+<div class="delivery-section store-edit">
     <?php if (!$store): ?>
     <div class="admin-card">
         <h3>No linked store</h3>
         <p class="small-note">Your vendor account is not linked to a store yet. Ask the administrator to link your account to your store so you can edit its information here.</p>
     </div>
     <?php else: ?>
-    <p class="small-note" style="margin-bottom:1rem;">
-        <?php if ($isMart): ?>
-        <i class="fa-solid fa-basket-shopping"></i> This is the Mart store shown on the <strong>Stores</strong> page. Its items appear on the <strong>Mart</strong> page.
-        <?php else: ?>
-        <i class="fa-solid fa-hotel"></i> This information appears on your store's own page — open it from the <strong>Stores</strong> page.
-        <?php endif; ?>
-    </p>
 
-    <form action="vendor_store" method="POST" enctype="multipart/form-data" class="admin-card">
-        <h3><i class="fa-solid fa-store"></i> <?= delivery_esc($store['name']) ?></h3>
+    <div class="store-hero">
+        <div class="store-hero-logo">
+            <?php if (!empty($store['logo'])): ?>
+            <img src="<?= delivery_esc($store['logo']) ?>" alt="<?= delivery_esc($store['name']) ?> logo">
+            <?php else: ?>
+            <i class="fa-solid <?= $isMart ? 'fa-basket-shopping' : 'fa-store' ?>"></i>
+            <?php endif; ?>
+        </div>
+        <div class="store-hero-info">
+            <p class="kicker"><i class="fa-solid <?= $isMart ? 'fa-basket-shopping' : 'fa-hotel' ?>"></i> <?= $isMart ? 'Your Mart Store' : 'Your Store Profile' ?></p>
+            <h2 class="display"><?= delivery_esc($store['name']) ?></h2>
+            <?php if (!empty($store['type'])): ?><p class="store-hero-tag"><?= delivery_esc($store['type']) ?></p><?php endif; ?>
+            <div class="store-hero-badges">
+                <?php if (!empty($store['phone'])): ?>
+                <span><i class="fa-solid fa-phone"></i> +977 <?= delivery_esc($store['phone']) ?></span>
+                <?php endif; ?>
+                <span><i class="fa-solid fa-eye"></i> Live on the <?= $isMart ? 'Mart' : 'Stores' ?> page</span>
+            </div>
+        </div>
+    </div>
+
+    <form action="vendor_store" method="POST" enctype="multipart/form-data" class="admin-card store-form">
+        <h3><i class="fa-solid fa-pen-to-square"></i> Store Information</h3>
+        <p class="store-form-sub"><?= $isMart ? 'Items you publish appear on the <strong>Mart</strong> page.' : 'This information appears on your store\'s own page — open it from the <strong>Stores</strong> page.' ?></p>
         <input type="hidden" name="csrf_token" value="<?= delivery_esc(delivery_csrf_token()) ?>">
         <input type="hidden" name="id" value="<?= (int)$store['id'] ?>">
-        <label>Store Name</label>
-        <input type="text" name="name" value="<?= delivery_esc($store['name']) ?>" required>
-        <label>Tagline / Type</label>
-        <input type="text" name="type" value="<?= delivery_esc($store['type']) ?>" placeholder="e.g. Momo · New Baneshwor">
-        <div class="admin-field-row">
-            <div><label>Phone</label><input type="text" name="phone" value="<?= delivery_esc($store['phone']) ?>" placeholder="98XXXXXXXX"></div>
-            <div><label>Logo <span class="muted">(optional)</span></label><input type="file" name="logo_file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"></div>
+
+        <div class="store-field">
+            <label for="store-name">Store name</label>
+            <div class="store-input">
+                <i class="fa-solid fa-store"></i>
+                <input type="text" id="store-name" name="name" value="<?= delivery_esc($store['name']) ?>" required>
+            </div>
+            <p class="field-hint">This is how customers see your store everywhere on the site.</p>
         </div>
-        <?php if (!empty($store['logo'])): ?>
-        <div class="img-preview"><img src="<?= delivery_esc($store['logo']) ?>" alt="Current logo"></div>
-        <label class="delete-check"><input type="checkbox" name="remove_img" value="1"> <i class="fa-solid fa-trash-can"></i> Remove logo</label>
-        <?php endif; ?>
-        <label>About the store</label>
-        <textarea name="desc" rows="4" placeholder="Tell customers what makes your store special..."><?= delivery_esc($store['desc']) ?></textarea>
-        <button type="submit" name="store_save" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save Store Information</button>
+
+        <div class="store-field-row">
+            <div class="store-field">
+                <label for="store-type">Tagline / type</label>
+                <div class="store-input">
+                    <i class="fa-solid fa-tag"></i>
+                    <input type="text" id="store-type" name="type" value="<?= delivery_esc($store['type']) ?>" placeholder="e.g. Momo · New Baneshwor">
+                </div>
+                <p class="field-hint">A short line that tells customers what you serve.</p>
+            </div>
+            <div class="store-field">
+                <label for="store-phone">Phone</label>
+                <div class="store-input">
+                    <i class="fa-solid fa-phone"></i>
+                    <input type="text" id="store-phone" name="phone" value="<?= delivery_esc($store['phone']) ?>" placeholder="98XXXXXXXX">
+                </div>
+            </div>
+        </div>
+
+        <div class="store-field">
+            <label for="store-logo">Logo <span class="muted">(optional)</span></label>
+            <div class="store-logo-upload">
+                <div class="img-preview">
+                    <?php if (!empty($store['logo'])): ?>
+                    <img src="<?= delivery_esc($store['logo']) ?>" alt="Current logo">
+                    <?php else: ?>
+                    <i class="fa-solid fa-store"></i>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <input type="file" id="store-logo" name="logo_file" class="settings-file-input" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+                    <?php if (!empty($store['logo'])): ?>
+                    <label class="delete-check"><input type="checkbox" name="remove_img" value="1"> <i class="fa-solid fa-trash-can"></i> Remove logo</label>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <p class="field-hint">A square image works best. PNG, JPG, WebP, GIF or SVG.</p>
+        </div>
+
+        <div class="store-field">
+            <label for="store-desc">About the store</label>
+            <textarea id="store-desc" name="desc" rows="4" placeholder="Tell customers what makes your store special..."><?= delivery_esc($store['desc']) ?></textarea>
+            <p class="field-hint">A few friendly sentences shown on your store page.</p>
+        </div>
+
+        <div class="store-form-actions">
+            <a class="btn btn-outline" href="vendor"><i class="fa-solid fa-xmark"></i> Cancel</a>
+            <button type="submit" name="store_save" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Store Information</button>
+        </div>
     </form>
     <?php endif; ?>
 </div>
