@@ -97,7 +97,7 @@ if ($user) {
              JOIN order_vendor_status ovs ON ovs.order_id = o.id AND ovs.vendor_id = :vid
              LEFT JOIN riders r ON r.id = o.rider_id
              WHERE ovs.status IN ("Pending", "Accepted", "Preparing", "Ready for pickup")
-             ORDER BY FIELD(ovs.status, "Pending", "Accepted", "Preparing", "Ready for pickup"), o.created_at ASC'
+             ORDER BY o.created_at DESC'
         );
         $rows->execute([':vid' => $vendorId]);
         $orders = $rows->fetchAll();
@@ -140,6 +140,21 @@ if ($user) {
         $completed = [];
     }
 
+    $historyCount = 0;
+    try {
+        $st = $pdo->prepare(
+            'SELECT COUNT(DISTINCT o.id)
+             FROM orders o
+             LEFT JOIN order_items oi ON oi.order_id = o.id
+             WHERE o.status IN ("Out for delivery", "Delivered", "Cancelled")
+               AND (o.vendor_id = :vid1 OR oi.vendor_id = :vid2)'
+        );
+        $st->execute([':vid1' => $vendorId, ':vid2' => $vendorId]);
+        $historyCount = (int)$st->fetchColumn();
+    } catch (Throwable $e) {
+        $historyCount = 0;
+    }
+
 if ($flash) {
         $ftype = ($flash['type'] ?? 'success') === 'error' ? 'error' : 'success';
         $ficon = $ftype === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
@@ -163,6 +178,7 @@ if ($flash) {
     echo '<button type="button" class="delivery-stat stat-pending" data-stat-filter="pending" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-bell"></i></span><strong>' . $stats['Pending'] . '</strong><span>New</span></button>';
     echo '<button type="button" class="delivery-stat stat-progress" data-stat-filter="progress" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-fire-burner"></i></span><strong>' . $inProgress . '</strong><span>In progress</span></button>';
     echo '<button type="button" class="delivery-stat stat-ready" data-stat-filter="ready" aria-pressed="false"><span class="stat-ico"><i class="fa-solid fa-bag-shopping"></i></span><strong>' . $stats['Ready for pickup'] . '</strong><span>Ready</span></button>';
+    echo '<button type="button" class="delivery-stat stat-history" data-history-scroll aria-label="View completed orders"><span class="stat-ico"><i class="fa-solid fa-clock-rotate-left"></i></span><strong>' . $historyCount . '</strong><span>History</span></button>';
     echo '</div>';
 
     if (!$queue) {
@@ -238,7 +254,7 @@ if ($flash) {
     echo '</div>';
 
     if ($completed) {
-        echo '<section class="delivery-section"><h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Completed Orders</h2><div class="delivery-list">';
+        echo '<section class="delivery-section" id="deliveryHistory"><h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Completed Orders</h2><div class="delivery-list">';
         foreach ($completed as $o):
             $pill = match ($o['status']) {
                 'Delivered' => 'delivered',
@@ -275,6 +291,14 @@ if ($flash) {
     if (s < 86400) return Math.floor(s/3600) + " hr ago";
     return Math.floor(s/86400) + " days ago";
   }
+  function showToast(msg){
+    var el = document.createElement("div");
+    el.className = "delivery-toast flash-banner flash-success delivery-flash";
+    el.innerHTML = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ el.classList.add("show"); }); });
+    setTimeout(function(){ el.classList.add("hide"); setTimeout(function(){ el.remove(); }, 350); }, 3500);
+  }
   function tickTimes(){
     document.querySelectorAll("[data-rel-time]").forEach(function(el){
       var ts = parseInt(el.getAttribute("data-ts") || "0", 10);
@@ -307,6 +331,20 @@ if ($flash) {
   }
 
   document.addEventListener("click", function(e){
+    var hbtn = e.target && e.target.closest ? e.target.closest("[data-history-scroll]") : null;
+    if (hbtn) {
+      var sec = document.getElementById("deliveryHistory");
+      if (sec) {
+        sec.scrollIntoView({ behavior: "smooth", block: "start" });
+        sec.classList.remove("history-flash");
+        void sec.offsetWidth;
+        sec.classList.add("history-flash");
+        setTimeout(function(){ sec.classList.remove("history-flash"); }, 2200);
+      } else {
+        showToast(\'<i class="fa-solid fa-clock-rotate-left"></i> No completed orders yet.\');
+      }
+      return;
+    }
     var btn = e.target && e.target.closest ? e.target.closest("[data-stat-filter]") : null;
     if (btn) {
       activeFilter = btn.getAttribute("data-stat-filter") || "all";
