@@ -986,6 +986,7 @@ function lyaideu_ensure_delivery_tables(): bool {
         }
 
         lyaideu_ensure_column($pdo, 'order_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
+        lyaideu_ensure_column($pdo, 'riders', 'avatar', "VARCHAR(255) NOT NULL DEFAULT ''");
 
         $changed = false;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'scope', "VARCHAR(20) NOT NULL DEFAULT 'hotel'") || $changed;

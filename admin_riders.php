@@ -66,7 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['rider_delete'])) {
         $id = (int)($_POST['id'] ?? 0);
         try {
+            $st = $pdo->prepare('SELECT avatar FROM riders WHERE id = ? LIMIT 1');
+            $st->execute([$id]);
+            $oldAvatar = (string)$st->fetchColumn();
             $pdo->prepare('DELETE FROM riders WHERE id = ?')->execute([$id]);
+            if ($oldAvatar !== '') {
+                lyaideu_delete_upload($oldAvatar);
+            }
             header('Location: admin_riders?saved=1');
             exit;
         } catch (Throwable $e) {
@@ -77,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $riders = [];
 try {
-    $riders = $pdo->query('SELECT id, name, email, phone, vehicle, is_active, created_at FROM riders ORDER BY name')->fetchAll();
+    $riders = $pdo->query('SELECT id, name, email, phone, vehicle, avatar, is_active, created_at FROM riders ORDER BY name')->fetchAll();
 } catch (Throwable $e) {
     $riders = [];
 }
@@ -125,10 +131,13 @@ admin_page_start('Riders', 'riders', 'Rider Management');
 
 <section class="admin-section">
     <div class="pm-list" id="riderList">
-        <?php foreach ($riders as $r): $id = (int)$r['id']; $active = (bool)$r['is_active']; ?>
+        <?php foreach ($riders as $r): $id = (int)$r['id']; $active = (bool)$r['is_active'];
+            $av = $ce((string)($r['avatar'] ?? ''));
+        ?>
         <div class="pm-row" data-search="<?= $ce(strtolower((string)$r['name'] . ' ' . $r['phone'] . ' ' . $r['email'] . ' ' . $r['vehicle'])) ?>">
             <div class="pm-item">
-                <span class="pm-thumb pm-thumb-empty"><i class="fa-solid fa-motorcycle"></i></span>
+                <?php if ($av !== ''): ?><span class="pm-thumb pm-avatar" data-lightbox="<?= $av ?>" data-lightbox-caption="<?= $ce($r['name']) ?>" style="background-image:url('<?= $av ?>')"></span>
+                <?php else: ?><span class="pm-thumb pm-thumb-empty"><i class="fa-solid fa-motorcycle"></i></span><?php endif; ?>
                 <span class="pm-body">
                     <span class="pm-name"><?= $ce($r['name']) ?></span>
                     <span class="pm-meta"><?= $ce($r['phone']) ?><?= $r['vehicle'] !== '' ? ' · ' . $ce($r['vehicle']) : '' ?></span>
@@ -231,5 +240,6 @@ admin_page_start('Riders', 'riders', 'Rider Management');
   });
 })();
 </script>
+<script src="js/lightbox.js?v=2"></script>
 <?php
 admin_page_end();

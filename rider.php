@@ -91,8 +91,214 @@ if ($user) {
         exit;
     }
 
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_save'])) {
+        if (hash_equals(delivery_csrf_token(), $_POST['csrf_token'] ?? '')) {
+            $name = trim((string)($_POST['name'] ?? ''));
+            $phone = preg_replace('/[^0-9]/', '', (string)($_POST['phone'] ?? ''));
+            $email = strtolower(trim((string)($_POST['email'] ?? '')));
+            $vehicle = trim((string)($_POST['vehicle'] ?? ''));
+            $errors = [];
+            if ($name === '') {
+                $errors[] = 'Your name is required.';
+            }
+            if ($phone === '') {
+                $errors[] = 'Your phone number is required.';
+            }
+            if (!$errors) {
+                try {
+                    $dup = $pdo->prepare('SELECT id FROM riders WHERE (phone = :p OR (email <> "" AND email = :e)) AND id <> :id LIMIT 1');
+                    $dup->execute([':p' => $phone, ':e' => $email, ':id' => $riderId]);
+                    if ($dup->fetch()) {
+                        $errors[] = 'This phone or email is already used by another rider.';
+                    }
+                } catch (Throwable $e) {
+                    $errors[] = 'Could not check your details right now.';
+                }
+            }
+            if (!$errors) {
+                $conflict = lyaideu_delivery_credential_conflict('rider', $phone, $email, $riderId);
+                if ($conflict) {
+                    $errors[] = $conflict;
+                }
+            }
+            if ($errors) {
+                $_SESSION['flash'] = ['type' => 'error', 'msg' => implode('<br>', $errors)];
+            } else {
+                try {
+                    $pdo->prepare('UPDATE riders SET name = ?, email = ?, phone = ?, vehicle = ? WHERE id = ?')
+                        ->execute([$name, $email, $phone, $vehicle, $riderId]);
+                    $_SESSION['delivery_user'] = array_merge($_SESSION['delivery_user'], [
+                        'name' => $name, 'email' => $email, 'phone' => $phone, 'vehicle' => $vehicle,
+                    ]);
+                    $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Your profile has been updated.'];
+                } catch (Throwable $e) {
+                    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Could not save your profile. Please try again.'];
+                }
+            }
+        }
+        header('Location: rider?tab=profile');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avatar_save'])) {
+        if (hash_equals(delivery_csrf_token(), $_POST['csrf_token'] ?? '')) {
+            try {
+                $st = $pdo->prepare('SELECT avatar FROM riders WHERE id = ? LIMIT 1');
+                $st->execute([$riderId]);
+                $current = (string)$st->fetchColumn();
+                $avatar = lyaideu_handle_item_image($current, $_POST, $_FILES['avatar_file'] ?? null, 'rider_avatar');
+                $pdo->prepare('UPDATE riders SET avatar = ? WHERE id = ?')->execute([$avatar, $riderId]);
+                $_SESSION['delivery_user']['avatar'] = $avatar;
+                $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Profile photo updated.'];
+            } catch (Throwable $e) {
+                $_SESSION['flash'] = ['type' => 'error', 'msg' => $e->getMessage()];
+            }
+        }
+        header('Location: rider?tab=profile');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avatar_remove'])) {
+        if (hash_equals(delivery_csrf_token(), $_POST['csrf_token'] ?? '')) {
+            try {
+                $st = $pdo->prepare('SELECT avatar FROM riders WHERE id = ? LIMIT 1');
+                $st->execute([$riderId]);
+                $current = (string)$st->fetchColumn();
+                if ($current !== '') {
+                    lyaideu_delete_upload($current);
+                    $pdo->prepare('UPDATE riders SET avatar = \'\' WHERE id = ?')->execute([$riderId]);
+                }
+                $_SESSION['delivery_user']['avatar'] = '';
+                $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Profile photo removed.'];
+            } catch (Throwable $e) {
+                $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Could not remove your profile photo.'];
+            }
+        }
+        header('Location: rider?tab=profile');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_password'])) {
+        if (hash_equals(delivery_csrf_token(), $_POST['csrf_token'] ?? '')) {
+            $current = (string)($_POST['current_password'] ?? '');
+            $newPass = (string)($_POST['new_password'] ?? '');
+            $errors = [];
+            try {
+                $st = $pdo->prepare('SELECT pass FROM riders WHERE id = ? LIMIT 1');
+                $st->execute([$riderId]);
+                $hash = (string)$st->fetchColumn();
+                if ($hash === '' || !password_verify($current, $hash)) {
+                    $errors[] = 'Your current password is incorrect.';
+                }
+            } catch (Throwable $e) {
+                $errors[] = 'Could not verify your password right now.';
+            }
+            if (strlen($newPass) < 6) {
+                $errors[] = 'New password must be at least 6 characters.';
+            }
+            if ($errors) {
+                $_SESSION['flash'] = ['type' => 'error', 'msg' => implode('<br>', $errors)];
+            } else {
+                try {
+                    $pdo->prepare('UPDATE riders SET pass = ? WHERE id = ?')
+                        ->execute([password_hash($newPass, PASSWORD_DEFAULT), $riderId]);
+                    $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Your password has been updated.'];
+                } catch (Throwable $e) {
+                    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Could not update your password. Please try again.'];
+                }
+            }
+        }
+        header('Location: rider?tab=profile');
+        exit;
+    }
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: rider');
+        exit;
+    }
+
+    if (isset($_GET['tab']) && $_GET['tab'] === 'profile') {
+        $profile = $user;
+        try {
+            $st = $pdo->prepare('SELECT id, name, email, phone, vehicle, avatar FROM riders WHERE id = ? LIMIT 1');
+            $st->execute([$riderId]);
+            $prof = $st->fetch();
+            if ($prof) {
+                $profile = $prof;
+            }
+        } catch (Throwable $e) {
+            $profile = $user;
+        }
+
+        $avatarUrl = delivery_esc((string)($profile['avatar'] ?? ''));
+        $parts = preg_split('/\s+/', trim((string)($profile['name'] ?? '')));
+        $ini = strtoupper(substr((string)($parts[0] ?? ''), 0, 1) . (isset($parts[1]) ? substr((string)$parts[1], 0, 1) : ''));
+
+        delivery_header('Rider Profile', 'Your Profile', 'fa-user-pen', $role);
+
+        if ($flash) {
+            $ftype = ($flash['type'] ?? 'success') === 'error' ? 'error' : 'success';
+            $ficon = $ftype === 'error' ? 'fa-circle-xmark' : 'fa-circle-check';
+            echo '<div class="delivery-toast flash-banner flash-' . $ftype . '" data-auto-dismiss="1" role="status"><i class="fa-solid ' . $ficon . '"></i> ' . delivery_esc($flash['msg']) . '</div>';
+        }
+
+        echo '<div class="profile-grid">';
+        echo '<form class="profile-card" method="POST" enctype="multipart/form-data" action="rider">';
+        echo '<input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '">';
+        echo '<h2><i class="fa-solid fa-camera"></i> Profile photo</h2>';
+        echo '<div class="avatar-upload">';
+        echo '<div class="avatar-preview" id="riderAvatarPreview"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc($ini) : '') . '</div>';
+        echo '<label class="btn btn-outline" for="riderAvatarFile" style="cursor:pointer;"><i class="fa-solid fa-upload"></i> Upload photo</label>';
+        echo '<input type="file" id="riderAvatarFile" name="avatar_file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>';
+        echo '<p class="small-note">A clear photo of your face so customers can recognise you at the door.</p>';
+        if ($avatarUrl !== '') {
+            echo '<button type="submit" name="avatar_remove" value="1" class="btn btn-outline btn-sm"><i class="fa-solid fa-trash"></i> Remove photo</button>';
+        }
+        echo '<button type="submit" name="avatar_save" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save photo</button>';
+        echo '</div></form>';
+
+        echo '<form class="profile-card" method="POST" action="rider">';
+        echo '<input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '">';
+        echo '<h2><i class="fa-solid fa-user"></i> Personal information</h2>';
+        echo '<label>Full Name<input name="name" value="' . delivery_esc((string)($profile['name'] ?? '')) . '" required></label>';
+        echo '<label>Phone<input name="phone" value="' . delivery_esc((string)($profile['phone'] ?? '')) . '" required inputmode="numeric" maxlength="10"></label>';
+        echo '<label>Email<input name="email" type="email" value="' . delivery_esc((string)($profile['email'] ?? '')) . '" placeholder="rider@example.com"></label>';
+        echo '<label>Vehicle<input name="vehicle" value="' . delivery_esc((string)($profile['vehicle'] ?? '')) . '" placeholder="e.g. Bike / Scooter"></label>';
+        echo '<button type="submit" name="profile_save" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>';
+        echo '</form>';
+
+        echo '<form class="profile-card" method="POST" action="rider">';
+        echo '<input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '">';
+        echo '<h2><i class="fa-solid fa-lock"></i> Change password</h2>';
+        echo '<label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>';
+        echo '<label>New password<input type="password" name="new_password" autocomplete="new-password" required></label>';
+        echo '<p class="small-note">New password must be at least 6 characters.</p>';
+        echo '<button type="submit" name="profile_password" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-key"></i> Update password</button>';
+        echo '</form>';
+        echo '</div>';
+
+        echo '<script>
+(function(){
+  var av = document.getElementById("riderAvatarPreview");
+  var af = document.getElementById("riderAvatarFile");
+  if (av && af) {
+    af.addEventListener("change", function () {
+      var f = af.files && af.files[0];
+      if (!f) return;
+      var r = new FileReader();
+      r.onload = function () { av.style.backgroundImage = "url(" + r.result + ")"; av.textContent = ""; };
+      r.readAsDataURL(f);
+    });
+  }
+  var toast = document.querySelector("[data-auto-dismiss]");
+  if (toast) {
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ toast.classList.add("show"); }); });
+    setTimeout(function(){ toast.classList.add("hide"); setTimeout(function(){ toast.remove(); }, 350); }, 5000);
+  }
+})();
+</script>';
+
+        delivery_footer();
         exit;
     }
 

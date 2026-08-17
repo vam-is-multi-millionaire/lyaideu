@@ -107,7 +107,7 @@ function delivery_login_attempt(string $role): void {
 
     try {
         $stmt = $pdo->prepare(
-            "SELECT id, name, email, phone, pass, is_active FROM `$table`
+            "SELECT id, name, email, phone, vehicle, avatar, pass, is_active FROM `$table`
              WHERE LOWER(name) = LOWER(:n) OR phone = :p OR LOWER(email) = LOWER(:e) LIMIT 1"
         );
         $stmt->execute([
@@ -154,6 +154,8 @@ function delivery_login_attempt(string $role): void {
         'name' => (string)$u['name'],
         'email' => (string)$u['email'],
         'phone' => (string)$u['phone'],
+        'vehicle' => (string)($u['vehicle'] ?? ''),
+        'avatar' => (string)($u['avatar'] ?? ''),
     ];
     $_SESSION['csrf_delivery'] = bin2hex(random_bytes(32));
     header('Location: ' . $role);
@@ -223,7 +225,12 @@ function delivery_header(string $title, string $heading, string $icon, string $r
     $user = delivery_user();
     $logo = delivery_esc(site_logo_url());
     $name = $user ? delivery_esc($user['name']) : '';
-    $avatarUrl = ($role === 'vendor' && $user) ? delivery_vendor_avatar_url((int)$user['id']) : '';
+    $avatarUrl = '';
+    if ($user) {
+        $avatarUrl = $role === 'vendor'
+            ? delivery_vendor_avatar_url((int)$user['id'])
+            : (string)($user['avatar'] ?? '');
+    }
     echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo lyaideu_base_tag();
     echo '<title>' . delivery_esc($title) . ' | LyaiDeu</title>';
@@ -236,7 +243,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
 <div class="delivery-user">
   <span class="avatar"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . delivery_esc($avatarUrl) . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc(substr($user['name'] ?? '', 0, 1)) : '') . '</span>
   <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
-  ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '') . '
+  ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '<a class="btn btn-outline btn-sm" href="rider?tab=profile"><i class="fa-solid fa-user-pen"></i> My Profile</a>') . '
   <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
 </div></header>
 <main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>● Live updates</span> New orders appear here automatically.</p></div>';
