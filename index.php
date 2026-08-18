@@ -68,7 +68,6 @@ $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'h
     $featured['dishes'] = array_slice($featured['dishes'], 0, 12);
     $featured['mart']   = array_slice($featured['mart'], 0, 12);
     $featured['others'] = array_slice($featured['others'], 0, 12);
-    $featured['beverages'] = array_slice($featured['beverages'], 0, 12);
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
     $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
     $featured['other_stores'] = array_slice($featured['other_stores'], 0, 4);
