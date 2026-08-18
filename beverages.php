@@ -36,7 +36,7 @@ $bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=28">
+<link rel="stylesheet" href="css/style.css?v=29">
 </head>
 <body>
 
@@ -121,7 +121,7 @@ $bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=20"></script>
+<script src="js/script.js?v=21"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=4"></script>
 </body>

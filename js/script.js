@@ -216,7 +216,7 @@ function renderCart(){
     const shops=cartShops(c);
     const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
     let html='';
-    if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> — about <b>'+deliveryEtaFor(shops.length,cartHasHotel(c))+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
+    if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> about <b>'+deliveryEtaFor(shops.length,cartHasHotel(c))+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
     Object.keys(groups).forEach(s=>{
       html+='<div class="cart-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>';
       html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');const price=Number(r.variant?r.price:d.price)||0;const variant=r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:'';return `<div class="cart-item"><div><strong>${esc(d.name)}${variant}</strong><small>Rs. ${price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">+</button></div><strong>Rs. ${price*r.qty}</strong></div>`}).join('');
