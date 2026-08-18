@@ -3,6 +3,9 @@ session_start();
 if (!isset($_SESSION['user'])) { header('Location: login?next=' . urlencode('checkout')); exit; }
 if (!isset($_SESSION['csrf_order'])) $_SESSION['csrf_order'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'];
+$parts = preg_split('/\s+/', trim($user['name']));
+$firstName = $parts[0] ?? '';
+$initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 require_once __DIR__ . '/site_config.php';
 
@@ -25,7 +28,46 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 <link rel="stylesheet" href="css/style.css?v=27">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head><body class="checkout-body">
-<header class="topbar"><nav class="nav"><a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a><form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form><a class="btn btn-outline" href="menu"><i class="fa-solid fa-arrow-left"></i> Back to Menu</a></nav></header>
+<header class="topbar">
+    <nav class="nav">
+        <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
+        <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index" class="nav-a">Home</a></li>
+            <li><a href="menu" class="nav-a">Menu</a></li>
+            <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a">Beverages</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
+            <li><a href="store" class="nav-a">Stores</a></li>
+            <?php if ($user): ?>
+            <li>
+                <div class="profile-wrap">
+                    <button class="profile-chip" id="profileChip" type="button">
+                        <span class="avatar"<?= !empty($user['avatar']) ? ' style="background-image:url(\'' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8') . '\')"' : '' ?>><?= empty($user['avatar']) ? htmlspecialchars($initials) : '' ?></span>
+                        <span class="chip-name"><?= htmlspecialchars($firstName) ?></span>
+                        <span class="caret"><i class="fa-solid fa-chevron-down"></i></span>
+                    </button>
+                    <div class="profile-menu" id="profileMenu">
+                        <p class="pm-name"><i class="fa-solid fa-user"></i> <?= htmlspecialchars($user['name']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($user['email']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($user['phone']) ?></p>
+                        <p class="pm-line"><i class="fa-solid fa-cake-candles"></i> <?= htmlspecialchars($user['dob']) ?></p>
+                        <?php if (!empty($_SESSION['is_admin'])): ?>
+                            <a class="btn btn-outline btn-block" href="admin"><i class="fa-solid fa-gear"></i> Admin Panel</a>
+                        <?php endif; ?>
+                        <a class="btn btn-outline btn-block" href="profile" style="margin-top:.5rem;"><i class="fa-solid fa-user-gear"></i> My Profile</a>
+                        <a class="btn btn-outline btn-block" href="orders" style="margin-top:.5rem;"><i class="fa-solid fa-box"></i> My Orders</a>
+                        <a class="btn btn-primary btn-block" href="logout" style="margin-top:.5rem; background:#c93a3a; box-shadow:0 5px 0 #a02a2a;">Log Out</a>
+                    </div>
+                </div>
+            </li>
+            <?php else: ?>
+            <li><a class="nav-a nav-cta" href="login"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</header>
 <main class="checkout-page container">
   <div class="section-head"><p class="kicker"><i class="fa-solid fa-receipt"></i> Secure checkout</p><h1 class="display">Almost there, <?= htmlspecialchars($user['name']) ?>!</h1><p class="section-sub">Review your items, add delivery details, and place the order.</p></div>
   <?php if ($flash): ?><div class="flash-banner flash-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['msg'] ?></div><?php endif; ?>
