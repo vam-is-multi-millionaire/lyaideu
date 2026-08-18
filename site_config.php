@@ -2554,7 +2554,7 @@ function lyaideu_footer_html(): string {
     return '<footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></p><p class="footer-blurb">' . $blurb . '</p></div>
-        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li><li><a href="demo.html"><i class="fa-solid fa-film"></i> Product Demo</a></li></ul></div>
+        <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li></ul></div>
         <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> ' . $address . '</li><li><i class="fa-solid fa-envelope"></i> ' . $email . '</li><li><i class="fa-solid fa-phone"></i> ' . $phone . '</li></ul></div>
         <div><h4>Opening Hours</h4><ul><li>' . $hoursWeekday . '</li><li>' . $hoursSaturday . '</li><li><i class="fa-solid fa-motorcycle"></i> ' . $hoursNote . '</li></ul></div>
     </div>
