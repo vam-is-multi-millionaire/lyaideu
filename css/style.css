@@ -173,6 +173,11 @@ section{scroll-margin-top:96px;}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:1.4rem;}
 .dish-grid{grid-template-columns:repeat(6,1fr);gap:.85rem;}
 
+/* Featured "Random Picks" grids cap at 12 visible cards like the other
+   sections, while the full stable item set stays in the DOM so
+   featured-order.js can restore the exact order on Back/Forward. */
+#featuredBeverages .dish-card:nth-child(n+13){display:none;}
+
 .dish-card{position:relative;background:#fff;border:1px solid var(--orange-100);border-radius:10px;overflow:hidden;
            display:flex;flex-direction:column;box-shadow:var(--shadow-sm);cursor:pointer;
            transition:transform .3s ease,box-shadow .3s ease,border-color .3s;}
