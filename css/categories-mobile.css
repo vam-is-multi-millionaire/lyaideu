@@ -23,7 +23,7 @@
   .cat-section-head h2{font-size:1.18rem;}
   .cat-section-desc{font-size:.8rem;margin:-.3rem 0 .95rem;}
 
-  .cat-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
+  .cat-grid{grid-template-columns:repeat(4,1fr);gap:.55rem;}
 
   /* Floating cart button is replaced by the bottom-nav Cart tab */
   .cart-fab{display:none !important;}
@@ -39,8 +39,8 @@
   .cat-card-main{
     flex-direction:column;
     align-items:center;
-    gap:.55rem;
-    padding:.6rem .6rem .35rem;
+    gap:.4rem;
+    padding:.5rem .3rem .55rem;
     text-align:center;
   }
 
@@ -56,18 +56,18 @@
   }
   .cat-card-img{width:100%;height:100%;object-fit:cover;display:block;}
 
-  .cat-card-main strong{font-size:.92rem;font-weight:900;line-height:1.3;}
+  .cat-card-main strong{font-size:.7rem;font-weight:900;line-height:1.25;}
   .cat-card-arrow{display:none;}
 
   /* Child category pills are handled inside the browse overlay rail —
      keep the main grid clean on mobile */
   .cat-card-children{display:none;}
 
-  /* Small phones: single column keeps cards comfortably tappable */
+  /* Very small phones: keep 4 columns, just tighten spacing */
   @media (max-width:360px){
-    .cat-grid{grid-template-columns:1fr;}
-    .cat-card-img-wrap{aspect-ratio:4/3;}
-    .cat-card-main strong{font-size:1rem;}
+    .cat-grid{grid-template-columns:repeat(4,1fr);gap:.4rem;}
+    .cat-card-main{gap:.35rem;padding:.45rem .2rem .5rem;}
+    .cat-card-main strong{font-size:.62rem;}
   }
 
   /* ===================== CATEGORY PRODUCT VIEW ===================== */
