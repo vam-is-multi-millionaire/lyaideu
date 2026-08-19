@@ -144,6 +144,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=32">
+<style>@media (max-width:960px){footer.footer{display:none !important;}}</style>
 <script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
