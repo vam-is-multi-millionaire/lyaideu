@@ -32,7 +32,7 @@ function initMobileNav(){
     '<a class="bn-item" data-nav="profile" href="profile"><span class="bn-ico"><i class="fa-solid fa-user"></i></span><span class="bn-label">Profile</span></a>';
   document.body.appendChild(nav);
   const cartBtn=nav.querySelector('[data-nav="cart"]');
-  if(cartBtn)cartBtn.addEventListener('click',e=>{if(!document.getElementById('cartDrawer')){e.preventDefault();e.stopPropagation();window.location.href='checkout';}});
+  if(cartBtn)cartBtn.addEventListener('click',e=>{ensureCartDrawer();openCart();e.preventDefault();e.stopPropagation();});
   const leaf=path.split('/').pop();
   const base=mobileBasePath();
   let key='';
@@ -262,7 +262,8 @@ function renderCart(){
   if($('#cartTotal'))$('#cartTotal').textContent='Rs. '+(sub+fee);
 }
 function cartBell(show){const b=document.getElementById('notifyBell');if(b)b.style.visibility=show?'':'hidden'}
-function openCart(){const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open');cartBell(false)}cartNavActive(!!d)}
+function ensureCartDrawer(){const d=$('#cartDrawer');if(d)return d;const o=document.createElement('div');o.id='cartOverlay';o.className='cart-overlay';const drawer=document.createElement('aside');drawer.id='cartDrawer';drawer.className='cart-drawer';drawer.setAttribute('aria-label','Shopping cart');drawer.innerHTML='<div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div><div id="cartItems" class="cart-items"></div><div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div><div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>';document.body.appendChild(o);document.body.appendChild(drawer);renderCart();return drawer;}
+function openCart(){ensureCartDrawer();const d=$('#cartDrawer'),o=$('#cartOverlay');if(d){d.classList.add('open');o?.classList.add('open');cartBell(false)}cartNavActive(!!d)}
 function closeCart(){$('#cartDrawer')?.classList.remove('open');$('#cartOverlay')?.classList.remove('open');cartBell(true);cartNavActive(false)}
 function initCart(){document.addEventListener('click',e=>{if(e.target.closest('.cart-open-btn'))openCart();if(e.target.closest('#cartClose')||e.target.closest('#cartOverlay'))closeCart();if(e.target.closest('#clearCart')){localStorage.removeItem(CART_KEY);renderCart();toast('Cart cleared')}});renderCart()}
 function initAddCart(){document.addEventListener('click',e=>{const b=e.target.closest('.add-cart');if(!b)return;const id=Number(b.dataset.id),type=b.dataset.type||'dish';const d=findItem(id,type);const hasVariants=!!(b.dataset.hasVariants||(d&&d.has_variants));if(hasVariants&&!b.dataset.variant){const card=b.closest('.dish-card')||b.closest('.related-card');const cardUrl=card?card.dataset.url:'';let url=cardUrl;if(!url){const slug=(d&&d.slug)||b.dataset.slug||slugify(b.dataset.name||'item');url=productUrl(type,slug,(d&&d.cats)||(b.dataset.cats||'').split(','));}if(url){window.location.href=url;return;}}addToCart(id,type,undefined,b)})}
