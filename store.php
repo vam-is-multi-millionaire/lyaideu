@@ -144,7 +144,14 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=32">
-<style>@media (max-width:960px){footer.footer{display:none !important;}}</style>
+<style>
+@media (max-width:960px){
+  footer.footer{display:none !important;}
+  #storeKinds{flex-wrap:nowrap;overflow-x:auto;align-items:center;padding:.35rem .25rem .6rem;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  #storeKinds::-webkit-scrollbar{display:none;}
+  #storeKinds .chip{flex:0 0 auto;white-space:nowrap;}
+}
+</style>
 <script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
@@ -282,9 +289,9 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                 <div class="chip-row" id="storeKinds">
                     <button class="chip active" data-skind="all">All</button>
                     <button class="chip" data-skind="hotel"><i class="fa-solid fa-hotel"></i> Hotels</button>
-                    <button class="chip" data-skind="mart"><i class="fa-solid fa-basket-shopping"></i> Mart</button>
-                    <button class="chip" data-skind="other"><i class="fa-solid fa-store"></i> Other</button>
+                    <button class="chip" data-skind="mart"><i class="fa-solid fa-basket-shopping"></i> Marts</button>
                     <button class="chip" data-skind="beverage"><i class="fa-solid fa-glass-water"></i> Beverages</button>
+                    <button class="chip" data-skind="other"><i class="fa-solid fa-store"></i> Others</button>
                 </div>
                 <div class="menu-tools"></div>
             </div>
