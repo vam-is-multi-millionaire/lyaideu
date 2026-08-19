@@ -805,8 +805,8 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
    ========================================================== */
 .back-link{display:inline-flex;align-items:center;gap:.45rem;font-weight:900;color:var(--orange-700);text-decoration:none;margin-bottom:1.1rem;transition:.2s;}
 .back-link:hover{color:var(--orange-500);transform:translateX(-3px);}
-.back-link.top-back-link{display:none;margin-bottom:0;flex:0 0 auto;width:40px;height:40px;border-radius:50%;justify-content:center;background:#fff;border:2px solid var(--orange-200);box-shadow:var(--shadow-sm);font-size:0;}
-.back-link.top-back-link i{font-size:1.05rem;margin:0;}
+.back-link.top-back-link{display:none;margin-bottom:0;flex:0 0 auto;width:40px;height:40px;border-radius:50%;justify-content:center;align-items:center;background:#fff;border:2px solid var(--orange-200);box-shadow:var(--shadow-sm);font-size:0;gap:0;line-height:1;}
+.back-link.top-back-link i{font-size:1.05rem;margin:0;line-height:1;}
 .back-link.top-back-link:hover{transform:none;border-color:var(--orange-500);}
 .product-wrap{padding-top:2.2rem;}
 .product-main{display:grid;grid-template-columns:1.05fr 1fr;gap:2rem;align-items:start;}
