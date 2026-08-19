@@ -147,6 +147,8 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <style>
 @media (max-width:960px){
   footer.footer{display:none !important;}
+  .section-head .kicker{display:none;}
+  .section-head .section-sub{display:none;}
   #storeKinds{flex-wrap:nowrap;overflow-x:auto;align-items:center;padding:.35rem .25rem .6rem;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   #storeKinds::-webkit-scrollbar{display:none;}
   #storeKinds .chip{flex:0 0 auto;white-space:nowrap;}
