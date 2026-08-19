@@ -205,6 +205,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
 </script>
-<script src="js/categories-mobile.js?v=3"></script>
+<script src="js/categories-mobile.js?v=5"></script>
 </body>
 </html>

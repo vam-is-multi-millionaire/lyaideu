@@ -182,6 +182,7 @@
     var cat = findCat(type, slug);
     var items = cache ? poolItems(type) : null;
     if (!items) {
+      products.style.display = '';
       products.hidden = false;
       empty.hidden = true;
       products.innerHTML = '<div class="mc-empty"><span class="mc-empty-ico"><i class="fa-solid fa-spinner fa-spin"></i></span>Loading ' + esc(cat ? cat.name : slug) + '…</div>';
@@ -192,14 +193,18 @@
       return cats.indexOf(slug) !== -1;
     });
     if (list.length) {
-      empty.hidden = true;
+      products.style.display = '';
       products.hidden = false;
+      empty.hidden = true;
       products.innerHTML = list.map(function (p) { return cardHTML(p, type, cat); }).join('');
     } else {
-      /* No products in this category — show a clean blank area. */
+      /* No products in this category — show a short friendly message. */
       products.innerHTML = '';
-      products.hidden = true;
-      empty.hidden = true;
+      products.style.display = 'none';
+      empty.hidden = false;
+      empty.innerHTML = '<span class="mc-empty-ico"><i class="fa-solid fa-box-open"></i></span>' +
+        'No items in <b>' + esc(cat ? cat.name : slug) + '</b> yet.<br>' +
+        '<a href="' + esc(GROUPS[type].page) + '">Browse all ' + esc(GROUPS[type].label) + '</a>';
     }
   }
 
