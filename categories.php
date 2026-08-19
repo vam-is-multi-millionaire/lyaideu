@@ -134,12 +134,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <main>
     <section id="categories" class="section">
         <div class="container">
-            <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-layer-group"></i> Everything on LyaiDeu</p>
-                <h1 class="display">Browse Categories <i class="fa-solid fa-layer-group"></i></h1>
-                <p class="section-sub">Jump straight into what you're craving â€” food, groceries, gifts &amp; drinks.</p>
-            </div>
-
             <?php foreach ($catGroups as $type => $group):
                 $tree = $catTrees[$type];
                 if (!$tree['parents']) continue;
