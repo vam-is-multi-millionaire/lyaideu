@@ -61,6 +61,20 @@
     return null;
   }
 
+  /* Walks up to the top-level (depth 0) ancestor of a category slug. */
+  function rootSlug(type, slug) {
+    var list = TREES[type] || [];
+    var byId = {};
+    list.forEach(function (c) { byId[c.id] = c; });
+    var cur = findCat(type, slug);
+    var hops = 0;
+    while (cur && cur.parent_id !== null && hops < 20) {
+      cur = byId[cur.parent_id] || null;
+      hops++;
+    }
+    return cur ? cur.slug : slug;
+  }
+
   function catThumb(cat) {
     var icon = (cat && cat.icon) || 'fa-tags';
     var cls = /^(fa-solid|fa-regular|fa-brands)\s+/.test(icon) ? icon : 'fa-solid ' + icon;
@@ -103,7 +117,7 @@
         cache = d;
         applyCatalogImages(d);
         if (view.classList.contains('open') && current) {
-          renderRail(current.type, current.slug);
+          renderRail(current.type, current.scope, current.slug);
           renderProducts(current.type, current.slug);
         }
       }).catch(function () {});
@@ -111,11 +125,19 @@
   }
   function stopSync() { if (syncTimer) { clearInterval(syncTimer); syncTimer = null; } }
 
-  /* ---- Left category rail ---- */
-  function renderRail(type, activeSlug) {
+  /* ---- Left category rail: the tapped parent + its subcategories ---- */
+  function renderRail(type, scopeSlug, activeSlug) {
     var list = TREES[type] || [];
-    var html = list.map(function (cat) {
-      var cls = 'mc-rail-item' + (cat.depth > 0 ? ' child' : '') + (cat.slug === activeSlug ? ' active' : '');
+    var scope = findCat(type, scopeSlug);
+    var items = [];
+    if (scope) {
+      items.push(scope);
+      list.forEach(function (c) { if (c.parent_id !== null && c.parent_id === scope.id) items.push(c); });
+    } else {
+      items = list.filter(function (c) { return c.depth === 0; });
+    }
+    var html = items.map(function (cat) {
+      var cls = 'mc-rail-item' + (cat.slug === scopeSlug ? ' is-scope' : '') + (cat.slug === activeSlug ? ' active' : '');
       return '<button type="button" class="' + cls + '" data-slug="' + esc(cat.slug) + '">' +
         '<span class="mc-rail-thumb">' + catThumb(cat) + '</span>' +
         '<span class="mc-rail-name">' + esc(cat.name) + '</span>' +
@@ -174,23 +196,23 @@
       products.hidden = false;
       products.innerHTML = list.map(function (p) { return cardHTML(p, type, cat); }).join('');
     } else {
+      /* No products in this category — show a clean blank area. */
+      products.innerHTML = '';
       products.hidden = true;
-      empty.hidden = false;
-      empty.innerHTML = '<span class="mc-empty-ico"><i class="fa-solid fa-utensils"></i></span>' +
-        'Nothing in <b>' + esc(cat ? cat.name : slug) + '</b> yet.<br>' +
-        '<a href="' + esc(GROUPS[type].page) + '">Browse all ' + esc(GROUPS[type].label) + '</a>';
+      empty.hidden = true;
     }
   }
 
   /* ---- Open / close ---- */
   function openView(type, slug, opts) {
     opts = opts || {};
-    current = { type: type, slug: slug };
+    var scope = rootSlug(type, slug);
+    current = { type: type, slug: slug, scope: scope };
     var cat = findCat(type, slug);
     headLabel.textContent = GROUPS[type].label;
     headSub.textContent = cat ? cat.name : slug;
-    viewAll.href = GROUPS[type].page;
-    renderRail(type, slug);
+    viewAll.href = GROUPS[type].page + '?' + GROUPS[type].param + '=' + encodeURIComponent(scope);
+    renderRail(type, scope, slug);
     renderProducts(type, slug);
     view.classList.add('open');
     view.setAttribute('aria-hidden', 'false');
@@ -205,7 +227,7 @@
       if (!d) return;
       applyCatalogImages(d);
       if (view.classList.contains('open') && current && current.type === type) {
-        renderRail(current.type, current.slug);
+        renderRail(current.type, current.scope, current.slug);
         renderProducts(current.type, current.slug);
       }
     });
@@ -216,7 +238,7 @@
     current.slug = slug;
     var cat = findCat(current.type, slug);
     headSub.textContent = cat ? cat.name : slug;
-    renderRail(current.type, slug);
+    renderRail(current.type, current.scope, slug);
     renderProducts(current.type, slug);
     try { history.replaceState({ lycat: 1 }, '', hashFor(current.type, slug)); } catch (e) {}
   }

@@ -195,6 +195,7 @@
     max-width:100%;
   }
   .mc-rail-item.active{background:var(--orange-50);}
+  .mc-rail-item.is-scope .mc-rail-name{color:var(--orange-800);font-weight:900;}
   .mc-rail-item.active .mc-rail-thumb{border-color:var(--orange-600);transform:scale(1.03);}
   .mc-rail-item.active .mc-rail-name{color:var(--orange-700);}
   .mc-rail-item.child .mc-rail-thumb{width:44px;height:44px;font-size:.95rem;border-radius:13px;}
