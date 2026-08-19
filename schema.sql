@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS categories (
   parent_id INT UNSIGNED NULL,
   sort_order INT NOT NULL DEFAULT 0,
   icon VARCHAR(60) NOT NULL DEFAULT '',
+  image VARCHAR(255) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   UNIQUE KEY uq_cat_slug_type (slug, type),
   KEY idx_cat_parent (parent_id)
@@ -313,6 +314,7 @@ CREATE TABLE IF NOT EXISTS categories (
   parent_id INT UNSIGNED NULL,
   sort_order INT NOT NULL DEFAULT 0,
   icon VARCHAR(60) NOT NULL DEFAULT '',
+  image VARCHAR(255) NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   UNIQUE KEY uq_cat_slug_type (slug, type),
   KEY idx_cat_parent (parent_id)

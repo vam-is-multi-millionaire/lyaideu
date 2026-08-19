@@ -1,0 +1,285 @@
+/* ==========================================================
+   LyaiDeu — Mobile Categories experience
+   Everything in this file is applied ONLY on phones/tablets
+   (max-width: 960px). The desktop/PC Categories page is 100%
+   untouched and keeps the original Font Awesome icon cards.
+   ========================================================== */
+
+/* ---- Base: the browse overlay must never appear on desktop ---- */
+.mc-view{display:none;}
+
+@media (max-width:960px){
+
+  /* ===================== MAIN CATEGORIES SCREEN ===================== */
+  .section{padding:1.6rem 1rem 2.2rem;}
+  .section-head{margin-bottom:1.2rem;}
+  .section-head .kicker{margin-bottom:.85rem;font-size:.72rem;padding:.32rem .8rem;}
+  .section-head .display{font-size:1.55rem;line-height:1.15;}
+  .section-head .section-sub{font-size:.84rem;line-height:1.5;}
+
+  .cat-section+.cat-section{margin-top:2rem;}
+  .cat-section-head{margin-bottom:.8rem;gap:.55rem;}
+  .cat-section-ico{width:36px;height:36px;border-radius:12px;font-size:1rem;}
+  .cat-section-head h2{font-size:1.18rem;}
+  .cat-section-desc{font-size:.8rem;margin:-.3rem 0 .95rem;}
+
+  .cat-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
+
+  .cat-card{
+    border-radius:18px;
+    border:1px solid var(--orange-100);
+    box-shadow:0 4px 16px rgba(90,40,10,.07);
+    transition:transform .2s ease,box-shadow .2s ease;
+  }
+  .cat-card:active{transform:scale(.97);}
+
+  .cat-card-main{
+    flex-direction:column;
+    align-items:center;
+    gap:.55rem;
+    padding:.6rem .6rem .35rem;
+    text-align:center;
+  }
+
+  /* Real category image (from the Admin Panel) fills the card top */
+  .cat-card-img-wrap{
+    width:100%;
+    aspect-ratio:1/1;
+    border-radius:13px;
+    overflow:hidden;
+    background:var(--orange-50);
+    position:relative;
+    border:1px solid var(--orange-100);
+  }
+  .cat-card-img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  /* Clean fallback circle when a category has no image yet */
+  .cat-card-icon{
+    width:48px;
+    height:48px;
+    flex:0 0 auto;
+    border-radius:50%;
+    background:linear-gradient(145deg,var(--orange-100),var(--orange-50));
+    color:var(--orange-600);
+    font-size:1.2rem;
+    box-shadow:inset 0 2px 4px rgba(90,40,10,.06);
+  }
+  .cat-card.has-img .cat-card-icon{display:none;}
+
+  .cat-card-main strong{font-size:.92rem;font-weight:900;line-height:1.3;}
+  .cat-card-arrow{display:none;}
+
+  .cat-card-children{
+    padding:.15rem .6rem .7rem;
+    justify-content:center;
+    gap:.32rem;
+  }
+  .cat-pill{
+    font-size:.68rem;
+    padding:.28rem .58rem;
+    border-radius:999px;
+    border:1.5px solid var(--orange-200);
+    background:#fff;
+    color:var(--orange-800);
+  }
+  .cat-pill:active{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+
+  /* Small phones: single column keeps cards comfortably tappable */
+  @media (max-width:360px){
+    .cat-grid{grid-template-columns:1fr;}
+    .cat-card-img-wrap{aspect-ratio:4/3;}
+    .cat-card-main strong{font-size:1rem;}
+  }
+
+  /* ===================== CATEGORY PRODUCT VIEW ===================== */
+
+  /* Full-screen browse overlay: left category rail + right products */
+  .mc-view{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:90;
+    background:var(--orange-50);
+    flex-direction:column;
+  }
+  .mc-view.open{display:flex;}
+
+  body.mc-open{overflow:hidden;}
+
+  .mc-head{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    padding:.6rem .8rem;
+    background:#fff;
+    border-bottom:2px solid var(--orange-100);
+    box-shadow:var(--shadow-sm);
+    flex:0 0 auto;
+  }
+  .mc-back{
+    width:40px;height:40px;
+    flex:0 0 auto;
+    border-radius:13px;
+    border:2px solid var(--orange-200);
+    background:#fff;
+    color:var(--orange-700);
+    font-size:1rem;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    transition:background .2s ease,color .2s ease,transform .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mc-back:active{transform:scale(.92);background:var(--orange-100);}
+  .mc-head-titles{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2;}
+  .mc-head-label{font-family:var(--font-display);font-weight:400;font-size:1.08rem;color:var(--orange-900);}
+  .mc-head-sub{
+    font-size:.74rem;
+    font-weight:800;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .mc-viewall{
+    flex:0 0 auto;
+    font-size:.76rem;
+    font-weight:900;
+    color:var(--orange-600);
+    text-decoration:none !important;
+    display:inline-flex;
+    align-items:center;
+    gap:.3rem;
+    padding:.42rem .6rem;
+    border-radius:999px;
+    background:var(--orange-100);
+    border:1px solid var(--orange-200);
+  }
+
+  .mc-body{flex:1;display:flex;min-height:0;}
+
+  /* ---- Left: vertically scrollable category rail ---- */
+  .mc-rail{
+    width:108px;
+    flex:0 0 auto;
+    background:#fff;
+    border-right:1px solid var(--orange-100);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:.65rem .45rem 1rem;
+    display:flex;
+    flex-direction:column;
+    gap:.15rem;
+    scrollbar-width:thin;
+    scrollbar-color:var(--orange-200) transparent;
+  }
+  .mc-rail::-webkit-scrollbar{width:4px;}
+  .mc-rail::-webkit-scrollbar-thumb{background:var(--orange-200);border-radius:999px;}
+
+  .mc-rail-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.3rem;
+    padding:.45rem .25rem;
+    border:0;
+    border-radius:14px;
+    background:transparent;
+    font:inherit;
+    cursor:pointer;
+    text-align:center;
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+    transition:background .2s ease;
+  }
+  .mc-rail-item:hover{background:var(--orange-50);}
+  .mc-rail-thumb{
+    width:52px;height:52px;
+    flex:0 0 auto;
+    border-radius:15px;
+    overflow:hidden;
+    background:linear-gradient(145deg,var(--orange-100),var(--orange-50));
+    display:grid;
+    place-items:center;
+    color:var(--orange-600);
+    font-size:1.15rem;
+    border:2px solid transparent;
+    transition:border-color .2s ease,transform .15s ease;
+  }
+  .mc-rail-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mc-rail-name{
+    font-size:.66rem;
+    font-weight:800;
+    color:var(--ink);
+    line-height:1.2;
+    max-width:100%;
+  }
+  .mc-rail-item.active{background:var(--orange-50);}
+  .mc-rail-item.active .mc-rail-thumb{border-color:var(--orange-600);transform:scale(1.03);}
+  .mc-rail-item.active .mc-rail-name{color:var(--orange-700);}
+  .mc-rail-item.child .mc-rail-thumb{width:44px;height:44px;font-size:.95rem;border-radius:13px;}
+  .mc-rail-item.child .mc-rail-name{font-size:.62rem;}
+
+  .mc-rail-all{
+    margin-top:.5rem;
+    padding:.5rem .3rem;
+    border-radius:14px;
+    border:1.5px dashed var(--orange-200);
+    background:transparent;
+    color:var(--orange-700);
+    font-size:.68rem;
+    font-weight:900;
+    text-decoration:none !important;
+    text-align:center;
+    display:block;
+  }
+
+  /* ---- Right: product grid for the selected category ---- */
+  .mc-main{
+    flex:1;
+    min-width:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:1rem .8rem calc(env(safe-area-inset-bottom,0px) + 118px);
+  }
+  .mc-products{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:.8rem;
+  }
+
+  .mc-products .dish-card{
+    border-radius:16px;
+    border:1px solid var(--orange-100);
+    box-shadow:0 4px 16px rgba(90,40,10,.07);
+    overflow:hidden;
+  }
+  .mc-products .dish-art{border-radius:0;}
+  .mc-products .dish-art::after{display:none;}
+  .mc-products .dish-body{padding:.55rem .6rem .65rem;}
+  .mc-products .dish-top h3{font-size:.82rem;}
+  .mc-products .price{font-size:.95rem;}
+  .mc-products .btn-order{font-size:.68rem;padding:.38rem .5rem;}
+
+  @media (max-width:360px){
+    .mc-products{grid-template-columns:1fr;}
+  }
+
+  .mc-empty{
+    text-align:center;
+    padding:2.5rem 1rem;
+    color:var(--muted);
+    font-weight:800;
+    font-size:.9rem;
+  }
+  .mc-empty .mc-empty-ico{
+    display:block;
+    font-size:3rem;
+    color:var(--orange-300);
+    margin-bottom:.7rem;
+  }
+  .mc-empty a{color:var(--orange-600);text-decoration:underline;}
+
+  /* Keep the toast above the overlay */
+  .toast{z-index:210 !important;}
+}

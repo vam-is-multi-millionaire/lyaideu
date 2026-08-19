@@ -826,21 +826,22 @@ try {
 
         $updateCat = $pdo->prepare(
             'UPDATE categories
-             SET name = :name, slug = :slug, parent_id = :parent_id, sort_order = :sort_order, icon = :icon
+             SET name = :name, slug = :slug, parent_id = :parent_id, sort_order = :sort_order, icon = :icon, image = :image
              WHERE id = :id'
         );
         $insertCat = $pdo->prepare(
-            'INSERT INTO categories (name, slug, type, parent_id, sort_order, icon)
-             VALUES (:name, :slug, :type, :parent_id, :sort_order, :icon)'
+            'INSERT INTO categories (name, slug, type, parent_id, sort_order, icon, image)
+             VALUES (:name, :slug, :type, :parent_id, :sort_order, :icon, :image)'
         );
         $nullDish = $pdo->prepare('UPDATE dishes SET category_id = NULL WHERE category_id = ?');
         $nullMart = $pdo->prepare('UPDATE mart_items SET category_id = NULL WHERE category_id = ?');
         $nullOther = $pdo->prepare('UPDATE other_items SET category_id = NULL WHERE category_id = ?');
+        $nullBeverage = $pdo->prepare('UPDATE beverage_items SET category_id = NULL WHERE category_id = ?');
         $reparent = $pdo->prepare('UPDATE categories SET parent_id = ? WHERE parent_id = ?');
         $deleteCat = $pdo->prepare('DELETE FROM categories WHERE id = ?');
         $dupeCat = $pdo->prepare('SELECT id FROM categories WHERE slug = :slug AND type = :type AND id <> :id');
 
-        foreach (($_POST['categories'] ?? []) as $cat) {
+        foreach (($_POST['categories'] ?? []) as $i => $cat) {
             $id = (int)($cat['id'] ?? 0);
             if ($id <= 0) {
                 continue;
@@ -852,6 +853,13 @@ try {
                     $nullDish->execute([$did]);
                     $nullMart->execute([$did]);
                     $nullOther->execute([$did]);
+                    $nullBeverage->execute([$did]);
+                    $stImg = $pdo->prepare('SELECT image FROM categories WHERE id = ?');
+                    $stImg->execute([$did]);
+                    $oldImg = (string)$stImg->fetchColumn();
+                    if ($oldImg !== '' && str_starts_with($oldImg, 'uploads/')) {
+                        @unlink(__DIR__ . '/' . $oldImg);
+                    }
                 }
                 $parent = (int)($byId[$id]['parent_id'] ?? 0);
                 $reparent->execute([$parent ?: null, $id]);
@@ -863,7 +871,7 @@ try {
             if ($name === '') {
                 continue;
             }
-            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart', 'other'], true) ? clean_text($cat['type']) : 'menu';
+            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart', 'other', 'beverage'], true) ? clean_text($cat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($cat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);
@@ -878,6 +886,7 @@ try {
             }
             $sort = max(0, (int)($cat['sort_order'] ?? 0));
             $icon = preg_replace('/[^a-z0-9-]/', '', clean_text($cat['icon'] ?? ''));
+            $img = lyaideu_handle_item_image((string)($cat['image'] ?? ''), $cat, uploaded_file_field('categories', $i, 'image_file'), 'cat_img');
 
             $dupeCat->execute([':slug' => $slug, ':type' => $type, ':id' => $id]);
             if ($dupeCat->fetchColumn()) {
@@ -890,6 +899,7 @@ try {
                 ':parent_id' => $parentId ?: null,
                 ':sort_order' => $sort,
                 ':icon' => $icon,
+                ':image' => $img,
                 ':id' => $id,
             ]);
         }
@@ -897,7 +907,7 @@ try {
         $newCat = $_POST['new_category'] ?? [];
         if (clean_text($newCat['name'] ?? '') !== '') {
             $name = clean_text($newCat['name']);
-            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart', 'other'], true) ? clean_text($newCat['type']) : 'menu';
+            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart', 'other', 'beverage'], true) ? clean_text($newCat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($newCat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);
@@ -910,6 +920,17 @@ try {
             }
             $sort = max(0, (int)($newCat['sort_order'] ?? 0));
             $icon = preg_replace('/[^a-z0-9-]/', '', clean_text($newCat['icon'] ?? ''));
+            $newFile = $_FILES['new_category'] ?? null;
+            $newImgFile = (isset($newFile['name']['image_file']))
+                ? [
+                    'name' => $newFile['name']['image_file'],
+                    'type' => $newFile['type']['image_file'] ?? '',
+                    'tmp_name' => $newFile['tmp_name']['image_file'],
+                    'error' => $newFile['error']['image_file'] ?? UPLOAD_ERR_NO_FILE,
+                    'size' => $newFile['size']['image_file'] ?? 0,
+                ]
+                : null;
+            $img = lyaideu_handle_item_image('', $newCat, $newImgFile, 'cat_img');
 
             $dupeNew = $pdo->prepare('SELECT id FROM categories WHERE slug = :slug AND type = :type');
             $dupeNew->execute([':slug' => $slug, ':type' => $type]);
@@ -924,6 +945,7 @@ try {
                 ':parent_id' => $parentId ?: null,
                 ':sort_order' => $sort,
                 ':icon' => $icon,
+                ':image' => $img,
             ]);
         }
     }

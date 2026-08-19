@@ -1292,6 +1292,8 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .wp-cat-edit-actions{display:flex;gap:.6rem;margin-top:.9rem;}
 .wp-cat-icon-wrap{display:flex;align-items:center;gap:.6rem;}
 .wp-cat-icon-wrap select{flex:1 1 auto;}
+.wp-cat-img-field{margin-top:.35rem;}
+.wp-cat-img-hidden{display:none;}
 .wp-cat-none{color:var(--muted);padding:.8rem 1rem;font-size:.9rem;}
 .wp-cat-empty{padding:1rem;color:var(--muted);text-align:center;font-weight:700;}
 .wp-cat-side{position:sticky;top:1rem;}

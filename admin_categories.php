@@ -155,7 +155,7 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= '</span>';
         $html .= '</div>';
 
-        $html .= '<form class="wp-cat-quick-edit" id="qe-' . $type . '-' . $id . '" action="admin_save" method="POST">';
+        $html .= '<form class="wp-cat-quick-edit" id="qe-' . $type . '-' . $id . '" action="admin_save" method="POST" enctype="multipart/form-data">';
         $html .= '<input type="hidden" name="csrf_token" value="' . $ce(admin_csrf_token()) . '">';
         $html .= '<input type="hidden" name="section" value="categories">';
         $html .= '<input type="hidden" name="categories[' . $i . '][id]" value="' . $id . '">';
@@ -170,6 +170,16 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= '</div>';
         $html .= '<label>Icon</label>';
         $html .= '<div class="wp-cat-icon-wrap"><select name="categories[' . $i . '][icon]">' . $iconOptions . '</select><span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span></div>';
+        $catImg = (string)($c['image'] ?? '');
+        $html .= '<input type="hidden" name="categories[' . $i . '][image]" value="' . $ce($catImg) . '">';
+        $html .= '<label>Image <span style="text-transform:none;font-weight:700;">(optional — shown on mobile category cards)</span></label>';
+        $html .= '<div class="pm-img-field wp-cat-img-field">';
+        $html .= '<span class="pm-img-preview' . ($catImg !== '' ? '' : ' wp-cat-img-hidden') . '"><img src="' . $ce($catImg) . '" alt="" data-preview></span>';
+        $html .= '<input type="file" name="categories[' . $i . '][image_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">';
+        $html .= '</div>';
+        if ($catImg !== '') {
+            $html .= '<label class="pm-remove-img"><input type="checkbox" name="categories[' . $i . '][remove_img]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove image</label>';
+        }
         $html .= '<div class="wp-cat-edit-actions">';
         $html .= '<button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Category</button>';
         $html .= '<button type="button" class="btn btn-outline wp-cat-cancel">Cancel</button>';
@@ -212,7 +222,7 @@ admin_page_start('Categories', 'categories', 'Categories');
     <aside class="wp-cat-side">
         <section class="admin-section">
             <h2><i class="fa-solid fa-plus"></i> Add New Category</h2>
-            <form action="admin_save" method="POST">
+            <form action="admin_save" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="section" value="categories">
                 <label>Type</label>
@@ -244,6 +254,10 @@ admin_page_start('Categories', 'categories', 'Categories');
                         <?php endforeach; ?>
                     </select>
                     <span class="cat-icon-chip"><i class="fa-solid fa-tags"></i></span>
+                </div>
+                <label>Image <span style="text-transform:none;font-weight:700;">(optional)</span></label>
+                <div class="pm-img-field wp-cat-img-field">
+                    <input type="file" name="new_category[image_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top:1rem;"><i class="fa-solid fa-plus"></i> Add New Category</button>
             </form>
@@ -327,6 +341,17 @@ admin_page_start('Categories', 'categories', 'Categories');
     form.addEventListener('submit',function(e){
       var btn=form.querySelector('.wp-cat-del-btn');
       if(btn&&!window.confirm(btn.getAttribute('data-confirm')))e.preventDefault();
+    });
+  });
+
+  document.querySelectorAll('.wp-cat-img-field input[type=file]').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var wrap=inp.closest('.wp-cat-img-field');
+      var prev=wrap?wrap.querySelector('[data-preview]'):null;
+      if(!inp.files||!inp.files[0]||!prev)return;
+      var reader=new FileReader();
+      reader.onload=function(){prev.src=reader.result;prev.classList.remove('wp-cat-img-hidden');};
+      reader.readAsDataURL(inp.files[0]);
     });
   });
 })();

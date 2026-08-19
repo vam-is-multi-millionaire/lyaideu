@@ -34,6 +34,38 @@ foreach (array_keys($catGroups) as $type) {
     $catTrees[$type] = ['parents' => $parents, 'children' => $children];
 }
 
+$catGroupsJson = [];
+$catTreesJson = [];
+foreach ($catGroups as $type => $group) {
+    $pool = $type === 'menu' ? 'dishes' : ($type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : 'beverages'));
+    $catGroupsJson[$type] = [
+        'label' => $group['label'],
+        'page'  => $group['page'],
+        'param' => $group['param'],
+        'pool'  => $pool,
+    ];
+    $flat = [];
+    $walk = function (array $parents, int $depth) use (&$walk, &$flat, &$catTrees, $type): void {
+        foreach ($parents as $c) {
+            $flat[] = [
+                'id'        => (int)$c['id'],
+                'name'      => $c['name'],
+                'slug'      => $c['slug'],
+                'parent_id' => $c['parent_id'] === null ? null : (int)$c['parent_id'],
+                'image'     => lyaideu_category_image_url($c),
+                'icon'      => (string)($c['icon'] ?? ''),
+                'depth'     => $depth,
+            ];
+            if (!empty($catTrees[$type]['children'][(int)$c['id']])) {
+                $walk($catTrees[$type]['children'][(int)$c['id']], $depth + 1);
+            }
+        }
+    };
+    $walk($catTrees[$type]['parents'], 0);
+    $catTreesJson[$type] = $flat;
+}
+$jsonFlags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
@@ -49,6 +81,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=32">
+<link rel="stylesheet" href="css/categories-mobile.css?v=1">
 </head>
 <body>
 
@@ -119,17 +152,21 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                 </div>
                 <p class="cat-section-desc"><?= $ce($group['desc']) ?></p>
                 <div class="cat-grid">
-                    <?php foreach ($tree['parents'] as $pc): ?>
-                    <div class="cat-card">
-                        <a class="cat-card-main" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($pc['slug']) ?>">
-                            <span class="cat-card-icon"><i class="fa-solid <?= $ce($pc['icon']) ?>"></i></span>
+                    <?php foreach ($tree['parents'] as $pc):
+                        $pcImg = lyaideu_category_image_url($pc);
+                        $pcIco = $ce($pc['icon'] !== '' ? $pc['icon'] : 'fa-tags');
+                    ?>
+                    <div class="cat-card<?= $pcImg !== '' ? ' has-img' : '' ?>">
+                        <a class="cat-card-main" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($pc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($pc['slug']) ?>">
+                            <span class="cat-card-img-wrap"><?php if ($pcImg !== ''): ?><img class="cat-card-img" src="<?= $ce($pcImg) ?>" alt="<?= $ce($pc['name']) ?>" loading="lazy"><?php endif; ?></span>
+                            <span class="cat-card-icon"><i class="fa-solid <?= $pcIco ?>"></i></span>
                             <strong><?= $ce($pc['name']) ?></strong>
                             <i class="cat-card-arrow fa-solid fa-chevron-right"></i>
                         </a>
                         <?php if (!empty($tree['children'][(int)$pc['id']])): ?>
                         <div class="cat-card-children">
                             <?php foreach ($tree['children'][(int)$pc['id']] as $cc): ?>
-                            <a class="cat-pill" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($cc['slug']) ?>"><?= $ce($cc['name']) ?></a>
+                            <a class="cat-pill" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($cc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($cc['slug']) ?>"><?= $ce($cc['name']) ?></a>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
@@ -141,6 +178,24 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
         </div>
     </section>
 </main>
+
+<div class="mc-view" id="mcView" aria-hidden="true">
+    <header class="mc-head">
+        <button type="button" class="mc-back" id="mcBack" aria-label="Back to categories"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="mc-head-titles">
+            <strong class="mc-head-label" id="mcHeadLabel">Categories</strong>
+            <span class="mc-head-sub" id="mcHeadSub"></span>
+        </div>
+        <a class="mc-viewall" id="mcViewAll" href="menu"><i class="fa-solid fa-arrow-right"></i></a>
+    </header>
+    <div class="mc-body">
+        <nav class="mc-rail" id="mcRail" aria-label="Categories"></nav>
+        <div class="mc-main">
+            <div class="mc-products" id="mcProducts"></div>
+            <div class="mc-empty" id="mcEmpty" hidden></div>
+        </div>
+    </div>
+</div>
 
 <button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
 <div class="cart-overlay" id="cartOverlay"></div>
@@ -155,5 +210,10 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <script src="js/script.js?v=23"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
+<script>
+window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
+window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
+</script>
+<script src="js/categories-mobile.js?v=1"></script>
 </body>
 </html>

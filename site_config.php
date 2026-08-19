@@ -317,11 +317,17 @@ function lyaideu_ensure_categories_table(): bool {
                 parent_id INT UNSIGNED NULL,
                 sort_order INT NOT NULL DEFAULT 0,
                 icon VARCHAR(60) NOT NULL DEFAULT \'\',
+                image VARCHAR(255) NOT NULL DEFAULT \'\',
                 PRIMARY KEY (id),
                 UNIQUE KEY uq_cat_slug_type (slug, type),
                 KEY idx_cat_parent (parent_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
+
+        $catImageCol = $pdo->query("SHOW COLUMNS FROM categories LIKE 'image'")->fetchAll();
+        if (!$catImageCol) {
+            $pdo->exec("ALTER TABLE categories ADD COLUMN image VARCHAR(255) NOT NULL DEFAULT ''");
+        }
 
         lyaideu_ensure_other_table();
         lyaideu_ensure_beverage_table();
@@ -584,7 +590,7 @@ function lyaideu_categories(?string $type = null): array {
     if (!$pdo instanceof PDO) {
         return [];
     }
-    $sql = 'SELECT id, name, slug, type, parent_id, sort_order, icon FROM categories';
+    $sql = 'SELECT id, name, slug, type, parent_id, sort_order, icon, image FROM categories';
     $params = [];
     if ($type !== null && $type !== '') {
         $sql .= ' WHERE type = :type';
@@ -649,6 +655,16 @@ function lyaideu_category_path(int $categoryId): array {
         $cur = isset($byId[(int)$cur['parent_id']]) ? $byId[(int)$cur['parent_id']] : null;
     }
     return array_reverse($path);
+}
+
+/**
+ * Returns the stored category image (an `uploads/...` relative path) or an
+ * empty string when the category has no image yet. Relative paths resolve
+ * against the site <base> tag, so they work on every page.
+ */
+function lyaideu_category_image_url(array $cat): string {
+    $img = (string)($cat['image'] ?? '');
+    return $img !== '' ? $img : '';
 }
 
 function lyaideu_item_cats(?int $categoryId, string $fallbackCat): array {
