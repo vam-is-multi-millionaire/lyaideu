@@ -664,7 +664,7 @@ $FEATURED_BEVERAGE_ICONS = [
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=22"></script>
+<script src="js/script.js?v=23"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 </body>
