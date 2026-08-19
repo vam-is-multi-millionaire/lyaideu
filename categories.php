@@ -81,7 +81,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=32">
-<link rel="stylesheet" href="css/categories-mobile.css?v=1">
+<link rel="stylesheet" href="css/categories-mobile.css?v=2">
 </head>
 <body>
 
@@ -154,12 +154,10 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                 <div class="cat-grid">
                     <?php foreach ($tree['parents'] as $pc):
                         $pcImg = lyaideu_category_image_url($pc);
-                        $pcIco = $ce($pc['icon'] !== '' ? $pc['icon'] : 'fa-tags');
                     ?>
                     <div class="cat-card<?= $pcImg !== '' ? ' has-img' : '' ?>">
                         <a class="cat-card-main" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($pc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($pc['slug']) ?>">
-                            <span class="cat-card-img-wrap"><?php if ($pcImg !== ''): ?><img class="cat-card-img" src="<?= $ce($pcImg) ?>" alt="<?= $ce($pc['name']) ?>" loading="lazy"><?php endif; ?></span>
-                            <span class="cat-card-icon"><i class="fa-solid <?= $pcIco ?>"></i></span>
+                            <?php if ($pcImg !== ''): ?><span class="cat-card-img-wrap"><img class="cat-card-img" src="<?= $ce($pcImg) ?>" alt="<?= $ce($pc['name']) ?>" loading="lazy"></span><?php endif; ?>
                             <strong><?= $ce($pc['name']) ?></strong>
                             <i class="cat-card-arrow fa-solid fa-chevron-right"></i>
                         </a>
