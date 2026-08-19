@@ -19,6 +19,7 @@
 
   .cat-section+.cat-section{margin-top:2rem;}
   .cat-section-head{margin-bottom:.8rem;gap:.55rem;}
+  .cat-section-head .see-all{display:none;}
   .cat-section-ico{width:36px;height:36px;border-radius:12px;font-size:1rem;}
   .cat-section-head h2{font-size:1.18rem;}
   .cat-section-desc{font-size:.8rem;margin:-.3rem 0 .95rem;}
