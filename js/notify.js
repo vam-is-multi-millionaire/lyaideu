@@ -42,10 +42,10 @@
 
     function placeBell() {
         var delivery = document.body.classList.contains('delivery-body');
-        // User pages: on mobile/tablet the bell joins the nav row next to the
-        // hamburger so it never overlaps it. Delivery pages keep the bell
-        // floating just below their sticky header instead (never touching the
-        // .delivery-topbar flex layout, which would otherwise wrap/burst).
+        // Customer pages on mobile/tablet: park the bell inside the header
+        // nav, immediately to the right of the search bar, so it sits
+        // perfectly aligned with it (the nav flex row centers it vertically).
+        // Desktop keeps the bell floating in the top-right corner.
         if (!delivery && mq.matches) {
             var host = document.querySelector('header.topbar .nav');
             if (host) {
@@ -54,9 +54,12 @@
                 bell.style.right = 'auto';
                 bell.style.bottom = 'auto';
                 bell.style.margin = '0';
-                bell.style.marginLeft = 'auto';
-                var toggle = host.querySelector('.nav-toggle');
-                host.insertBefore(bell, toggle);
+                var search = host.querySelector('.nav-search');
+                if (search) {
+                    host.insertBefore(bell, search.nextSibling || null);
+                } else {
+                    host.appendChild(bell);
+                }
                 return;
             }
         }

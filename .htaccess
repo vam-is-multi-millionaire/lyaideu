@@ -29,4 +29,4 @@ RewriteRule ^(menu|mart|beverages|others)/((?:[a-z0-9-]+/)*[a-z0-9-]+)/([a-z0-9-
 RewriteRule ^admin_hotels/?$ admin_vendors [R=301,L]
 
 # Extensionless page URLs (internal rewrite): /menu -> menu.php, /login -> login.php, ...
-RewriteRule ^(admin_beverages|admin_categories|admin_contacts|admin_dishes|admin_kyc|admin_mart|admin_messages|admin_orders|admin_others|admin_riders|admin_save|admin_settings|admin_users|admin_vendors|order_save|order_success|contact_send|index|menu|mart|beverages|others|contact|faq|terms|login|logout|auth|orders|checkout|product|profile|admin|api|vendor|vendor_products|vendor_store|store|rider)$ $1.php [QSA,L]
+RewriteRule ^(admin_beverages|admin_categories|admin_contacts|admin_dishes|admin_kyc|admin_mart|admin_messages|admin_orders|admin_others|admin_riders|admin_save|admin_settings|admin_users|admin_vendors|order_save|order_success|contact_send|index|menu|mart|beverages|others|contact|faq|terms|login|logout|auth|orders|checkout|product|profile|admin|api|vendor|vendor_products|vendor_store|store|rider|categories)$ $1.php [QSA,L]

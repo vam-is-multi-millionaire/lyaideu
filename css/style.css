@@ -1441,3 +1441,136 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 .settings-number-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;margin:.7rem 0 .3rem}
 .settings-number-row label{display:block;margin:0;font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .settings-number-row input{margin-top:.3rem}
+
+/* ==========================================================
+   MOBILE APP — search-only header + floating bottom navigation
+   Injected/added on every customer page; desktop (>=961px) is
+   completely untouched. The bar is hidden on desktop by default.
+   ========================================================== */
+.bottom-nav{display:none;}
+
+@media (max-width:960px){
+  /* ---- Mobile header: keep ONLY the search bar + notification bell ---- */
+  .topbar .brand,
+  .topbar .nav-toggle,
+  .topbar .nav-links{display:none !important;}
+  .topbar .nav{flex-wrap:nowrap;gap:.55rem;padding:.55rem .8rem;}
+  .topbar .nav-search{flex:1 1 100%;max-width:none;order:0;padding:.3rem .55rem .3rem 1rem;}
+  .topbar .nav-search input{font-size:.98rem;padding:.25rem .2rem;}
+  .topbar .nav-search .search-ico{font-size:1rem;}
+  .topbar .nav #notifyBell{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;margin-left:0;}
+  .topbar .nav #notifyBell button{flex:0 0 auto;}
+
+  /* ---- Cart FAB is replaced by the bottom-nav Cart tab on mobile ---- */
+  .cart-fab{display:none !important;}
+
+  /* ---- Content clearance so nothing hides behind the fixed nav ---- */
+  body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px);}
+
+  /* ---- Floating bottom navigation ---- */
+  .bottom-nav{
+    display:flex;
+    position:fixed;
+    left:10px;right:10px;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
+    z-index:95;
+    background:#fff;
+    border:1px solid var(--orange-100);
+    border-radius:22px;
+    box-shadow:0 12px 32px rgba(90,40,10,.22),0 2px 8px rgba(90,40,10,.08);
+    padding:6px 4px;
+    align-items:stretch;
+  }
+  .bn-item{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    min-height:58px;
+    padding:.3rem .15rem;
+    border:0;
+    border-radius:16px;
+    background:transparent;
+    color:var(--muted);
+    text-decoration:none;
+    font:inherit;
+    font-weight:800;
+    font-size:.62rem;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    line-height:1.1;
+    cursor:pointer;
+    position:relative;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .2s ease,background .2s ease,transform .15s ease;
+  }
+  .bn-ico{
+    position:relative;
+    display:grid;
+    place-items:center;
+    width:44px;
+    height:30px;
+    border-radius:999px;
+    font-size:1.08rem;
+    line-height:1;
+    transition:background .2s ease,color .2s ease;
+  }
+  .bn-item:hover{color:var(--orange-700);}
+  .bn-item:active{transform:scale(.95);}
+  .bn-item.active{color:var(--orange-700);}
+  .bn-item.active .bn-ico{background:var(--orange-100);color:var(--orange-600);}
+  .bn-count{
+    position:absolute;
+    top:-4px;right:-2px;
+    min-width:18px;height:18px;
+    padding:0 4px;
+    border-radius:999px;
+    background:var(--orange-600);
+    color:#fff;
+    font-size:.64rem;
+    font-weight:900;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(166,80,7,.35);
+  }
+  .bn-count:empty{display:none;}
+
+  /* ---- Lift transient overlays above the bottom nav ---- */
+  .toast{bottom:calc(env(safe-area-inset-bottom,0px) + 100px) !important;}
+  .loc-banner{bottom:calc(env(safe-area-inset-bottom,0px) + 100px) !important;}
+}
+
+/* ==========================================================
+   CATEGORIES PAGE — grouped category cards (mobile-first)
+   ========================================================== */
+.cat-section+.cat-section{margin-top:2.6rem;}
+.cat-section-head{display:flex;align-items:center;gap:.65rem;margin-bottom:1.05rem;}
+.cat-section-ico{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:13px;background:var(--orange-100);color:var(--orange-600);font-size:1.1rem;}
+.cat-section-head h2{font-family:var(--font-display);font-weight:400;font-size:1.35rem;color:var(--orange-900);margin:0;flex:1;}
+.cat-section-desc{color:var(--muted);font-weight:700;font-size:.88rem;margin:-.45rem 0 1.1rem;}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;}
+.cat-card{background:#fff;border:1px solid var(--orange-100);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column;}
+.cat-card-main{display:flex;align-items:center;gap:.75rem;padding:1rem 1.05rem;text-decoration:none !important;color:var(--ink);transition:background .2s ease;}
+.cat-card-main:hover{background:var(--orange-50);}
+.cat-card-icon{display:grid;place-items:center;width:46px;height:46px;flex:0 0 auto;border-radius:13px;background:var(--orange-100);color:var(--orange-600);font-size:1.2rem;}
+.cat-card-main strong{font-weight:900;font-size:.95rem;line-height:1.25;flex:1;min-width:0;}
+.cat-card-arrow{color:var(--orange-300);font-size:.8rem;flex:0 0 auto;}
+.cat-card-children{display:flex;flex-wrap:wrap;gap:.4rem;padding:0 1.05rem 1rem;}
+.cat-pill{display:inline-flex;align-items:center;padding:.34rem .75rem;border-radius:999px;border:1.5px solid var(--orange-200);background:#fff;color:var(--orange-800);font-size:.76rem;font-weight:800;text-decoration:none !important;transition:.2s ease;line-height:1.2;}
+.cat-pill:hover{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+@media(max-width:560px){
+  .cat-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
+  .cat-card-main{flex-direction:column;align-items:flex-start;gap:.55rem;padding:.9rem .9rem .6rem;}
+  .cat-card-icon{width:42px;height:42px;font-size:1.08rem;}
+  .cat-card-arrow{display:none;}
+  .cat-card-children{padding:.35rem .9rem .9rem;}
+  .cat-pill{font-size:.7rem;padding:.3rem .6rem;}
+}
+@media(max-width:340px){
+  .cat-grid{grid-template-columns:1fr;}
+}

@@ -12,17 +12,29 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
-lyaideu_ensure_other_table();
 lyaideu_ensure_categories_table();
-$otherCats = lyaideu_categories('other');
-$otherParents = array_values(array_filter($otherCats, fn($c) => $c['parent_id'] === null));
-$otherChildren = [];
-foreach ($otherCats as $c) {
-    if ($c['parent_id'] !== null) {
-        $otherChildren[(int)$c['parent_id']][] = $c;
+
+$catGroups = [
+    'menu'     => ['label' => 'Menu',            'icon' => 'fa-utensils',        'param' => 'cat',  'page' => 'menu',      'desc' => 'Dishes from our partner kitchens'],
+    'mart'     => ['label' => 'Mart',            'icon' => 'fa-basket-shopping', 'param' => 'mcat', 'page' => 'mart',      'desc' => 'Fresh groceries & daily essentials'],
+    'other'    => ['label' => 'Other Products',  'icon' => 'fa-gift',            'param' => 'ocat', 'page' => 'others',    'desc' => 'Flowers, decor, achar & gifts'],
+    'beverage' => ['label' => 'Beverages',       'icon' => 'fa-glass-water',     'param' => 'bcat', 'page' => 'beverages', 'desc' => 'Cold drinks, water & more'],
+];
+
+$catTrees = [];
+foreach (array_keys($catGroups) as $type) {
+    $cats = lyaideu_categories($type);
+    $parents = array_values(array_filter($cats, fn($c) => $c['parent_id'] === null));
+    $children = [];
+    foreach ($cats as $c) {
+        if ($c['parent_id'] !== null) {
+            $children[(int)$c['parent_id']][] = $c;
+        }
     }
+    $catTrees[$type] = ['parents' => $parents, 'children' => $children];
 }
-$oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+
+$ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +42,7 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Others | LyaiDeu</title>
+<title>Categories | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,14 +55,15 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="others" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search others"></form>
+        <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search dishes, mart &amp; hotels" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search LyaiDeu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
+            <li><a href="categories" class="nav-a active">Categories</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="beverages" class="nav-a">Beverages</a></li>
-            <li><a href="others" class="nav-a active">Others</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
             <li><a href="store" class="nav-a">Stores</a></li>
             <?php if ($user): ?>
             <li>
@@ -86,27 +99,45 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <?php endif; ?>
 
 <main>
-    <section id="others" class="section">
+    <section id="categories" class="section">
         <div class="container">
             <div class="section-head">
-                <p class="kicker"><i class="fa-solid fa-gift"></i> Flowers, candles, achar &amp; gifts — delivered to your door</p>
-                <h1 class="display">LyaiDeu Others <i class="fa-solid fa-gift"></i></h1>
-                <p class="section-sub">Surprises, celebrations and everyday extras from our partner stores — add them to your cart with your food.</p>
-                <div class="hero-actions" style="margin-top:1.2rem;">
-                    <button class="btn btn-primary cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
+                <p class="kicker"><i class="fa-solid fa-layer-group"></i> Everything on LyaiDeu</p>
+                <h1 class="display">Browse Categories <i class="fa-solid fa-layer-group"></i></h1>
+                <p class="section-sub">Jump straight into what you're craving â€” food, groceries, gifts &amp; drinks.</p>
+            </div>
+
+            <?php foreach ($catGroups as $type => $group):
+                $tree = $catTrees[$type];
+                if (!$tree['parents']) continue;
+            ?>
+            <div class="cat-section">
+                <div class="cat-section-head">
+                    <span class="cat-section-ico"><i class="fa-solid <?= $ce($group['icon']) ?>"></i></span>
+                    <h2><?= $ce($group['label']) ?></h2>
+                    <a class="see-all" href="<?= $ce($group['page']) ?>">View all <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                <p class="cat-section-desc"><?= $ce($group['desc']) ?></p>
+                <div class="cat-grid">
+                    <?php foreach ($tree['parents'] as $pc): ?>
+                    <div class="cat-card">
+                        <a class="cat-card-main" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($pc['slug']) ?>">
+                            <span class="cat-card-icon"><i class="fa-solid <?= $ce($pc['icon']) ?>"></i></span>
+                            <strong><?= $ce($pc['name']) ?></strong>
+                            <i class="cat-card-arrow fa-solid fa-chevron-right"></i>
+                        </a>
+                        <?php if (!empty($tree['children'][(int)$pc['id']])): ?>
+                        <div class="cat-card-children">
+                            <?php foreach ($tree['children'][(int)$pc['id']] as $cc): ?>
+                            <a class="cat-pill" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($cc['slug']) ?>"><?= $ce($cc['name']) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
-            <div class="menu-toolbar"><div class="chip-row">
-                <button class="chip active" data-ocat="all">All</button>
-                <?php foreach ($otherParents as $pc): ?>
-                <button class="chip" data-ocat="<?= $oce($pc['slug']) ?>"><?= $oce($pc['name']) ?></button>
-                <?php foreach ($otherChildren[(int)$pc['id']] ?? [] as $cc): ?>
-                <button class="chip sub-chip" data-ocat="<?= $oce($cc['slug']) ?>" data-parent="<?= $oce($pc['slug']) ?>"><?= $oce($cc['name']) ?></button>
-                <?php endforeach; ?>
-                <?php endforeach; ?>
-            </div><div class="menu-tools"><select id="sortOthers" class="sort-select"><option value="default">Sort: Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div></div>
-            <div class="grid dish-grid" id="others-grid"></div>
-            <div class="empty-state" id="othersEmpty"><span class="big"><i class="fa-solid fa-gift"></i></span><p>No items match your search.</p></div>
+            <?php endforeach; ?>
         </div>
     </section>
 </main>
@@ -114,7 +145,7 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
-  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">Ã—</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
   <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
