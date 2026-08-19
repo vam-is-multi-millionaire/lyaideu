@@ -365,7 +365,6 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 
 <main class="profile-page container">
     <div class="section-head">
-        <p class="kicker"><i class="fa-solid fa-id-card"></i> Your account</p>
         <h1 class="display">My Profile</h1>
         <p class="section-sub">Keep your details up to date and complete the KYC verification so you can order.</p>
     </div>
