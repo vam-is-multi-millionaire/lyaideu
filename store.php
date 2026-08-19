@@ -151,6 +151,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <?php if ($isDetail): ?><a class="back-link top-back-link" href="<?= lyaideu_from_home() ? 'index' : 'store' ?>" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i> Back</a><?php endif; ?>
         <form class="nav-search" action="store" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search stores" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search stores"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
@@ -311,12 +312,14 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <script src="js/notify.js?v=6"></script>
 <script>
 (function(){
-  var backLink = document.querySelector('.back-link');
-  if (!backLink || !window.history) return;
+  var backLinks = document.querySelectorAll('.back-link');
+  if (!backLinks.length || !window.history) return;
   if (window.history.length > 1) {
-    backLink.addEventListener('click', function (e) {
-      e.preventDefault();
-      window.history.back();
+    backLinks.forEach(function (backLink) {
+      backLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.history.back();
+      });
     });
   }
 })();
