@@ -492,6 +492,6 @@ delivery_header(
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=1"></script>
+<script src="js/admin-variants.js?v=2"></script>
 <?php
 delivery_footer();

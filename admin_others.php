@@ -239,6 +239,6 @@ admin_page_start('Others', 'others', 'Others');
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=1"></script>
+<script src="js/admin-variants.js?v=2"></script>
 <?php
 admin_page_end();

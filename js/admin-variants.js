@@ -65,6 +65,9 @@
 
     toggle.addEventListener('change', function () {
       list.style.display = toggle.checked ? '' : 'none';
+      list.querySelectorAll('.pv-row input').forEach(function (input) {
+        input.disabled = !toggle.checked;
+      });
     });
 
     block.addEventListener('click', function (e) {
