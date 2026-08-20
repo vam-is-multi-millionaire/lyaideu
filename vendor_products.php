@@ -65,9 +65,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $desc = trim(strip_tags((string)($_POST['desc'] ?? '')));
         $phone = preg_replace('/[^0-9]/', '', (string)($_POST['phone'] ?? ''));
         $unit = trim(strip_tags((string)($_POST['unit'] ?? '')));
+        $hasVariants = $id > 0
+            ? !empty($_POST['product'][$id]['has_variants'] ?? [])
+            : !empty($_POST['new_product']['has_variants'] ?? []);
 
         if ($categoryId > 0 && !isset($allowedCats[$categoryId])) {
             $categoryId = 0;
+        }
+
+        if ($hasVariants && $price <= 0) {
+            $variantOptions = $id > 0
+                ? ($_POST['product'][$id]['variants'] ?? [])
+                : ($_POST['new_product']['variants'] ?? []);
+            foreach ($variantOptions as $opt) {
+                $optPrice = max(0, (int)($opt['price'] ?? 0));
+                if ($optPrice > 0) {
+                    $price = $optPrice;
+                    break;
+                }
+            }
         }
 
         $error = null;
@@ -120,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $upd->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $id, $vendorId]);
                     }
                     lyaideu_sync_item_slug($table, $id, $name);
-                    lyaideu_save_item_variants($pdo, $itemType, $id, !empty($_POST['product'][$id]['has_variants'] ?? []), $_POST['product'][$id]['variants'] ?? []);
+                    lyaideu_save_item_variants($pdo, $itemType, $id, $hasVariants, $_POST['product'][$id]['variants'] ?? []);
                 } else {
                     if ($isMart) {
                         $ins = $pdo->prepare('INSERT INTO mart_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
@@ -135,8 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins = $pdo->prepare('INSERT INTO dishes (name, hotel, category_id, price, phone, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
                         $ins->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $vendorId]);
                     }
-                    lyaideu_sync_item_slug($table, (int)$pdo->lastInsertId(), $name);
-                    lyaideu_save_item_variants($pdo, $itemType, (int)$pdo->lastInsertId(), !empty($_POST['new_product']['has_variants'] ?? []), $_POST['new_product']['variants'] ?? []);
+                    $newItemId = (int)$pdo->lastInsertId();
+                    lyaideu_sync_item_slug($table, $newItemId, $name);
+                    lyaideu_save_item_variants($pdo, $itemType, $newItemId, $hasVariants, $_POST['new_product']['variants'] ?? []);
                 }
                 header('Location: vendor_products?msg=' . urlencode('Product saved. It is now live on the website.'));
                 exit;
@@ -490,8 +507,41 @@ delivery_header(
     var del = e.target && e.target.closest ? e.target.closest("[data-confirm]") : null;
     if (del && !window.confirm(del.getAttribute("data-confirm") || "Are you sure?")) e.preventDefault();
   });
+
+  function vpSyncPrice(form){
+    var toggle = form.querySelector(".pv-toggle");
+    if (!toggle) return;
+    var priceInput = form.querySelector("input[name='price']");
+    if (!priceInput) return;
+    var field = priceInput.closest(".store-field") || priceInput.parentNode;
+    if (toggle.checked) {
+      field.style.display = "none";
+      priceInput.required = false;
+      priceInput.min = 0;
+      var first = form.querySelector(".pv-row .pv-price");
+      var v = first ? parseInt(first.value, 10) : NaN;
+      if (!isNaN(v) && v > 0) priceInput.value = v;
+    } else {
+      field.style.display = "";
+      priceInput.required = true;
+      priceInput.min = 1;
+    }
+  }
+  document.querySelectorAll("form.delivery-form").forEach(function(form){
+    var toggle = form.querySelector(".pv-toggle");
+    if (!toggle) return;
+    toggle.addEventListener("change", function(){ vpSyncPrice(form); });
+    var list = form.querySelector(".pv-list");
+    if (list) list.addEventListener("input", function(e){
+      if (e.target && e.target.classList && e.target.classList.contains("pv-price")) {
+        var t = form.querySelector(".pv-toggle");
+        if (t && t.checked) vpSyncPrice(form);
+      }
+    });
+    vpSyncPrice(form);
+  });
 })();
 </script>
-<script src="js/admin-variants.js?v=2"></script>
+<script src="js/admin-variants.js?v=3"></script>
 <?php
 delivery_footer();

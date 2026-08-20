@@ -1933,10 +1933,10 @@ function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool
         . '<div class="pv-list"' . ($hasVariants ? '' : ' style="display:none"') . '>';
     $variants = array_values($variants);
     if (!$variants) {
-        $h .= lyaideu_variant_row_html($p, 0, null, $hasVariants);
+        $h .= lyaideu_variant_row_html($p, 0, null);
     } else {
         foreach ($variants as $i => $v) {
-            $h .= lyaideu_variant_row_html($p, $i, $v, $hasVariants);
+            $h .= lyaideu_variant_row_html($p, $i, $v);
         }
     }
     $h .= '<button type="button" class="btn btn-outline pv-add"><i class="fa-solid fa-plus"></i> Add option</button>';
@@ -1946,20 +1946,19 @@ function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool
 /**
  * Single option row used by lyaideu_variants_editor_html().
  */
-function lyaideu_variant_row_html(string $p, int $i, ?array $v, bool $enabled = true): string {
+function lyaideu_variant_row_html(string $p, int $i, ?array $v): string {
     $label = $v ? htmlspecialchars((string)($v['label'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
     $price = $v ? (int)($v['price'] ?? 0) : '';
     $info = $v ? htmlspecialchars((string)($v['info'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
     $def = $v && !empty($v['is_default']) ? ' checked' : '';
-    $dis = $enabled ? '' : ' disabled';
     return '<div class="pv-row">'
         . '<div class="pv-fields">'
-        . '<input type="text" class="pv-label" name="' . $p . '[variants][' . $i . '][label]" placeholder="Option, e.g. 0.5 kg" value="' . $label . '" required' . $dis . '>'
-        . '<input type="number" min="0" step="1" class="pv-price" name="' . $p . '[variants][' . $i . '][price]" placeholder="Price (Rs.)" value="' . $price . '" required' . $dis . '>'
-        . '<input type="text" class="pv-info" name="' . $p . '[variants][' . $i . '][info]" placeholder="Info (optional)" value="' . $info . '"' . $dis . '>'
+        . '<input type="text" class="pv-label" name="' . $p . '[variants][' . $i . '][label]" placeholder="Option, e.g. 0.5 kg" value="' . $label . '">'
+        . '<input type="number" min="0" step="1" class="pv-price" name="' . $p . '[variants][' . $i . '][price]" placeholder="Price (Rs.)" value="' . $price . '">'
+        . '<input type="text" class="pv-info" name="' . $p . '[variants][' . $i . '][info]" placeholder="Info (optional)" value="' . $info . '">'
         . '</div>'
         . '<div class="pv-tools">'
-        . '<label class="pv-default" title="Preselect this option by default"><input type="checkbox" class="pv-default-input" name="' . $p . '[variants][' . $i . '][default]" value="1"' . $def . $dis . '> Default</label>'
+        . '<label class="pv-default" title="Preselect this option by default"><input type="checkbox" class="pv-default-input" name="' . $p . '[variants][' . $i . '][default]" value="1"' . $def . '> Default</label>'
         . '<button type="button" class="pm-act pv-up" title="Move up"><i class="fa-solid fa-arrow-up"></i></button>'
         . '<button type="button" class="pm-act pv-down" title="Move down"><i class="fa-solid fa-arrow-down"></i></button>'
         . '<button type="button" class="pm-act pm-del-btn pv-del" title="Remove option"><i class="fa-solid fa-trash-can"></i></button>'

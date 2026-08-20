@@ -65,10 +65,25 @@
 
     toggle.addEventListener('change', function () {
       list.style.display = toggle.checked ? '' : 'none';
-      list.querySelectorAll('.pv-row input').forEach(function (input) {
-        input.disabled = !toggle.checked;
-      });
     });
+
+    var form = block.closest('form');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        if (!toggle.checked) return;
+        var valid = Array.prototype.some.call(list.querySelectorAll('.pv-row'), function (row) {
+          var l = row.querySelector('.pv-label');
+          var pr = row.querySelector('.pv-price');
+          return l && pr && l.value.trim() !== '' && parseInt(pr.value, 10) > 0;
+        });
+        if (!valid) {
+          e.preventDefault();
+          var firstLabel = list.querySelector('.pv-label');
+          if (firstLabel) firstLabel.focus();
+          alert('Add at least one size / quantity option with a price, or turn off "Enable size / quantity options".');
+        }
+      });
+    }
 
     block.addEventListener('click', function (e) {
       var t = e.target;

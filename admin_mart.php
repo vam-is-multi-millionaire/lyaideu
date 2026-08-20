@@ -239,6 +239,6 @@ admin_page_start('Mart', 'mart', 'Mart');
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=2"></script>
+<script src="js/admin-variants.js?v=3"></script>
 <?php
 admin_page_end();
