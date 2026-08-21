@@ -29,24 +29,29 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body class="auth-body">
-<div class="auth-wrap">
 
-<aside class="auth-brand">
-    <span class="float-emoji" style="top:7%;left:8%;font-size:3.2rem;"><i class="fa-solid fa-pizza-slice"></i></span>
-    <span class="float-emoji" style="top:14%;right:12%;font-size:2.6rem;"><i class="fa-solid fa-drumstick-bite"></i></span>
-    <span class="float-emoji" style="bottom:28%;left:6%;font-size:2.4rem;"><i class="fa-solid fa-bowl-rice"></i></span>
-    <span class="float-emoji" style="bottom:22%;right:9%;font-size:2.8rem;"><i class="fa-solid fa-burger"></i></span>
-    <div class="brand-mark"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu"></div>
-    <h1 class="display">Hot &amp; fresh,<br><em>zooming to you.</em></h1>
-    <p class="brand-sub">Momo, pizza, chowmein and more — delivered straight to your doorstep in as little as 15 minutes.</p>
-    <ul class="brand-stats">
-        <li><strong>25+</strong><span>partner hotels</span></li>
-        <li><strong>15–60 min</strong><span>delivery</span></li>
+<header class="topbar">
+    <nav class="nav">
+        <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search dishes, mart &amp; hotels" aria-label="Search LyaiDeu"></form>
+        <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index" class="nav-a">Home</a></li>
+            <li><a href="categories" class="nav-a">Categories</a></li>
+            <li><a href="menu" class="nav-a">Menu</a></li>
+            <li><a href="mart" class="nav-a">Mart</a></li>
+            <li><a href="beverages" class="nav-a">Beverages</a></li>
+            <li><a href="others" class="nav-a">Others</a></li>
+            <li><a href="store" class="nav-a">Stores</a></li>
+            <li><a class="nav-a nav-cta" href="login"><i class="fa-solid fa-right-to-bracket"></i> Login / Sign Up</a></li>
         </ul>
-</aside>
+    </nav>
+</header>
+
+<div class="auth-wrap">
 
 <main class="auth-panel">
     <div class="auth-card">
@@ -171,6 +176,15 @@ require_once __DIR__ . '/site_config.php';
     <p class="auth-foot">© <?= date('Y') ?> LyaiDeu · All rights reserved.</p>
 </main>
 </div>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="Primary mobile navigation">
+    <a class="bn-item" data-nav="home" href="index"><span class="bn-ico"><i class="fa-solid fa-house"></i></span><span class="bn-label">Home</span></a>
+    <a class="bn-item" data-nav="categories" href="categories"><span class="bn-ico"><i class="fa-solid fa-layer-group"></i></span><span class="bn-label">Categories</span></a>
+    <a class="bn-item" data-nav="stores" href="store"><span class="bn-ico"><i class="fa-solid fa-store"></i></span><span class="bn-label">Stores</span></a>
+    <button class="bn-item cart-open-btn" data-nav="cart" type="button" aria-label="Open cart"><span class="bn-ico"><i class="fa-solid fa-cart-shopping"></i><span class="bn-count cart-count">0</span></span><span class="bn-label">Cart</span></button>
+    <a class="bn-item" data-nav="profile" href="profile"><span class="bn-ico"><i class="fa-solid fa-user"></i></span><span class="bn-label">Profile</span></a>
+</nav>
+
 <script src="js/script.js?v=25"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
