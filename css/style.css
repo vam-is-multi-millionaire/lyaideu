@@ -1565,6 +1565,10 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   }
   .bn-count:empty{display:none;}
 
+  /* ---- Scroll-aware nav: slides away scrolling down, returns on scroll up ---- */
+  .bottom-nav{transition:transform .28s ease,opacity .28s ease;will-change:transform;}
+  .bottom-nav.bn-hidden{transform:translateY(140%);opacity:0;pointer-events:none;}
+
   /* ---- Lift transient overlays above the bottom nav ---- */
   .toast{bottom:calc(env(safe-area-inset-bottom,0px) + 100px) !important;}
   .loc-banner{bottom:calc(env(safe-area-inset-bottom,0px) + 100px) !important;}

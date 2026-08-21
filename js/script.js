@@ -80,9 +80,26 @@ function initMobileNav(){
   else if(leaf==='profile'||leaf==='orders')key='profile';
   if(key){const el=nav.querySelector('[data-nav="'+key+'"]');if(el)el.classList.add('active');}
 }
+/* Hide the bottom nav while scrolling down, reveal it on the first upward
+   scroll. Works for the injected nav AND static copies (login page). */
+function initBottomNavAutoHide(){
+  const nav=document.getElementById('bottomNav');
+  if(!nav)return;
+  let lastY=window.pageYOffset||0,ticking=false;
+  function update(){
+    ticking=false;
+    const y=window.pageYOffset||0,dy=y-lastY;
+    if(Math.abs(dy)<6){lastY=y;return;}   /* ignore scroll jitter */
+    const max=(document.documentElement.scrollHeight||0)-window.innerHeight;
+    if(dy>0&&y>90&&y<max-60)nav.classList.add('bn-hidden');   /* scrolling down */
+    else if(dy<0)nav.classList.remove('bn-hidden');           /* scrolling up */
+    lastY=y;
+  }
+  window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+}
 
 document.addEventListener('DOMContentLoaded',()=>{
-  initMobileNav();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();
+  initMobileNav();initBottomNavAutoHide();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();
   if($('#menu-grid')||$('#mart-grid')||$('#others-grid')||$('#beverages-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||$('#featuredBeverages')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];

@@ -576,7 +576,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 })();
 </script>
 <script src="js/lightbox.js?v=2"></script>
-<script src="js/script.js?v=25"></script>
+<script src="js/script.js?v=26"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 </body>

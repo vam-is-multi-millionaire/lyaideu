@@ -16,7 +16,7 @@ require_once __DIR__ . '/site_config.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-/* Default (preselected) variant of an item — rows must have `variants` attached
+/* Default (preselected) variant of an item â€” rows must have `variants` attached
    via lyaideu_attach_variants(). Null when the item has no options. */
 function lyaideu_featured_variant(array $item): ?array {
     if (empty($item['has_variants']) || empty($item['variants'])) {
@@ -174,7 +174,7 @@ $FEATURED_BEVERAGE_ICONS = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Food Delivery in Surkhet Valley' ?></title>
+<title><?= $user ? 'LyaiDeu Â· Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu Â· Food Delivery in Surkhet Valley' ?></title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -185,9 +185,9 @@ $FEATURED_BEVERAGE_ICONS = [
 /* Home page: hide the section subtitle lines on phones only */
 @media (max-width:960px){
   .section-head .section-sub{display:none;}
-  /* Mobile hero shows only the slider — trim its heavy vertical padding */
+  /* Mobile hero shows only the slider â€” trim its heavy vertical padding */
   .hero.hero-split{padding:1.25rem .95rem 1.75rem;}
-  /* Random Picks sits right under the hero on phones — no top gap */
+  /* Random Picks sits right under the hero on phones â€” no top gap */
   #featured{padding-top:0;}
 }
 </style>
@@ -262,13 +262,13 @@ $FEATURED_BEVERAGE_ICONS = [
             <div class="hero-split-text">
                 <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast delivery across Surkhet Valley</p>
                 <h1 class="display">Delicious food, delivered fast &amp; <em>fresh</em></h1>
-                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door — hot and on time.</p>
+                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door â€” hot and on time.</p>
                 <div class="hero-ctas">
                     <a class="btn btn-primary" href="menu">Order Now <i class="fa-solid fa-arrow-right"></i></a>
                     <a class="btn btn-outline" href="mart">Shop the Mart</a>
                 </div>
                 <div class="hero-badges">
-                    <span><i class="fa-solid fa-truck-fast"></i> 15–60 min delivery</span>
+                    <span><i class="fa-solid fa-truck-fast"></i> 15â€“60 min delivery</span>
                     <span><i class="fa-solid fa-wallet"></i> eSewa &middot; Khalti &middot; COD</span>
                     <span><i class="fa-solid fa-star"></i> Trusted hotels</span>
                 </div>
@@ -436,7 +436,7 @@ $FEATURED_BEVERAGE_ICONS = [
         <div class="container">
             <div class="section-head">
                 <h2 class="display">Random Picks for You <i class="fa-solid fa-dice"></i></h2>
-                <p class="section-sub">Tasty dishes, grocery essentials, gifts &amp; decor and partner stores — shuffled fresh on every refresh.</p>
+                <p class="section-sub">Tasty dishes, grocery essentials, gifts &amp; decor and partner stores â€” shuffled fresh on every refresh.</p>
             </div>
 
             <div class="featured-stack">
@@ -635,15 +635,15 @@ $FEATURED_BEVERAGE_ICONS = [
             <div class="faq-list">
                 <details class="faq-item" open>
                     <summary>How do I place an order?</summary>
-                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel — we'll confirm it by phone if needed.</p>
+                    <p>Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel â€” we'll confirm it by phone if needed.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How long does delivery take?</summary>
-                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45–60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
+                    <p>Mart items are ready-made, so a Mart-only order arrives in as little as <strong>15 minutes</strong>. Food from hotels is freshly cooked, so hotel orders take <strong>45â€“60 minutes</strong> depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.</p>
                 </details>
                 <details class="faq-item">
                     <summary>How much is delivery?</summary>
-                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> — and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
+                    <p>Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart (more stops = a bit more time and fee). Your first order is free with the code <strong>LYAIDEU</strong> â€” and promo codes like <strong>FOODXPRESS</strong> give you free delivery too.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What payment methods do you accept?</summary>
@@ -651,11 +651,11 @@ $FEATURED_BEVERAGE_ICONS = [
                 </details>
                 <details class="faq-item">
                     <summary>Can I track my order?</summary>
-                    <p>Yes! Open the Orders page at any time to see your order status — from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
+                    <p>Yes! Open the Orders page at any time to see your order status â€” from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.</p>
                 </details>
                 <details class="faq-item">
                     <summary>What if my order is late or wrong?</summary>
-                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best.</p>
+                    <p>We're sorry about that! Call our Delivery Support line immediately and we'll fix it fast â€” re-delivery, replacement or a refund, whichever fits best.</p>
                 </details>
             </div>
         </div>
@@ -670,13 +670,13 @@ $FEATURED_BEVERAGE_ICONS = [
                     </div>
                     <div class="grid contact-grid" id="contact-grid"></div>
                     <div class="contact-map">
-                        <iframe src="https://www.google.com/maps?q=Birendranagar%2C%20Surkhet%2C%20Nepal&output=embed" width="100%" height="280" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="LyaiDeu location — Birendranagar, Surkhet, Nepal"></iframe>
+                        <iframe src="https://www.google.com/maps?q=Birendranagar%2C%20Surkhet%2C%20Nepal&output=embed" width="100%" height="280" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="LyaiDeu location â€” Birendranagar, Surkhet, Nepal"></iframe>
                     </div>
                 </div>
                 <div class="contact-split-right">
                     <div class="section-head">
                         <h2 class="display">Send Us a Message <i class="fa-solid fa-envelope"></i></h2>
-                        <p class="section-sub">Questions, feedback or partnership ideas — drop us a line and our team will reply soon.</p>
+                        <p class="section-sub">Questions, feedback or partnership ideas â€” drop us a line and our team will reply soon.</p>
                     </div>
                     <form action="contact_send" method="POST" class="contact-form">
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_contact'], ENT_QUOTES, 'UTF-8') ?>">
@@ -686,10 +686,10 @@ $FEATURED_BEVERAGE_ICONS = [
                         </div>
                         <div class="contact-form-row">
                             <div><label>Phone</label><input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="98XXXXXXXX"></div>
-                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedback…"></div>
+                            <div><label>Subject</label><input type="text" name="subject" placeholder="e.g. Order help, feedbackâ€¦"></div>
                         </div>
                         <label>Message</label>
-                        <textarea name="message" rows="5" placeholder="Tell us how we can help…" minlength="10" required></textarea>
+                        <textarea name="message" rows="5" placeholder="Tell us how we can helpâ€¦" minlength="10" required></textarea>
                         <button type="submit" class="btn btn-primary contact-submit"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
                     </form>
                 </div>
@@ -702,14 +702,14 @@ $FEATURED_BEVERAGE_ICONS = [
 <button class="cart-fab cart-open-btn" type="button" aria-label="Open cart"><span class="cart-fab-icon"><i class="fa-solid fa-cart-shopping"></i></span><span class="cart-fab-label">Cart</span><span class="cart-count">0</span></button>
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
-  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">×</button></div>
+  <div class="cart-head"><h2><i class="fa-solid fa-cart-shopping"></i> Your Cart</h2><button type="button" class="cart-close" id="cartClose">Ã—</button></div>
   <div id="cartItems" class="cart-items"></div>
   <div class="cart-empty" id="cartEmpty">Your cart is waiting for something tasty. <i class="fa-solid fa-pizza-slice"></i></div>
   <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=25"></script>
+<script src="js/script.js?v=26"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=6"></script>
 </body>
