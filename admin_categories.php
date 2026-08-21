@@ -51,13 +51,13 @@ function subtree_item_count(array $cats, int $id, array $counts): int {
     return $total;
 }
 
-function category_select_options(array $flat): string {
+function category_select_options(array $flat, string $type = ''): string {
     global $ce;
     $html = '';
     foreach ($flat as $c) {
         $indent = str_repeat('&nbsp;&nbsp;', (int)$c['depth']);
         $arrow = (int)$c['depth'] > 0 ? '└ ' : '';
-        $html .= '<option value="' . (int)$c['id'] . '">' . $indent . $arrow . $ce($c['name']) . '</option>';
+        $html .= '<option value="' . (int)$c['id'] . '" data-type="' . $ce($type) . '">' . $indent . $arrow . $ce($c['name']) . '</option>';
     }
     return $html;
 }
@@ -268,10 +268,10 @@ admin_page_start('Categories', 'categories', 'Categories');
                 <label>Parent Category <span style="text-transform:none;font-weight:700;">(optional)</span></label>
                 <select name="new_category[parent_id]" id="newCatParent">
                     <option value="0">— No parent (top level) —</option>
-                    <optgroup label="Menu Categories"><?= category_select_options($menuFlat) ?></optgroup>
-                    <optgroup label="Mart Categories"><?= category_select_options($martFlat) ?></optgroup>
-                    <optgroup label="Beverage Categories"><?= category_select_options($beverageFlat) ?></optgroup>
-                    <optgroup label="Other Categories"><?= category_select_options($otherFlat) ?></optgroup>
+                    <optgroup label="Menu Categories" data-type="menu"><?= category_select_options($menuFlat, 'menu') ?></optgroup>
+                    <optgroup label="Mart Categories" data-type="mart"><?= category_select_options($martFlat, 'mart') ?></optgroup>
+                    <optgroup label="Beverage Categories" data-type="beverage"><?= category_select_options($beverageFlat, 'beverage') ?></optgroup>
+                    <optgroup label="Other Categories" data-type="other"><?= category_select_options($otherFlat, 'other') ?></optgroup>
                 </select>
                 <label>Icon</label>
                 <div class="wp-cat-icon-wrap">
@@ -295,15 +295,25 @@ admin_page_start('Categories', 'categories', 'Categories');
 <script>
 (function(){
   var type=document.getElementById('newCatType'),parent=document.getElementById('newCatParent');
-  var labelFor={menu:'Menu',mart:'Mart',other:'Other',beverage:'Beverages'};
+  /* Only parents of the selected type stay selectable. Wrong-type options are
+     disabled (not just hidden) so native mobile pickers can never pick them —
+     a picked parent can therefore never be silently dropped on save. */
   function sync(){
     if(!type||!parent)return;
     var v=type.value;
     Array.prototype.forEach.call(parent.querySelectorAll('optgroup'),function(g){
-      g.style.display=(g.getAttribute('label').indexOf(labelFor[v]||v)>-1)?'':'none';
+      var match=g.getAttribute('data-type')===v;
+      g.disabled=!match;
+      g.style.display=match?'':'none';
+    });
+    Array.prototype.forEach.call(parent.options,function(o){
+      if(o.value==='0'||o.value==='')return;
+      var match=o.getAttribute('data-type')===v;
+      o.disabled=!match;
+      o.hidden=!match;
     });
     var sel=parent.selectedOptions[0];
-    if(sel&&sel.parentNode.tagName==='OPTGROUP'&&sel.parentNode.style.display==='none'){parent.value='0';}
+    if(sel&&sel.disabled){parent.value='0';}
   }
   if(type)type.addEventListener('change',sync);
   sync();

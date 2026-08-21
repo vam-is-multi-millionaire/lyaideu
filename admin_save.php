@@ -905,10 +905,16 @@ try {
             }
             $parentId = (int)($cat['parent_id'] ?? 0);
             if ($parentId > 0) {
+                /* Never silently drop a requested parent — a dropped parent
+                   would turn a sub-category into a top-level one. */
                 if (!isset($byId[$parentId]) || $byId[$parentId]['type'] !== $type) {
-                    $parentId = 0;
-                } elseif ($parentId === $id || in_array($id, $descOf($parentId), true)) {
-                    $parentId = 0;
+                    throw new RuntimeException('The selected parent category does not match this category type. Nothing was saved.');
+                }
+                /* A category may sit under any category EXCEPT itself or its
+                   own descendants (that would create a circle). Its current
+                   parent is of course still allowed. */
+                if ($parentId === $id || in_array($parentId, $descOf($id), true)) {
+                    throw new RuntimeException('A category cannot be placed under its own sub-category. Nothing was saved.');
                 }
             }
             $sort = max(0, (int)($cat['sort_order'] ?? 0));
@@ -941,8 +947,10 @@ try {
             }
             $parentId = (int)($newCat['parent_id'] ?? 0);
             if ($parentId > 0) {
+                /* Same rule as updates: a requested parent is never silently
+                   dropped (that would create a top-level category by accident). */
                 if (!isset($byId[$parentId]) || $byId[$parentId]['type'] !== $type) {
-                    $parentId = 0;
+                    throw new RuntimeException('The selected parent category does not match the selected type. Pick a parent of the same type.');
                 }
             }
             $sort = max(0, (int)($newCat['sort_order'] ?? 0));
