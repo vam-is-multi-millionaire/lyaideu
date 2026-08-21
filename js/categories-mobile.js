@@ -143,7 +143,6 @@
         '<span class="mc-rail-name">' + esc(cat.name) + '</span>' +
       '</button>';
     }).join('');
-    html += '<a class="mc-rail-all" href="' + esc(GROUPS[type].page) + '">All ' + esc(GROUPS[type].label) + '</a>';
     rail.innerHTML = html;
   }
 

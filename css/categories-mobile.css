@@ -201,20 +201,6 @@
   .mc-rail-item.child .mc-rail-thumb{width:44px;height:44px;font-size:.95rem;border-radius:13px;}
   .mc-rail-item.child .mc-rail-name{font-size:.62rem;}
 
-  .mc-rail-all{
-    margin-top:.5rem;
-    padding:.5rem .3rem;
-    border-radius:14px;
-    border:1.5px dashed var(--orange-200);
-    background:transparent;
-    color:var(--orange-700);
-    font-size:.68rem;
-    font-weight:900;
-    text-decoration:none !important;
-    text-align:center;
-    display:block;
-  }
-
   /* ---- Right: product grid for the selected category ---- */
   .mc-main{
     flex:1;
