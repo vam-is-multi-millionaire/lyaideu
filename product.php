@@ -112,6 +112,9 @@ try {
 } catch (Throwable $e) {
     $item = null;
 }
+if ($item) {
+    lyaideu_attach_variants($related, $type);
+}
 
 if (!$item) {
     $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Product not found.'];
@@ -319,7 +322,18 @@ if ($hasVariants) {
             <?php if ($related): ?>
                 <div class="related-grid">
                     <?php foreach ($related as $rItem): ?>
-                        <?php $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat'])); ?>
+                        <?php
+                            $relPath = implode('/', lyaideu_item_cats((int)($rItem['category_id'] ?? 0), (string)$rItem['cat']));
+                            $rDef = null;
+                            if (!empty($rItem['has_variants']) && !empty($rItem['variants'])) {
+                                foreach ($rItem['variants'] as $rv) {
+                                    if (!empty($rv['is_default'])) { $rDef = $rv; break; }
+                                }
+                                if ($rDef === null) { $rDef = $rItem['variants'][0]; }
+                            }
+                            $rPrice = $rDef ? (int)$rDef['price'] : (int)$rItem['price'];
+                            $rUnit = $rDef && (string)$rDef['label'] !== '' ? (string)$rDef['label'] : (string)$rItem['unit'];
+                        ?>
                         <div class="related-card">
                             <a class="related-link" href="<?= $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : ($type === 'beverage' ? 'beverages' : 'menu')) ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">
                                 <div class="related-img">
@@ -333,8 +347,8 @@ if ($hasVariants) {
                             <div class="related-info">
                                 <h4><?= e($rItem['name']) ?></h4>
                                 <div class="related-foot">
-                                    <span class="price"><small>Rs.</small> <?= (int)$rItem['price'] ?><?= ($type !== 'dish' && $rItem['unit'] !== '') ? ' <span class="unit">/ ' . e($rItem['unit']) . '</span>' : '' ?></span>
-                                    <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= (int)$rItem['price'] ?>"<?= ($type !== 'dish' && $rItem['unit'] !== '') ? ' data-unit="' . e($rItem['unit']) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>
+                                    <span class="price"><small>Rs.</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span>
+                                    <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>
                                 </div>
                             </div>
                         </div>
@@ -358,7 +372,7 @@ if ($hasVariants) {
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=23"></script>
+<script src="js/script.js?v=24"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>

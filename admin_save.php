@@ -145,6 +145,29 @@ function handle_item_image(string $existingImg, array $post, ?array $file, strin
     return lyaideu_handle_item_image($existingImg, $post, $file, $prefix);
 }
 
+/* Base price for a variant product: prefer the option marked Default, then
+   the first priced option. Keeps card listings in sync with the preselected
+   option when the main price field is left at 0. */
+function variant_base_price(int $price, array $row): int {
+    if ($price > 0 || empty($row['has_variants'])) {
+        return $price;
+    }
+    $first = 0;
+    foreach (($row['variants'] ?? []) as $opt) {
+        $p = max(0, (int)($opt['price'] ?? 0));
+        if ($p <= 0) {
+            continue;
+        }
+        if (!empty($opt['default'])) {
+            return $p;
+        }
+        if ($first === 0) {
+            $first = $p;
+        }
+    }
+    return $first;
+}
+
 $section = trim($_POST['section'] ?? '');
 $allowedSections = ['categories', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
 
@@ -212,7 +235,7 @@ try {
                 ':hotel' => $hotel,
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($d['cat'] ?? 'snacks'),
                 ':category_id' => $catRes[0] ?: null,
-                ':price' => max(0, (int)($d['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($d['price'] ?? 0)), $d),
                 ':phone' => clean_phone($d['phone'] ?? ''),
                 ':tag' => clean_text($d['tag'] ?? ''),
                 ':descr' => clean_text($d['desc'] ?? ''),
@@ -243,7 +266,7 @@ try {
                 ':hotel' => clean_text($newDish['hotel'] ?? ''),
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($newDish['cat'] ?? 'snacks'),
                 ':category_id' => $catRes[0] ?: null,
-                ':price' => max(0, (int)($newDish['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($newDish['price'] ?? 0)), $newDish),
                 ':phone' => clean_phone($newDish['phone'] ?? ''),
                 ':tag' => clean_text($newDish['tag'] ?? ''),
                 ':descr' => clean_text($newDish['desc'] ?? ''),
@@ -315,7 +338,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($m['cat'] ?? 'vegetables'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
-                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -346,7 +369,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($newItem['cat'] ?? 'vegetables'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
-                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
@@ -421,7 +444,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($m['cat'] ?? 'gifts'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
-                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -452,7 +475,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($newItem['cat'] ?? 'gifts'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
-                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
@@ -527,7 +550,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($m['cat'] ?? 'cold-drinks'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
-                ':price' => max(0, (int)($m['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -558,7 +581,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($newItem['cat'] ?? 'cold-drinks'),
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
-                ':price' => max(0, (int)($newItem['price'] ?? 0)),
+                ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,

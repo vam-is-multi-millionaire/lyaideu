@@ -123,6 +123,10 @@ if ($isDetail) {
     } catch (Throwable $e) {
         $products = [];
     }
+    lyaideu_attach_variants(
+        $products,
+        $kind === 'mart' ? 'mart' : ($kind === 'other' ? 'other' : ($kind === 'beverage' ? 'beverage' : 'dish'))
+    );
 }
 
 $kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : ($kind === 'beverage' ? 'Beverages' : 'Hotel'));
@@ -252,8 +256,16 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             $isOther = $kind === 'other';
                             $isBeverage = $kind === 'beverage';
                             $hasUnit = $isMart || $isOther || $isBeverage;
-                            $price = (int)$p['price'];
-                            $unitHtml = $hasUnit && $p['unit'] !== '' ? ' <span class="unit">/ ' . e($p['unit']) . '</span>' : '';
+                            $defVar = null;
+                            if (!empty($p['has_variants']) && !empty($p['variants'])) {
+                                foreach ($p['variants'] as $vv) {
+                                    if (!empty($vv['is_default'])) { $defVar = $vv; break; }
+                                }
+                                if ($defVar === null) { $defVar = $p['variants'][0]; }
+                            }
+                            $price = $defVar ? (int)$defVar['price'] : (int)$p['price'];
+                            $unitLabel = $defVar && (string)$defVar['label'] !== '' ? (string)$defVar['label'] : (string)$p['unit'];
+                            $unitHtml = $hasUnit && $unitLabel !== '' ? ' <span class="unit">/ ' . e($unitLabel) . '</span>' : '';
                             $img = (string)$p['img'];
                             $catIcon = $isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($isOther ? ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift') : ($BEVERAGE_CAT_ICONS[$p['cat']] ?? 'fa-glass-water'));
                             $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($catIcon) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
@@ -265,7 +277,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
                                 <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $price ?><?= $unitHtml ?></span>
-                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $p['unit'] !== '' ? ' data-unit="' . e($p['unit']) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div>
                             </div>
                         </article>
                         <?php endforeach; ?>
@@ -317,7 +329,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=23"></script>
+<script src="js/script.js?v=24"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>

@@ -78,10 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? ($_POST['product'][$id]['variants'] ?? [])
                 : ($_POST['new_product']['variants'] ?? []);
             foreach ($variantOptions as $opt) {
-                $optPrice = max(0, (int)($opt['price'] ?? 0));
-                if ($optPrice > 0) {
-                    $price = $optPrice;
-                    break;
+                if (!empty($opt['default'])) {
+                    $optPrice = max(0, (int)($opt['price'] ?? 0));
+                    if ($optPrice > 0) {
+                        $price = $optPrice;
+                        break;
+                    }
+                }
+            }
+            if ($price <= 0) {
+                foreach ($variantOptions as $opt) {
+                    $optPrice = max(0, (int)($opt['price'] ?? 0));
+                    if ($optPrice > 0) {
+                        $price = $optPrice;
+                        break;
+                    }
                 }
             }
         }
@@ -518,8 +529,13 @@ delivery_header(
       field.style.display = "none";
       priceInput.required = false;
       priceInput.min = 0;
-      var first = form.querySelector(".pv-row .pv-price");
-      var v = first ? parseInt(first.value, 10) : NaN;
+      var defRow = null;
+      form.querySelectorAll(".pv-row").forEach(function(row){
+        var d = row.querySelector(".pv-default-input");
+        if (d && d.checked && !defRow) defRow = row;
+      });
+      var src = defRow || form.querySelector(".pv-row");
+      var v = src ? parseInt(src.querySelector(".pv-price").value, 10) : NaN;
       if (!isNaN(v) && v > 0) priceInput.value = v;
     } else {
       field.style.display = "";
@@ -533,7 +549,13 @@ delivery_header(
     toggle.addEventListener("change", function(){ vpSyncPrice(form); });
     var list = form.querySelector(".pv-list");
     if (list) list.addEventListener("input", function(e){
-      if (e.target && e.target.classList && e.target.classList.contains("pv-price")) {
+      if (e.target && e.target.classList && (e.target.classList.contains("pv-price") || e.target.classList.contains("pv-default-input"))) {
+        var t = form.querySelector(".pv-toggle");
+        if (t && t.checked) vpSyncPrice(form);
+      }
+    });
+    if (list) list.addEventListener("change", function(e){
+      if (e.target && e.target.classList && e.target.classList.contains("pv-default-input")) {
         var t = form.querySelector(".pv-toggle");
         if (t && t.checked) vpSyncPrice(form);
       }

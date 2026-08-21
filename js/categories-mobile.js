@@ -148,10 +148,13 @@
   }
 
   /* ---- Right product grid ---- */
+  function defVar(p){var vs=(p&&p.variants)||[];if(!vs.length)return null;for(var i=0;i<vs.length;i++){if(vs[i]&&vs[i].is_default)return vs[i]}return vs[0]}
   function cardHTML(p, type, fallbackCat) {
     var id = Number(p.id), name = esc(p.name), tag = esc(p.tag);
     var img = esc(p.img || '');
-    var unit = esc(p.unit || '');
+    var dv = defVar(p);
+    var price = dv ? (Number(dv.price) || 0) : (Number(p.price) || 0);
+    var unit = esc(dv && dv.label ? dv.label : (p.unit || ''));
     var hotel = esc(p.hotel || '');
     var cats = (p.cats && p.cats.length) ? p.cats.map(esc) : [esc(p.cat || '')];
     var slug = p.slug || slugify(p.name);
@@ -166,14 +169,14 @@
     }
     var dataType = type === 'menu' ? 'dish' : type;
     var addBtn = '<button class="btn-order add-cart" data-id="' + id + '" data-type="' + dataType +
-      '" data-name="' + name + '" data-price="' + (Number(p.price) || 0) + '" data-unit="' + unit +
+      '" data-name="' + name + '" data-price="' + price + '" data-unit="' + unit +
       '" data-hotel="' + hotel + '"' + (p.has_variants ? ' data-has-variants="1"' : '') +
       ' type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>';
     return '<article class="dish-card reveal visible" data-id="' + id + '" data-slug="' + esc(slug) +
       '" data-cats="' + cats.join(',') + '" data-url="' + esc(url) + '">' +
       '<div class="dish-art mart-art">' + art + (tag ? '<span class="dish-tag">' + tag + '</span>' : '') + '</div>' +
       '<div class="dish-body"><div class="dish-top"><h3>' + name + '</h3></div>' +
-      '<div class="dish-foot"><span class="price"><small>Rs.</small> ' + (Number(p.price) || 0) +
+      '<div class="dish-foot"><span class="price"><small>Rs.</small> ' + price +
       (unit ? ' <span class="unit">/ ' + unit + '</span>' : '') + '</span>' + addBtn + '</div></div>' +
     '</article>';
   }
