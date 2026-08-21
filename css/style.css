@@ -1278,6 +1278,12 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .wp-cat-item:hover{background:#fff8f0;}
 .wp-cat-indent{display:flex;align-items:center;gap:.6rem;flex:1 1 auto;min-width:0;}
 .wp-cat-name{font-weight:800;color:#3a2415;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wp-cat-name-wrap{display:flex;flex-direction:column;min-width:0;}
+.wp-cat-name-wrap .wp-cat-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wp-cat-subpath{font-size:.66rem;font-weight:800;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wp-cat-level-badge{flex:0 0 auto;display:inline-flex;align-items:center;font-size:.6rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;padding:.24rem .55rem;border-radius:999px;white-space:nowrap;}
+.wp-cat-level-badge.is-top{background:#e5f4e8;color:#1e7a3c;}
+.wp-cat-level-badge.is-sub{background:#fff1dd;color:#a85b00;}
 .cat-icon-chip{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:#fff;border:1px solid var(--orange-200);display:grid;place-items:center;color:var(--orange-700);font-size:.85rem;}
 .wp-cat-meta{display:flex;align-items:center;gap:.5rem;flex:0 0 auto;}
 .wp-cat-actions{flex:0 0 auto;display:flex;align-items:center;gap:.2rem;}

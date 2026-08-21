@@ -104,6 +104,23 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
 function render_category_group(array $flat, string $type, array $counts, array $typeCats, array $ICON_OPTIONS): string {
     global $ce, $TYPE_LABELS, $TYPE_ICONS;
+    /* id => row map, used to show each row's full place in the tree so a
+       top-level category can never be mistaken for a sub (or vice versa). */
+    $byId = [];
+    foreach ($flat as $c) {
+        $byId[(int)$c['id']] = $c;
+    }
+    $pathNames = function (array $c) use ($byId): array {
+        $names = [];
+        $cur = $c;
+        $guard = 0;
+        while ($cur && $guard++ < 10) {
+            array_unshift($names, (string)$cur['name']);
+            $pid = (int)($cur['parent_id'] ?? 0);
+            $cur = ($pid > 0 && isset($byId[$pid])) ? $byId[$pid] : null;
+        }
+        return $names;
+    };
     $html = '<div class="wp-cat-group">';
     $html .= '<h3 class="wp-cat-group-title"><i class="fa-solid ' . $TYPE_ICONS[$type] . '"></i> ' . $TYPE_LABELS[$type] . ' <span class="wp-cat-group-count">' . count($flat) . '</span></h3>';
     if (!$flat) {
@@ -112,6 +129,9 @@ function render_category_group(array $flat, string $type, array $counts, array $
     foreach ($flat as $i => $c) {
         $id = (int)$c['id'];
         $depth = min((int)$c['depth'], 5);
+        $isTop = (int)$c['depth'] === 0;
+        $names = $pathNames($c);
+        $parentName = count($names) > 1 ? $names[count($names) - 2] : '';
         $skip = descendant_ids_of($typeCats, $id);
 
         $parentOptions = '<option value="0">— No parent (top level) —</option>';
@@ -137,10 +157,17 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= '<div class="wp-cat-item">';
         $html .= '<span class="wp-cat-indent" style="' . ($depth > 0 ? 'padding-left:' . ($depth * 1.6) . 'rem;' : '') . '">';
         $html .= '<span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span>';
-        $html .= '<span class="wp-cat-name">' . $ce($c['name']) . '</span>';
+        $html .= '<span class="wp-cat-name-wrap"><span class="wp-cat-name">' . $ce($c['name']) . '</span>';
+        if (!$isTop) {
+            $html .= '<span class="wp-cat-subpath">' . $ce(implode(' › ', $names)) . '</span>';
+        }
+        $html .= '</span>';
         $html .= '</span>';
         $html .= '<span class="wp-cat-meta">';
         $html .= '<span class="admin-cat-type cat-type-' . $type . '">' . $TYPE_LABELS[$type] . '</span>';
+        $html .= $isTop
+            ? '<span class="wp-cat-level-badge is-top">Top level</span>'
+            : '<span class="wp-cat-level-badge is-sub">Sub of ' . $ce($parentName) . '</span>';
         $html .= '<span class="admin-count-badge">' . (int)$itemCount . ' items</span>';
         $html .= '</span>';
         $html .= '<span class="wp-cat-actions">';
