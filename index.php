@@ -205,7 +205,18 @@ $FEATURED_BEVERAGE_ICONS = [
     transition:color .2s ease,transform .2s ease;
   }
   .dish-card .btn-order.add-cart::after{display:none;}
-  .dish-card .btn-order.add-cart i{font-size:.95rem;line-height:1;}
+  /* Swap plain cart for a cart+plus glyph on phones */
+  .dish-card .btn-order.add-cart i{display:none;}
+  .dish-card .btn-order.add-cart::before{
+    font-family:"Font Awesome 6 Free";
+    font-weight:900;
+    content:"\f217"; /* fa-cart-plus */
+    display:inline-block;
+    font-style:normal;
+    font-size:.95rem;
+    line-height:1;
+    -webkit-font-smoothing:antialiased;
+  }
   .dish-card .btn-order.add-cart:hover{
     color:var(--orange-700,#a03c07)!important;
     transform:none!important;box-shadow:none!important;background:transparent!important;
@@ -228,8 +239,8 @@ $FEATURED_BEVERAGE_ICONS = [
   #search .dish-grid.home-grid .price{font-size:.8rem;}
   #featured .dish-grid.home-grid .btn-order.add-cart,
   #search .dish-grid.home-grid .btn-order.add-cart{width:2.05rem;height:2.05rem;}
-  #featured .dish-grid.home-grid .btn-order.add-cart i,
-  #search .dish-grid.home-grid .btn-order.add-cart i{font-size:.8rem;}
+  #featured .dish-grid.home-grid .btn-order.add-cart::before,
+  #search .dish-grid.home-grid .btn-order.add-cart::before{font-size:.8rem;}
 }
 </style>
 <script>
