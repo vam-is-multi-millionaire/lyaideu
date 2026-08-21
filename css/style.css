@@ -1573,6 +1573,9 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 /* ---- Profile page: desktop has Log Out in the header dropdown, so the
    red button at the end of the page is for phones only ---- */
 .profile-mobile-logout{display:none;}
+@media (min-width:961px){
+  .profile-mobile-logout{display:none !important;}
+}
 @media (max-width:960px){
   .profile-mobile-logout{display:inline-flex;}
 }
