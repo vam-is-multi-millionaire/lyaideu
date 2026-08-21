@@ -570,6 +570,6 @@ delivery_header(
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=4"></script>
+<script src="js/admin-variants.js?v=5"></script>
 <?php
 delivery_footer();

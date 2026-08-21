@@ -272,9 +272,10 @@ try {
                 ':descr' => clean_text($newDish['desc'] ?? ''),
                 ':img' => $img,
             ]);
-            lyaideu_sync_item_slug('dishes', (int)$pdo->lastInsertId(), clean_text($newDish['name'] ?? ''));
-            lyaideu_resolve_dish_vendor((int)$pdo->lastInsertId());
-            lyaideu_save_item_variants($pdo, 'dish', (int)$pdo->lastInsertId(), !empty($newDish['has_variants']), $newDish['variants'] ?? []);
+            $newDishId = (int)$pdo->lastInsertId();
+            lyaideu_sync_item_slug('dishes', $newDishId, clean_text($newDish['name'] ?? ''));
+            lyaideu_resolve_dish_vendor($newDishId);
+            lyaideu_save_item_variants($pdo, 'dish', $newDishId, !empty($newDish['has_variants']), $newDish['variants'] ?? []);
         }
     }
 
@@ -375,11 +376,12 @@ try {
                 ':img' => $img,
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
-            lyaideu_sync_item_slug('mart_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            $newItemId = (int)$pdo->lastInsertId();
+            lyaideu_sync_item_slug('mart_items', $newItemId, clean_text($newItem['name'] ?? ''));
             if ($vid <= 0) {
-                lyaideu_resolve_mart_vendor((int)$pdo->lastInsertId());
+                lyaideu_resolve_mart_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'mart', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            lyaideu_save_item_variants($pdo, 'mart', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 
@@ -481,11 +483,12 @@ try {
                 ':img' => $img,
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
-            lyaideu_sync_item_slug('other_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            $newItemId = (int)$pdo->lastInsertId();
+            lyaideu_sync_item_slug('other_items', $newItemId, clean_text($newItem['name'] ?? ''));
             if ($vid <= 0) {
-                lyaideu_resolve_other_vendor((int)$pdo->lastInsertId());
+                lyaideu_resolve_other_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'other', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            lyaideu_save_item_variants($pdo, 'other', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 
@@ -587,11 +590,12 @@ try {
                 ':img' => $img,
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
-            lyaideu_sync_item_slug('beverage_items', (int)$pdo->lastInsertId(), clean_text($newItem['name'] ?? ''));
+            $newItemId = (int)$pdo->lastInsertId();
+            lyaideu_sync_item_slug('beverage_items', $newItemId, clean_text($newItem['name'] ?? ''));
             if ($vid <= 0) {
-                lyaideu_resolve_beverage_vendor((int)$pdo->lastInsertId());
+                lyaideu_resolve_beverage_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'beverage', (int)$pdo->lastInsertId(), !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            lyaideu_save_item_variants($pdo, 'beverage', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
         }
     }
 

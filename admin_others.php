@@ -96,7 +96,7 @@ admin_page_start('Others', 'others', 'Others');
         </div>
         <label>Description</label>
         <textarea name="new_others[desc]" placeholder="Short description..."></textarea>
-        <?= lyaideu_variants_editor_html('new_others') ?>
+        <?= lyaideu_variants_editor_html('new_others', [], false, true) ?>
         <div class="pm-add-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Item</button>
             <button type="button" class="btn btn-outline" id="addItemCancel">Cancel</button>
@@ -156,7 +156,7 @@ admin_page_start('Others', 'others', 'Others');
                 <?php endif; ?>
                 <label>Description</label>
                 <textarea name="others[<?= $i ?>][desc]"><?= $ce($m['desc']) ?></textarea>
-                <?= lyaideu_variants_editor_html('others[' . $i . ']', $itemVariants, (bool)$m['has_variants']) ?>
+                <?= lyaideu_variants_editor_html('others[' . $i . ']', $itemVariants, (bool)$m['has_variants'], true) ?>
                 <div class="pm-edit-actions">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Update Item</button>
                     <button type="button" class="btn btn-outline pm-cancel">Cancel</button>
@@ -176,7 +176,7 @@ admin_page_start('Others', 'others', 'Others');
     addPanel.style.display=open?'block':'none';
     if(addBtn)addBtn.classList.toggle('active',open);
   }
-  if(addBtn)addBtn.addEventListener('click',function(){setAdd(addPanel.style.display==='none');});
+  if(addBtn)addBtn.addEventListener('click',function(){setAdd(addPanel.style.display!=='block');});
   if(addCancel)addCancel.addEventListener('click',function(){setAdd(false);});
 
   var search=document.getElementById('otherSearch');
@@ -199,7 +199,7 @@ admin_page_start('Others', 'others', 'Others');
       var form=document.getElementById(edit.getAttribute('data-target'));
       var row=edit.closest('.pm-row');
       if(!form||!row)return;
-      var opening=form.style.display==='none';
+      var opening=form.style.display!=='block';
       document.querySelectorAll('.pm-quick-edit').forEach(function(f){f.style.display='none';});
       document.querySelectorAll('.pm-item').forEach(function(it){it.style.display='';});
       if(opening){
@@ -239,6 +239,6 @@ admin_page_start('Others', 'others', 'Others');
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=4"></script>
+<script src="js/admin-variants.js?v=5"></script>
 <?php
 admin_page_end();

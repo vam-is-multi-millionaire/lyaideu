@@ -85,6 +85,58 @@
       }
     });
 
+    /* Vendor-style price sync (opt-in via data-sync-price on .pm-variants):
+       while options are active the form's main Price field is hidden and
+       mirrors the default (or first priced) option; it comes back with its
+       original required/min state when the toggle is turned off. */
+    if (block.hasAttribute('data-sync-price')) {
+      var syncForm = block.closest('form');
+      var priceInput = syncForm ? syncForm.querySelector('input[name$="[price]"]') : null;
+      if (priceInput) {
+        var priceWrap = priceInput.parentElement;
+        var priceRequiredInit = priceInput.required;
+        var priceMinInit = priceInput.getAttribute('min');
+        var syncPriceField = function () {
+          if (toggle.checked) {
+            if (priceWrap) priceWrap.style.display = 'none';
+            priceInput.required = false;
+            priceInput.min = 0;
+            var defRow = null;
+            list.querySelectorAll('.pv-row').forEach(function (row) {
+              var d = row.querySelector('.pv-default-input');
+              if (d && d.checked && !defRow) defRow = row;
+            });
+            var src = (defRow && parseInt(defRow.querySelector('.pv-price').value, 10) > 0) ? defRow : null;
+            if (!src) {
+              list.querySelectorAll('.pv-row').forEach(function (row) {
+                if (!src && parseInt(row.querySelector('.pv-price').value, 10) > 0) src = row;
+              });
+            }
+            var v = src ? parseInt(src.querySelector('.pv-price').value, 10) : NaN;
+            if (!isNaN(v) && v > 0) priceInput.value = v;
+          } else {
+            if (priceWrap) priceWrap.style.display = '';
+            priceInput.required = priceRequiredInit;
+            if (priceMinInit === null) priceInput.removeAttribute('min');
+            else priceInput.setAttribute('min', priceMinInit);
+          }
+        };
+        toggle.addEventListener('change', syncPriceField);
+        list.addEventListener('input', function (e) {
+          if (toggle.checked && e.target && e.target.classList &&
+              (e.target.classList.contains('pv-price') || e.target.classList.contains('pv-default-input'))) {
+            syncPriceField();
+          }
+        });
+        list.addEventListener('change', function (e) {
+          if (toggle.checked && e.target && e.target.classList && e.target.classList.contains('pv-default-input')) {
+            syncPriceField();
+          }
+        });
+        syncPriceField();
+      }
+    }
+
     var form = block.closest('form');
     if (form) {
       form.addEventListener('submit', function (e) {

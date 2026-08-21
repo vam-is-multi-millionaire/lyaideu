@@ -1931,9 +1931,9 @@ function lyaideu_delete_item_variants(PDO $pdo, string $type, int $itemId): void
  * into any product add/edit form. Repeater behaviour lives in
  * js/admin-variants.js.
  */
-function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool $hasVariants = false): string {
+function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool $hasVariants = false, bool $syncPrice = false): string {
     $p = htmlspecialchars($prefix, ENT_QUOTES, 'UTF-8');
-    $h = '<div class="pm-variants">'
+    $h = '<div class="pm-variants"' . ($syncPrice ? ' data-sync-price="1"' : '') . '>'
         . '<label class="pm-variant-toggle">'
         . '<input type="checkbox" class="pv-toggle" name="' . $p . '[has_variants]" value="1"' . ($hasVariants ? ' checked' : '') . '>'
         . '<span><i class="fa-solid fa-layer-group"></i> Enable size / quantity options</span>'
