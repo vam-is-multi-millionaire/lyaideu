@@ -646,6 +646,13 @@ section{scroll-margin-top:96px;}
 .cart-count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:#fff;color:var(--orange-700);font-size:.75rem;margin-left:.25rem}
 .menu-toolbar{display:flex;justify-content:space-between;gap:1rem;align-items:center;margin-bottom:1.5rem}
 .menu-toolbar .chip-row{margin:0}
+/* ---- Mobile: category chip rows scroll horizontally instead of wrapping
+   (same UX as the Stores page #storeKinds row) ---- */
+@media (max-width:960px){
+  .menu-toolbar .chip-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;padding:.35rem .25rem .55rem;}
+  .menu-toolbar .chip-row::-webkit-scrollbar{display:none;}
+  .menu-toolbar .chip-row .chip{flex:0 0 auto;white-space:nowrap;}
+}
 .sort-select{border:2px solid var(--orange-200);background:#fff;border-radius:999px;padding:.6rem 1rem;font:inherit;font-weight:800;color:var(--orange-900)}
 .dish-actions{display:flex;gap:.45rem;align-items:center}
 .btn-call{display:grid;place-items:center;width:38px;height:38px;border-radius:999px;border:2px solid var(--orange-300);color:var(--orange-700);text-decoration:none}
