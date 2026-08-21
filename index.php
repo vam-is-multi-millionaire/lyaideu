@@ -185,7 +185,12 @@ $FEATURED_BEVERAGE_ICONS = [
 (function(){
   try {
     var doc = document.documentElement;
-    if (sessionStorage.getItem('lyaideu_scroll_do_restore:1') === location.pathname) {
+    var searchLoad = false, mobileView = false;
+    try { searchLoad = !!((new URLSearchParams(location.search).get('q') || '').trim()); } catch (e) {}
+    try { mobileView = window.matchMedia('(max-width: 960px)').matches; } catch (e) {}
+    /* Mobile search loads scroll to the results instead of restoring the old
+       position, so the page must not be hidden while waiting for a restore. */
+    if (!(searchLoad && mobileView) && sessionStorage.getItem('lyaideu_scroll_do_restore:1') === location.pathname) {
       doc.classList.add('lyai-restoring');
     }
     window.addEventListener('load', function () { doc.classList.remove('lyai-restoring'); });
@@ -695,7 +700,7 @@ $FEATURED_BEVERAGE_ICONS = [
 <?= lyaideu_footer_html() ?>
 
 <script src="js/script.js?v=24"></script>
-<script src="js/scroll-memory.js?v=5"></script>
+<script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=6"></script>
 </body>
 </html>

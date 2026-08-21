@@ -58,6 +58,28 @@
     return savedPath === location.pathname;
   }
 
+  /* After submitting a search on this page (?q=...) the user wants to see the
+     results section (#search) — not the spot they happened to be scrolled to
+     when they searched. Mobile only; desktop keeps its current behaviour. */
+  function searchResultsEl() {
+    var el = document.getElementById('search');
+    if (!el) return null;
+    var q = '';
+    try { q = (new URLSearchParams(location.search).get('q') || '').trim(); } catch (e) { return null; }
+    if (!q) return null;
+    try { if (!window.matchMedia('(max-width: 960px)').matches) return null; } catch (e) { return null; }
+    return el;
+  }
+
+  /* Land on the results, just below the sticky header. Retried briefly so
+     late-loading images/fonts cannot leave us short of the target. */
+  function scrollToSearch(el, tries) {
+    var bar = document.querySelector('.topbar');
+    var off = bar ? bar.offsetHeight : 0;
+    doScroll(Math.max(0, el.getBoundingClientRect().top + currentY() - off - 10));
+    if (--tries > 0) setTimeout(function () { scrollToSearch(el, tries); }, 150);
+  }
+
   function read() {
     var raw = null;
     try { raw = sessionStorage.getItem(KEY); } catch (e) {}
@@ -135,6 +157,7 @@
      form submit that returned to this same path. Everything else (typing a
      URL, clicking a nav link like "Home") must start at the top/anchor. */
   var type = navType();
+  var searchEl = null;
   if (type === 'back_forward') {
     /* On Back/Forward the browser itself restores the exact scroll position
        (bfcache or the recorded offset), so manual restoration here only fights
@@ -146,12 +169,27 @@
       jumpTo(0);
     }
   }
-  if (type !== 'reload' && type !== 'back_forward' && !takeRestoreFlag()) {
-    restoring = false;
+  if (type !== 'reload' && type !== 'back_forward') {
+    if (takeRestoreFlag()) {
+      /* Load comes right after a form submit on this same page. A submitted
+         search lands on the results section instead of the old position. */
+      searchEl = searchResultsEl();
+      if (searchEl) restoring = false;
+    } else {
+      restoring = false;
+    }
   }
 
   read();
-  if (document.readyState === 'loading') {
+  if (searchEl) {
+    target = null; /* the search scroll owns this load */
+    var goSearch = function () { scrollToSearch(searchEl, 5); };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', goSearch);
+    } else {
+      goSearch();
+    }
+  } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', restore);
   } else {
     restore();
