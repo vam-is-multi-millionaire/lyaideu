@@ -29,7 +29,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=37">
+<link rel="stylesheet" href="css/style.css?v=38">
 </head>
 <body class="auth-body">
 
@@ -40,7 +40,7 @@ require_once __DIR__ . '/site_config.php';
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
-            <li><a href="categories" class="nav-a">Categories</a></li>
+            <li class="auth-hide-desktop"><a href="categories" class="nav-a">Categories</a></li>
             <li><a href="menu" class="nav-a">Menu</a></li>
             <li><a href="mart" class="nav-a">Mart</a></li>
             <li><a href="beverages" class="nav-a">Beverages</a></li>

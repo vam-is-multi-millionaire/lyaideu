@@ -454,6 +454,10 @@ section{scroll-margin-top:96px;}
    AUTH PAGE (Login / Signup) STYLES
    ========================================================== */
 .auth-body { background: var(--orange-50); }
+/* Login page: no Categories link in the desktop header; on mobile the
+   search bar is the only visible part of the topbar, so remove it there. */
+@media (min-width:961px){ .auth-body .auth-hide-desktop{display:none;} }
+@media (max-width:960px){ .auth-body .topbar{display:none;} }
 .auth-wrap { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1fr; overflow: hidden; }
 .auth-brand { position: relative; overflow: hidden; color: #fff; display: flex; flex-direction: column; justify-content: center; padding: 2.6rem 3.2rem 3rem; background: radial-gradient(120% 120% at 0% 0%, #f5974e 0%, #e76608 30%, #6d2503 100%); }
 .auth-brand::before { content: ''; position: absolute; inset: 0; opacity: .5; background-image: radial-gradient(rgba(255,255,255,.16) 1.5px, transparent 1.6px); background-size: 24px 24px; }
