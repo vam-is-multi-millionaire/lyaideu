@@ -193,7 +193,24 @@ $FEATURED_BEVERAGE_ICONS = [
   .dish-card .price .unit{display:none;}
   /* Add button shows only the cart icon on phones */
   .dish-card .btn-order.add-cart .add-label{display:none;}
-  .dish-card .btn-order.add-cart{padding:.45rem .55rem;}
+  /* Bare cart icon only — no pill, no fill, no border */
+  .dish-card .btn-order.add-cart{
+    width:2.25rem;height:2.25rem;min-height:0;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    background:transparent!important;
+    color:var(--orange-600,#e76608)!important;
+    border:0!important;
+    border-radius:.72rem;
+    box-shadow:none!important;
+    transition:color .2s ease,transform .2s ease;
+  }
+  .dish-card .btn-order.add-cart::after{display:none;}
+  .dish-card .btn-order.add-cart i{font-size:.95rem;line-height:1;}
+  .dish-card .btn-order.add-cart:hover{
+    color:var(--orange-700,#a03c07)!important;
+    transform:none!important;box-shadow:none!important;background:transparent!important;
+  }
+  .dish-card .btn-order.add-cart:active{transform:scale(.88);color:var(--orange-800,#742a05)!important;}
 }
 /* Mobile: product cards go 3-per-row (featured + search result grids) */
 @media (max-width:560px){
@@ -210,7 +227,9 @@ $FEATURED_BEVERAGE_ICONS = [
   #featured .dish-grid.home-grid .price,
   #search .dish-grid.home-grid .price{font-size:.8rem;}
   #featured .dish-grid.home-grid .btn-order.add-cart,
-  #search .dish-grid.home-grid .btn-order.add-cart{padding:.38rem .5rem;}
+  #search .dish-grid.home-grid .btn-order.add-cart{width:2.05rem;height:2.05rem;}
+  #featured .dish-grid.home-grid .btn-order.add-cart i,
+  #search .dish-grid.home-grid .btn-order.add-cart i{font-size:.8rem;}
 }
 </style>
 <script>
