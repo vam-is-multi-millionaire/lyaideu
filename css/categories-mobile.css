@@ -281,8 +281,19 @@
     .skel-shimmer::after{animation:none;}
   }
 
+  /* Very small phones (320px baseline): keep 2 products per row —
+     just compact spacing so both columns fit beside the rail */
   @media (max-width:360px){
-    .mc-products{grid-template-columns:1fr;}
+    .mc-main{padding:.85rem .55rem calc(env(safe-area-inset-bottom,0px) + 118px);}
+    .mc-products{gap:.5rem;}
+    .mc-products .dish-body{padding:.45rem .4rem .5rem;}
+    .mc-products .dish-top h3{font-size:.72rem;}
+    .mc-products .price{font-size:.8rem;}
+    .mc-products .dish-hotel{font-size:.58rem;}
+    .mc-products .dish-hotel i{font-size:.52rem;}
+    /* beats cards-mobile.css .dish-card scope (loads later) */
+    .mc-products .dish-card .btn-order.add-cart{width:2.05rem;height:2.05rem;}
+    .mc-products .dish-card .btn-order.add-cart::before{font-size:.8rem;}
   }
 
   .mc-empty{
