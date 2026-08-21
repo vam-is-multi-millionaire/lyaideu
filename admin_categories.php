@@ -110,6 +110,12 @@ function render_category_group(array $flat, string $type, array $counts, array $
     foreach ($flat as $c) {
         $byId[(int)$c['id']] = $c;
     }
+    /* Sibling ids (same type + same parent) in their current display order,
+       used to build the up/down reordering forms. */
+    $sibIds = [];
+    foreach ($typeCats as $tc) {
+        $sibIds[(int)$tc['parent_id']][] = (int)$tc['id'];
+    }
     $pathNames = function (array $c) use ($byId): array {
         $names = [];
         $cur = $c;
@@ -153,6 +159,40 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $itemCount = subtree_item_count($typeCats, $id, $counts);
         $confirm = 'Delete "' . $c['name'] . '"? Items in it will become uncategorized, and its sub-categories will move up one level.';
 
+        /* Reordering: each arrow button posts the full sibling order with this
+           category already swapped into its new place, so the server simply
+           writes clean sequential sort values — no drift, ever. */
+        $sibs = $sibIds[(int)$c['parent_id']] ?? [$id];
+        $sidx = array_search($id, $sibs, true);
+        if ($sidx === false) {
+            $sidx = 0;
+        }
+        $sibCount = count($sibs);
+        $moveForm = function (array $order) use ($ce): string {
+            $f = '<form class="wp-cat-move-form" action="admin_save" method="POST">';
+            $f .= '<input type="hidden" name="csrf_token" value="' . $ce(admin_csrf_token()) . '">';
+            $f .= '<input type="hidden" name="section" value="category_reorder">';
+            foreach ($order as $oid) {
+                $f .= '<input type="hidden" name="order[]" value="' . (int)$oid . '">';
+            }
+            return $f;
+        };
+        $moveHtml = '';
+        if ($sibCount > 1) {
+            $upOrder = $sibs;
+            if ($sidx > 0) {
+                [$upOrder[$sidx - 1], $upOrder[$sidx]] = [$upOrder[$sidx], $upOrder[$sidx - 1]];
+            }
+            $downOrder = $sibs;
+            if ($sidx < $sibCount - 1) {
+                [$downOrder[$sidx], $downOrder[$sidx + 1]] = [$downOrder[$sidx + 1], $downOrder[$sidx]];
+            }
+            $moveHtml .= '<span class="wp-cat-move">';
+            $moveHtml .= $moveForm($upOrder) . '<button type="submit" class="wp-cat-move-btn"' . ($sidx === 0 ? ' disabled' : '') . ' title="Move up" aria-label="Move ' . $ce($c['name']) . ' up"><i class="fa-solid fa-arrow-up"></i></button></form>';
+            $moveHtml .= $moveForm($downOrder) . '<button type="submit" class="wp-cat-move-btn"' . ($sidx === $sibCount - 1 ? ' disabled' : '') . ' title="Move down" aria-label="Move ' . $ce($c['name']) . ' down"><i class="fa-solid fa-arrow-down"></i></button></form>';
+            $moveHtml .= '</span>';
+        }
+
         $html .= '<div class="wp-cat-row" data-search="' . $ce(strtolower((string)$c['name'])) . '">';
         $html .= '<div class="wp-cat-item">';
         $html .= '<span class="wp-cat-indent" style="' . ($depth > 0 ? 'padding-left:' . ($depth * 1.6) . 'rem;' : '') . '">';
@@ -173,9 +213,11 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= $isTop
             ? '<span class="wp-cat-level-badge is-top">Top level</span>'
             : '<span class="wp-cat-level-badge is-sub">Sub of ' . $ce($parentName) . '</span>';
+        $html .= '<span class="admin-count-badge" title="Display position among its sibling categories">#' . ($sidx + 1) . '</span>';
         $html .= '<span class="admin-count-badge">' . (int)$itemCount . ' items</span>';
         $html .= '</span>';
         $html .= '<span class="wp-cat-actions">';
+        $html .= $moveHtml;
         $html .= '<button type="button" class="wp-cat-act wp-cat-edit" data-target="qe-' . $type . '-' . $id . '"><i class="fa-solid fa-pen"></i> Edit</button>';
         $html .= '<form class="wp-cat-del-inline" action="admin_save" method="POST">';
         $html .= '<input type="hidden" name="csrf_token" value="' . $ce(admin_csrf_token()) . '">';
@@ -228,7 +270,7 @@ admin_page_start('Categories', 'categories', 'Categories');
 ?>
 <section class="admin-section">
     <div class="admin-section-top">
-        <p class="section-sub">Organise every product into a category tree, just like WordPress. Use <strong>Edit</strong> to change any category, <strong>Delete</strong> to remove one, and the form on the right to add new categories.</p>
+        <p class="section-sub">Organise every product into a category tree, just like WordPress. Use the <strong>arrow buttons</strong> to reorder categories (top to bottom on the website), <strong>Edit</strong> to change any category, <strong>Delete</strong> to remove one, and the form on the right to add new categories.</p>
         <span class="admin-count-badge"><?= count($allCats) ?> categories</span>
     </div>
 </section>

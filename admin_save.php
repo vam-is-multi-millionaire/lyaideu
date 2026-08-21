@@ -169,7 +169,7 @@ function variant_base_price(int $price, array $row): int {
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'category_reorder', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -183,7 +183,7 @@ require_once __DIR__ . '/site_config.php';
    would make the later commit() fail with "There is no active transaction".
    The ensure_* calls inside the handlers below then short-circuit via their
    request guards. */
-if ($section === 'categories') {
+if ($section === 'categories' || $section === 'category_reorder') {
     lyaideu_ensure_categories_table();
 } elseif ($section === 'others') {
     lyaideu_ensure_other_table();
@@ -982,6 +982,26 @@ try {
                 ':icon' => $icon,
                 ':image' => $img,
             ]);
+        }
+    }
+
+    if ($section === 'category_reorder') {
+        lyaideu_ensure_categories_table();
+
+        $ids = [];
+        foreach ((array)($_POST['order'] ?? []) as $cid) {
+            $cid = (int)$cid;
+            if ($cid > 0 && !in_array($cid, $ids, true)) {
+                $ids[] = $cid;
+            }
+        }
+        if ($ids) {
+            /* The sibling ids arrive already in their new display order —
+               just rewrite clean sequential positions (0, 1, 2, …). */
+            $updOrder = $pdo->prepare('UPDATE categories SET sort_order = :o WHERE id = :id');
+            foreach (array_values($ids) as $pos => $cid) {
+                $updOrder->execute([':o' => $pos, ':id' => $cid]);
+            }
         }
     }
 
