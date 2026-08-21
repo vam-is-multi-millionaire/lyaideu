@@ -149,6 +149,9 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=35">
 <style>
+/* Hide the per-store "Call" button on the stores listing (all viewports);
+   "View Store" stays as the card's single action. */
+.hotel-call-row .hotel-call[href^="tel:"]{display:none !important;}
 @media (max-width:960px){
   footer.footer{display:none !important;}
   .section-head .kicker{display:none;}
