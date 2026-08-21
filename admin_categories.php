@@ -170,7 +170,6 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= '</span>';
         $html .= '</span>';
         $html .= '<span class="wp-cat-meta">';
-        $html .= '<span class="admin-cat-type cat-type-' . $type . '">' . $TYPE_LABELS[$type] . '</span>';
         $html .= $isTop
             ? '<span class="wp-cat-level-badge is-top">Top level</span>'
             : '<span class="wp-cat-level-badge is-sub">Sub of ' . $ce($parentName) . '</span>';
