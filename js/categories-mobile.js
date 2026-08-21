@@ -148,7 +148,7 @@
 
   /* ---- Right product grid ---- */
   function defVar(p){var vs=(p&&p.variants)||[];if(!vs.length)return null;for(var i=0;i<vs.length;i++){if(vs[i]&&vs[i].is_default)return vs[i]}return vs[0]}
-  function cardHTML(p, type, fallbackCat) {
+  function cardHTML(p, type) {
     var id = Number(p.id), name = esc(p.name), tag = esc(p.tag);
     var img = esc(p.img || '');
     var dv = defVar(p);
@@ -158,14 +158,11 @@
     var cats = (p.cats && p.cats.length) ? p.cats.map(esc) : [esc(p.cat || '')];
     var slug = p.slug || slugify(p.name);
     var url = productUrl(type, slug, (p.cats && p.cats.length) ? p.cats : [p.cat]);
-    var art;
-    if (img) {
-      art = '<img src="' + img + '" alt="' + name + '" loading="lazy">';
-    } else if (fallbackCat) {
-      art = catThumb(fallbackCat);
-    } else {
-      art = '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>';
-    }
+    /* Products without their own image get a neutral icon — never the
+       category's image. */
+    var art = img
+      ? '<img src="' + img + '" alt="' + name + '" loading="lazy">'
+      : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>';
     var dataType = type === 'menu' ? 'dish' : type;
     var addBtn = '<button class="btn-order add-cart" data-id="' + id + '" data-type="' + dataType +
       '" data-name="' + name + '" data-price="' + price + '" data-unit="' + unit +
@@ -198,7 +195,7 @@
       products.style.display = '';
       products.hidden = false;
       empty.hidden = true;
-      products.innerHTML = list.map(function (p) { return cardHTML(p, type, cat); }).join('');
+      products.innerHTML = list.map(function (p) { return cardHTML(p, type); }).join('');
     } else {
       /* No products in this category — show a short friendly message. */
       products.innerHTML = '';
