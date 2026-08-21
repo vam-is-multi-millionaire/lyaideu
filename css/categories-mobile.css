@@ -228,6 +228,59 @@
   .mc-products .price{font-size:.95rem;}
   .mc-products .btn-order{font-size:.68rem;padding:.38rem .5rem;}
 
+  /* ---- Skeleton loading cards (while the product list fetches) ---- */
+  .mc-products.is-loading{min-height:55vh;align-content:start;}
+  .mc-skel-card{
+    background:#fff;
+    border:1px solid var(--orange-100);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 4px 16px rgba(90,40,10,.07);
+  }
+  .mc-skel-art{
+    aspect-ratio:1/1;
+    background:var(--orange-100);
+  }
+  .mc-skel-body{
+    padding:.55rem .6rem .65rem;
+    display:flex;
+    flex-direction:column;
+    gap:.5rem;
+  }
+  .mc-skel-line{
+    display:block;
+    height:.72rem;
+    border-radius:999px;
+    background:var(--orange-100);
+  }
+  .mc-skel-foot{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:.4rem;
+    margin-top:.15rem;
+  }
+  .mc-skel-pill{
+    flex:0 0 auto;
+    width:62px;
+    height:1.55rem;
+    border-radius:999px;
+    background:var(--orange-100);
+  }
+  .skel-shimmer{position:relative;overflow:hidden;}
+  .skel-shimmer::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);
+    transform:translateX(-100%);
+    animation:skelSweep 1.4s ease-in-out infinite;
+  }
+  @keyframes skelSweep{100%{transform:translateX(100%);}}
+  @media (prefers-reduced-motion:reduce){
+    .skel-shimmer::after{animation:none;}
+  }
+
   @media (max-width:360px){
     .mc-products{grid-template-columns:1fr;}
   }

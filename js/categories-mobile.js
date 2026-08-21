@@ -184,6 +184,27 @@
 
   /* ---- Right product grid ---- */
   function defVar(p){var vs=(p&&p.variants)||[];if(!vs.length)return null;for(var i=0;i<vs.length;i++){if(vs[i]&&vs[i].is_default)return vs[i]}return vs[0]}
+
+  /* Skeleton placeholders that mirror the real .dish-card layout (square
+     art, title lines, price + button row) so the grid keeps its exact size
+     while the catalog is still loading — no spinner, no layout jump. */
+  function skeletonCards() {
+    var card = '<article class="mc-skel-card" aria-hidden="true">' +
+      '<div class="mc-skel-art skel-shimmer"></div>' +
+      '<div class="mc-skel-body">' +
+        '<span class="mc-skel-line skel-shimmer" style="width:82%"></span>' +
+        '<span class="mc-skel-line skel-shimmer" style="width:52%"></span>' +
+        '<div class="mc-skel-foot">' +
+          '<span class="mc-skel-line skel-shimmer" style="width:36%"></span>' +
+          '<span class="mc-skel-pill skel-shimmer"></span>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+    var out = '';
+    for (var i = 0; i < 6; i++) out += card;
+    return out;
+  }
+
   function cardHTML(p, type) {
     var id = Number(p.id), name = esc(p.name), tag = esc(p.tag);
     var img = esc(p.img || '');
@@ -220,9 +241,13 @@
       products.style.display = '';
       products.hidden = false;
       empty.hidden = true;
-      products.innerHTML = '<div class="mc-empty"><span class="mc-empty-ico"><i class="fa-solid fa-spinner fa-spin"></i></span>Loading ' + esc(cat ? cat.name : slug) + '…</div>';
+      products.classList.add('is-loading');
+      products.setAttribute('aria-busy', 'true');
+      products.innerHTML = skeletonCards();
       return;
     }
+    products.classList.remove('is-loading');
+    products.removeAttribute('aria-busy');
     var list = items.filter(function (p) {
       var cats = (p.cats && p.cats.length) ? p.cats : [p.cat || ''];
       return cats.indexOf(slug) !== -1;
