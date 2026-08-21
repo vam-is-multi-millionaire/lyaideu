@@ -33,8 +33,54 @@
 
   var cache = null;
   var current = null;      // { type, slug }
-  var canGoBack = false;
   var syncTimer = null;
+
+  /* ---- Browse-view state lives in sessionStorage, NOT the URL ----------
+     The previous implementation kept this in a #mc=… URL hash managed
+     with pushState/replaceState. Mobile browsers coalesce or skip
+     hash-only history entries, which glued the hash onto completely
+     unrelated URLs (e.g. the site root showing index.php with
+     "#mc=menu:beverages"). The address bar is now never touched: the
+     open category + product-list scroll are stored here and restored
+     whenever the user comes back to this page. */
+  var STATE_KEY = 'lyai_mc_view_v1';
+
+  function saveState() {
+    try {
+      var main = view.querySelector('.mc-main');
+      sessionStorage.setItem(STATE_KEY, JSON.stringify({
+        type: current ? current.type : '',
+        slug: current ? current.slug : '',
+        main: main ? Math.round(main.scrollTop) : 0
+      }));
+    } catch (e) {}
+  }
+
+  function readState() {
+    try {
+      var s = JSON.parse(sessionStorage.getItem(STATE_KEY) || 'null');
+      if (s && s.type && s.slug) return s;
+    } catch (e) {}
+    return null;
+  }
+
+  function clearState() {
+    try { sessionStorage.removeItem(STATE_KEY); } catch (e) {}
+  }
+
+  /* The product grid renders asynchronously, so keep re-applying for a
+     short window — otherwise late renders/images clamp the position. */
+  function restoreMainScroll(y) {
+    if (!y) return;
+    var main = view.querySelector('.mc-main');
+    if (!main) return;
+    var tries = 0;
+    (function apply() {
+      if (!view.classList.contains('open')) return;
+      main.scrollTop = y;
+      if (++tries < 10) setTimeout(apply, 150);
+    })();
+  }
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (ch) {
@@ -43,16 +89,6 @@
   }
   function slugify(s) {
     return String(s || '').replace(/&amp;/g, '&').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
-  }
-
-  function hashFor(type, slug) { return '#mc=' + type + ':' + slug; }
-  function parseHash() {
-    var h = location.hash || '';
-    if (h.indexOf('#mc=') !== 0) return null;
-    var body = h.slice(4);
-    var i = body.indexOf(':');
-    if (i < 0) return null;
-    return { type: decodeURIComponent(body.slice(0, i)), slug: decodeURIComponent(body.slice(i + 1)) };
   }
 
   function findCat(type, slug) {
@@ -208,8 +244,7 @@
   }
 
   /* ---- Open / close ---- */
-  function openView(type, slug, opts) {
-    opts = opts || {};
+  function openView(type, slug) {
     var scope = rootSlug(type, slug);
     current = { type: type, slug: slug, scope: scope };
     var cat = findCat(type, slug);
@@ -221,11 +256,8 @@
     view.classList.add('open');
     view.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mc-open');
-    canGoBack = opts.push !== false;
     startSync();
-    if (opts.push !== false) {
-      try { history.pushState({ lycat: 1 }, '', hashFor(type, slug)); } catch (e) {}
-    }
+    saveState();
     try { backBtn.focus({ preventScroll: true }); } catch (e) {}
     fetchCatalog().then(function (d) {
       if (!d) return;
@@ -244,7 +276,7 @@
     headSub.textContent = cat ? cat.name : slug;
     renderRail(current.type, current.scope, slug);
     renderProducts(current.type, slug);
-    try { history.replaceState({ lycat: 1 }, '', hashFor(current.type, slug)); } catch (e) {}
+    saveState();
   }
 
   function closeView() {
@@ -252,13 +284,8 @@
     view.classList.remove('open');
     view.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('mc-open');
-    canGoBack = false;
     stopSync();
-    try {
-      if (location.hash && location.hash.indexOf('#mc=') === 0) {
-        history.replaceState(null, '', location.pathname + location.search);
-      }
-    } catch (e) {}
+    clearState();
   }
 
   /* ---- Wire up ---- */
@@ -270,7 +297,7 @@
     var slug = t.getAttribute('data-mc-slug');
     if (!slug || !GROUPS[type]) return;
     e.preventDefault();
-    openView(type, slug, { push: true });
+    openView(type, slug);
   });
 
   rail.addEventListener('click', function (e) {
@@ -283,47 +310,38 @@
     var card = e.target.closest('.dish-card');
     if (!card) return;
     var url = card.dataset.url;
-    if (url) window.location.href = url;
+    if (url) {
+      saveState();
+      window.location.href = url;
+    }
   });
 
   backBtn.addEventListener('click', function () {
-    if (canGoBack) { try { history.back(); } catch (e) { closeView(); } }
-    else closeView();
+    /* Just close the overlay. The URL is never touched, so there is
+       nothing to unwind in the history stack. */
+    closeView();
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && view.classList.contains('open')) closeView();
   });
 
-  window.addEventListener('popstate', function () {
-    var parsed = parseHash();
-    if (view.classList.contains('open')) {
-      if (!parsed || !current || parsed.type !== current.type || parsed.slug !== current.slug) {
-        closeView();
-      }
-    } else if (parsed && GROUPS[parsed.type] && findCat(parsed.type, parsed.slug)) {
-      openView(parsed.type, parsed.slug, { push: false });
-    }
-  });
-
   function onViewportChange() {
     if (!isMobile() && view.classList.contains('open')) {
       closeView();
-      try {
-        if (location.hash && location.hash.indexOf('#mc=') === 0) {
-          history.replaceState(null, '', location.pathname + location.search);
-        }
-      } catch (e) {}
     }
   }
   if (MQ && MQ.addEventListener) MQ.addEventListener('change', onViewportChange);
   else window.addEventListener('resize', onViewportChange);
 
-  /* Reloading with a #mc=... hash reopens the browse view directly. */
+  /* Coming back to this page — browser Back from a product, or a reload
+     while the view was open — reopens the browse view exactly where the
+     user left it, straight from the saved state. No URL hashes involved. */
   if (isMobile()) {
-    var initial = parseHash();
-    if (initial && GROUPS[initial.type] && findCat(initial.type, initial.slug)) {
-      openView(initial.type, initial.slug, { push: false });
+    var saved = readState();
+    if (saved && GROUPS[saved.type] && findCat(saved.type, saved.slug)) {
+      openView(saved.type, saved.slug);
+      restoreMainScroll(Number(saved.main) || 0);
     }
   }
 })();

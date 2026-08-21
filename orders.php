@@ -132,4 +132,4 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=24"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script></body></html>
+<script src="js/script.js?v=25"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script></body></html>

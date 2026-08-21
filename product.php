@@ -194,7 +194,6 @@ if ($hasVariants) {
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=35">
-<script>window.LYADEU_BACK_TO_TOP=1;</script>
 </head>
 <body class="product-pg" data-needs-catalog>
 
@@ -372,21 +371,38 @@ if ($hasVariants) {
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=24"></script>
+<script src="js/script.js?v=25"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>
 (function(){
+  /* Back link priority:
+     1. Explicit session trail — the exact page the user was on before
+        (categories browse view, listing, another product…). Immune to
+        mobile browsers skipping hash-only history entries.
+     2. history.back() when the referrer is same-origin.
+     3. The static listing href rendered by PHP (direct landings). */
   var backLinks = document.querySelectorAll('.back-link');
-  if (!backLinks.length || !window.history) return;
-  if (window.history.length > 1) {
-    backLinks.forEach(function (backLink) {
-      backLink.addEventListener('click', function (e) {
+  if (!backLinks.length) return;
+  backLinks.forEach(function (backLink) {
+    backLink.addEventListener('click', function (e) {
+      var target = null;
+      try { target = window.LYAI_TRAIL_BACK ? window.LYAI_TRAIL_BACK() : null; } catch (err) { target = null; }
+      if (target) {
+        e.preventDefault();
+        window.location.href = target;
+        return;
+      }
+      var sameOriginRef = false;
+      try {
+        sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+      } catch (err) { sameOriginRef = false; }
+      if (sameOriginRef && window.history.length > 1) {
         e.preventDefault();
         window.history.back();
-      });
+      }
     });
-  }
+  });
 })();
 (function(){
   var opts = document.querySelectorAll('#variantOptions input[type="radio"]');

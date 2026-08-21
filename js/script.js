@@ -1,5 +1,43 @@
 
 window.FE_VERSION='v3';
+/* ============================================================
+   LyaiDeu navigation trail — deterministic Back support.
+   Mobile browsers sometimes skip/coalesce history entries that
+   only differ by hash (the categories browse view uses #mc=…),
+   so history.back() can jump past the listing to an older page.
+   We therefore keep an explicit same-session trail of visited
+   URLs and expose LYAI_TRAIL_BACK() so back links can navigate
+   to the exact previous page instead of trusting the stack.
+   ============================================================ */
+(function(){'use strict';
+  var KEY='lyai_trail_v1';
+  function read(){try{return JSON.parse(sessionStorage.getItem(KEY)||'[]')||[]}catch(e){return[]}}
+  function write(t){try{sessionStorage.setItem(KEY,JSON.stringify(t.slice(-30)))}catch(e){}}
+  function cur(){return location.pathname+location.search+location.hash}
+  var trail=read(),url=cur(),idx=trail.lastIndexOf(url);
+  if(idx>=0)trail=trail.slice(0,idx+1);          /* back/reload: drop forward garbage */
+  else if(trail[trail.length-1]!==url)trail.push(url);
+  write(trail);
+  window.addEventListener('pageshow',function(e){
+    if(!e.persisted)return;                       /* bfcache restore: fix the trail */
+    var t=read(),u=cur(),n=t.length;
+    if(!n||t[n-1]===u)return;
+    if(n>=2&&t[n-2]===u)t.pop();else t.push(u);
+    write(t);
+  });
+  window.LYAI_TRAIL_BACK=function(){
+    var t=read(),u=cur();
+    for(var i=t.length-2;i>=0;i--){if(t[i]!==u)return t[i]}
+    return null;
+  };
+  /* Pages that rewrite their own URL (pushState/replaceState) call this so
+     the trail's latest entry always matches what the address bar shows. */
+  window.LYAI_TRAIL_UPDATE=function(u){
+    var t=read();
+    if(!t.length)t.push(u);else t[t.length-1]=u;
+    write(t);
+  };
+})();
 (function(){'use strict';
 const $=(s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
 let currentCat='all',searchQuery='',allDishes=[],allMart=[],allOthers=[],allBeverages=[]; const CART_KEY='fe_cart',FAV_KEY='fe_favorites';

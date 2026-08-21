@@ -329,21 +329,35 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=24"></script>
+<script src="js/script.js?v=25"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>
 (function(){
+  /* Back link: prefer the explicit session trail (exact previous page),
+     then history.back() for same-origin referrers; otherwise follow the
+     static href so direct landings never bounce out of the site. */
   var backLinks = document.querySelectorAll('.back-link');
-  if (!backLinks.length || !window.history) return;
-  if (window.history.length > 1) {
-    backLinks.forEach(function (backLink) {
-      backLink.addEventListener('click', function (e) {
+  if (!backLinks.length) return;
+  backLinks.forEach(function (backLink) {
+    backLink.addEventListener('click', function (e) {
+      var target = null;
+      try { target = window.LYAI_TRAIL_BACK ? window.LYAI_TRAIL_BACK() : null; } catch (err) { target = null; }
+      if (target) {
+        e.preventDefault();
+        window.location.href = target;
+        return;
+      }
+      var sameOriginRef = false;
+      try {
+        sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+      } catch (err) { sameOriginRef = false; }
+      if (sameOriginRef && window.history.length > 1) {
         e.preventDefault();
         window.history.back();
-      });
+      }
     });
-  }
+  });
 })();
 </script>
 <?php if ($isDetail): ?>
