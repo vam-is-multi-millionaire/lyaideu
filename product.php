@@ -376,27 +376,20 @@ if ($hasVariants) {
 <script src="js/notify.js?v=6"></script>
 <script>
 (function(){
-  /* Back link priority:
-     1. Explicit session trail — the exact page the user was on before
-        (categories browse view, listing, another product…). Immune to
-        mobile browsers skipping hash-only history entries.
-     2. history.back() when the referrer is same-origin.
-     3. The static listing href rendered by PHP (direct landings). */
+  /* Back link: use the browser's own history so the previous page is
+     restored from its cache instantly — listings like index.php keep
+     their exact shuffled order and scroll position that way. The static
+     href rendered by PHP is only followed when this page was opened
+     directly (shared link / new tab), where history.back() would leave
+     the site. */
   var backLinks = document.querySelectorAll('.back-link');
-  if (!backLinks.length) return;
+  if (!backLinks.length || !window.history) return;
+  var sameOriginRef = false;
+  try {
+    sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+  } catch (err) { sameOriginRef = false; }
   backLinks.forEach(function (backLink) {
     backLink.addEventListener('click', function (e) {
-      var target = null;
-      try { target = window.LYAI_TRAIL_BACK ? window.LYAI_TRAIL_BACK() : null; } catch (err) { target = null; }
-      if (target) {
-        e.preventDefault();
-        window.location.href = target;
-        return;
-      }
-      var sameOriginRef = false;
-      try {
-        sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
-      } catch (err) { sameOriginRef = false; }
       if (sameOriginRef && window.history.length > 1) {
         e.preventDefault();
         window.history.back();

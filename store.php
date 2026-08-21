@@ -334,24 +334,18 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <script src="js/notify.js?v=6"></script>
 <script>
 (function(){
-  /* Back link: prefer the explicit session trail (exact previous page),
-     then history.back() for same-origin referrers; otherwise follow the
-     static href so direct landings never bounce out of the site. */
+  /* Back link: use the browser's own history so the previous page is
+     restored from its cache instantly (order and scroll stay exactly as
+     they were). The static href is only followed when this page was
+     opened directly (shared link / new tab). */
   var backLinks = document.querySelectorAll('.back-link');
-  if (!backLinks.length) return;
+  if (!backLinks.length || !window.history) return;
+  var sameOriginRef = false;
+  try {
+    sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+  } catch (err) { sameOriginRef = false; }
   backLinks.forEach(function (backLink) {
     backLink.addEventListener('click', function (e) {
-      var target = null;
-      try { target = window.LYAI_TRAIL_BACK ? window.LYAI_TRAIL_BACK() : null; } catch (err) { target = null; }
-      if (target) {
-        e.preventDefault();
-        window.location.href = target;
-        return;
-      }
-      var sameOriginRef = false;
-      try {
-        sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
-      } catch (err) { sameOriginRef = false; }
       if (sameOriginRef && window.history.length > 1) {
         e.preventDefault();
         window.history.back();

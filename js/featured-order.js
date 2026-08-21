@@ -1,14 +1,17 @@
 /* index.php "Random Picks" order memory.
    The server shuffles the featured grids with a fresh random seed on every
-   load, so no seed is kept in the URL (the address bar stays clean). The exact
-   order a user saw is remembered client-side in sessionStorage and re-applied
-   to the DOM whenever they return to this page with the browser Back/Forward,
-   reproducing the order they last saw — even after navigating pages deep. */
+   load. When the underlying catalog is bigger than the displayed count
+   (menu, others…), consecutive loads can render a DIFFERENT SUBSET of
+   products — merely re-ordering the fresh cards cannot reproduce what the
+   user last saw. So on Back/Forward the entire grid markup is restored
+   verbatim from a sessionStorage snapshot: identical products, identical
+   order. An explicit refresh keeps the freshly shuffled sets. */
 (function () {
   'use strict';
 
   var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredBeverages', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
-  var STORE_KEY = 'lyaideu_featured_v3:' + location.pathname.replace(/\/+$/, '');
+  var STORE_KEY = 'lyaideu_featured_v4:' + location.pathname.replace(/\/+$/, '');
+  var SNAP_TTL = 30 * 60 * 1000; /* half a browsing session */
 
   function navType() {
     try {
@@ -22,52 +25,19 @@
     return 'navigate';
   }
 
-  function cardKey(card) {
-    var id = card.getAttribute('data-id');
-    if (id) return (card.getAttribute('data-type') || 'item') + ':' + id;
-    var storeUrl = card.getAttribute('data-store-url');
-    if (storeUrl) return 'store:' + storeUrl;
+  function loadSaved() {
+    try {
+      var s = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+      if (s && s.html && Date.now() - (s.ts || 0) < SNAP_TTL) return s;
+    } catch (e) {}
     return null;
   }
 
-  function readOrder(grid) {
-    var keys = [];
-    for (var i = 0; i < grid.children.length; i++) {
-      var k = cardKey(grid.children[i]);
-      if (k) keys.push(k);
-    }
-    return keys;
-  }
-
-  function loadSaved() {
-    try { return JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null'); } catch (e) { return null; }
-  }
-
-  function saveOrders(grids) {
-    var data = {};
-    for (var i = 0; i < grids.length; i++) data[grids[i].id] = readOrder(grids[i]);
+  /* Snapshot the live grid markup so Back/Forward can put it back verbatim. */
+  function saveSnapshot(grids) {
+    var data = { ts: Date.now(), html: {} };
+    for (var i = 0; i < grids.length; i++) data.html[grids[i].id] = grids[i].innerHTML;
     try { sessionStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (e) {}
-  }
-
-  /* Re-arrange the grid's children into the saved order. Returns false if the
-     current cards no longer match the saved list (e.g. items changed). */
-  function applyOrder(grid, savedKeys) {
-    var current = Array.prototype.slice.call(grid.children);
-    var currentKeys = readOrder(grid);
-    if (!savedKeys || currentKeys.length !== savedKeys.length) return false;
-    var byKey = {};
-    var ok = true;
-    for (var i = 0; i < currentKeys.length; i++) {
-      if (!currentKeys[i]) { ok = false; break; }
-      byKey[currentKeys[i]] = current[i];
-    }
-    if (!ok) return false;
-    for (var j = 0; j < savedKeys.length; j++) {
-      if (!byKey[savedKeys[j]]) { ok = false; break; }
-    }
-    if (!ok) return false;
-    for (var k = 0; k < savedKeys.length; k++) grid.appendChild(byKey[savedKeys[k]]);
-    return true;
   }
 
   /* A leftover ?fs=... from an older build would otherwise stay visible in the
@@ -92,24 +62,21 @@
 
     cleanUrl();
 
-    var type = navType();
-    var overwrite = true;
-
-    /* On Back/Forward, restore the last-seen order from sessionStorage by
-       re-arranging the freshly-shuffled cards. Don't clobber the snapshot if
-       the rendered cards can't be re-arranged back to it. */
-    if (type === 'back_forward') {
-      var saved = loadSaved();
-      if (saved) {
+    /* Back/Forward: put the last-seen grids back verbatim. The snapshot is
+       intentionally NOT overwritten here, so repeated backs keep working. */
+    if (navType() === 'back_forward') {
+      var snap = loadSaved();
+      if (snap) {
         for (var j = 0; j < grids.length; j++) {
-          var keys = saved[grids[j].id];
-          if (keys && keys.length && grids[j].children.length && !applyOrder(grids[j], keys)) {
-            overwrite = false;
-          }
+          var html = snap.html[grids[j].id];
+          if (typeof html === 'string' && html) grids[j].innerHTML = html;
         }
       }
+      return;
     }
-    if (overwrite) saveOrders(grids);
+
+    /* Fresh visit or explicit refresh: remember this newly shuffled state. */
+    saveSnapshot(grids);
   }
 
   try {

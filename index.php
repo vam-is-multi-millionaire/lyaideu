@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
@@ -614,7 +614,7 @@ $FEATURED_BEVERAGE_ICONS = [
         </div>
     </section>
 
-    <script src="js/featured-order.js?v=4"></script>
+    <script src="js/featured-order.js?v=5"></script>
 
     <section id="faq" class="section section-white">
         <div class="container">
