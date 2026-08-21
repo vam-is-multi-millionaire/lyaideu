@@ -156,7 +156,13 @@ function render_category_group(array $flat, string $type, array $counts, array $
         $html .= '<div class="wp-cat-row" data-search="' . $ce(strtolower((string)$c['name'])) . '">';
         $html .= '<div class="wp-cat-item">';
         $html .= '<span class="wp-cat-indent" style="' . ($depth > 0 ? 'padding-left:' . ($depth * 1.6) . 'rem;' : '') . '">';
-        $html .= '<span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span>';
+        $listImg = (string)($c['image'] ?? '');
+        if ($listImg !== '') {
+            /* Show the attached category image; the FA icon is only the fallback. */
+            $html .= '<span class="cat-icon-chip cat-icon-chip-img"><img src="' . $ce($listImg) . '" alt="' . $ce($c['name']) . '" loading="lazy"></span>';
+        } else {
+            $html .= '<span class="cat-icon-chip"><i class="fa-solid ' . $ce($c['icon'] !== '' ? $c['icon'] : 'fa-tags') . '"></i></span>';
+        }
         $html .= '<span class="wp-cat-name-wrap"><span class="wp-cat-name">' . $ce($c['name']) . '</span>';
         if (!$isTop) {
             $html .= '<span class="wp-cat-subpath">' . $ce(implode(' › ', $names)) . '</span>';

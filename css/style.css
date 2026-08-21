@@ -1285,6 +1285,7 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .wp-cat-level-badge.is-top{background:#e5f4e8;color:#1e7a3c;}
 .wp-cat-level-badge.is-sub{background:#fff1dd;color:#a85b00;}
 .cat-icon-chip{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:#fff;border:1px solid var(--orange-200);display:grid;place-items:center;color:var(--orange-700);font-size:.85rem;}
+.cat-icon-chip img{width:100%;height:100%;object-fit:cover;border-radius:7px;display:block;}
 .wp-cat-meta{display:flex;align-items:center;gap:.5rem;flex:0 0 auto;}
 .wp-cat-actions{flex:0 0 auto;display:flex;align-items:center;gap:.2rem;}
 .wp-cat-act{border:0;background:transparent;color:var(--orange-700);font-weight:800;font-size:.8rem;cursor:pointer;padding:.35rem .6rem;border-radius:8px;font-family:inherit;}
