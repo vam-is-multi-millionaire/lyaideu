@@ -187,6 +187,8 @@ $FEATURED_BEVERAGE_ICONS = [
   .section-head .section-sub{display:none;}
   /* Mobile hero shows only the slider — trim its heavy vertical padding */
   .hero.hero-split{padding:1.25rem .95rem 1.75rem;}
+  /* Random Picks sits right under the hero on phones — no top gap */
+  #featured{padding-top:0;}
 }
 </style>
 <script>
