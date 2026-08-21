@@ -194,7 +194,7 @@ if ($hasVariants) {
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=35">
-<link rel="stylesheet" href="css/cards-mobile.css?v=1">
+<link rel="stylesheet" href="css/cards-mobile.css?v=2">
 </head>
 <body class="product-pg" data-needs-catalog>
 
@@ -303,7 +303,7 @@ if ($hasVariants) {
                 <?php endif; ?>
 
                 <div class="product-actions">
-                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-price="' . (int)$defaultVariant['price'] . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i> Add to Cart</button>
+                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-price="' . (int)$defaultVariant['price'] . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 
