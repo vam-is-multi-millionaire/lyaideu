@@ -182,9 +182,20 @@ $FEATURED_BEVERAGE_ICONS = [
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=35">
 <style>
+/* Vendor/store line on product cards — rendered for phones only */
+.dish-grid.home-grid .dish-hotel{display:none;}
 /* Home page: hide the section subtitle lines on phones only */
 @media (max-width:960px){
   .section-head .section-sub{display:none;}
+  /* Vendor/store name under the title — one line, truncated with “…” */
+  .dish-grid.home-grid .dish-card{min-width:0;}
+  .dish-grid.home-grid .dish-hotel{
+    display:block;margin:.16rem 0 0;max-width:100%;
+    font-size:.62rem;font-weight:800;line-height:1.2;
+    color:var(--orange-600,#e76608);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .dish-grid.home-grid .dish-hotel i{font-size:.55rem;color:var(--orange-400,#f5974e);margin-right:.24rem;}
   /* Mobile hero shows only the slider — trim its heavy vertical padding */
   .hero.hero-split{padding:1.25rem .95rem 1.75rem;}
   /* Random Picks sits right under the hero on phones — no top gap */
@@ -237,6 +248,10 @@ $FEATURED_BEVERAGE_ICONS = [
   #search .dish-grid.home-grid .dish-top h3{font-size:.72rem;}
   #featured .dish-grid.home-grid .price,
   #search .dish-grid.home-grid .price{font-size:.8rem;}
+  #featured .dish-grid.home-grid .dish-hotel,
+  #search .dish-grid.home-grid .dish-hotel{font-size:.58rem;}
+  #featured .dish-grid.home-grid .dish-hotel i,
+  #search .dish-grid.home-grid .dish-hotel i{font-size:.52rem;}
   #featured .dish-grid.home-grid .btn-order.add-cart,
   #search .dish-grid.home-grid .btn-order.add-cart{width:2.05rem;height:2.05rem;}
   #featured .dish-grid.home-grid .btn-order.add-cart::before,
@@ -364,7 +379,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>
                             <?php endif; ?>
                         </div>
-                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sDish['name']) ?></h3></div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sDish['name']) ?></h3></div><?= ($sDish['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sDish['hotel']) . '</p>' : '' ?>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($sDish) ?></span>
                         <button class="btn-order add-cart" data-id="<?= (int)$sDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($sDish['name']) ?>" data-price="<?= lyaideu_featured_price($sDish) ?>" data-unit=""<?= !empty($sDish['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
@@ -390,7 +405,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php endif; ?>
                             <?php if ($sMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sMart['tag']) ?></span><?php endif; ?>
                         </div>
-                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div><?= ($sMart['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sMart['hotel']) . '</p>' : '' ?>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($sMart) ?><?= lyaideu_featured_unit($sMart) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sMart)) . '</span>' : '' ?></span>
                         <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= lyaideu_featured_price($sMart) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sMart)) ?>" data-hotel="<?= lyaideu_featured_e($sMart['hotel'] ?? '') ?>"<?= !empty($sMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
@@ -416,7 +431,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php endif; ?>
                             <?php if ($sOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sOther['tag']) ?></span><?php endif; ?>
                         </div>
-                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sOther['name']) ?></h3></div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sOther['name']) ?></h3></div><?= ($sOther['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sOther['hotel']) . '</p>' : '' ?>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($sOther) ?><?= lyaideu_featured_unit($sOther) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sOther)) . '</span>' : '' ?></span>
                         <button class="btn-order add-cart" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-price="<?= lyaideu_featured_price($sOther) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sOther)) ?>" data-hotel="<?= lyaideu_featured_e($sOther['hotel'] ?? '') ?>"<?= !empty($sOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
@@ -442,7 +457,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php endif; ?>
                             <?php if ($sBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sBev['tag']) ?></span><?php endif; ?>
                         </div>
-                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sBev['name']) ?></h3></div>
+                        <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sBev['name']) ?></h3></div><?= ($sBev['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sBev['hotel']) . '</p>' : '' ?>
                         <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($sBev) ?><?= lyaideu_featured_unit($sBev) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sBev)) . '</span>' : '' ?></span>
                         <button class="btn-order add-cart" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-price="<?= lyaideu_featured_price($sBev) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sBev)) ?>" data-hotel="<?= lyaideu_featured_e($sBev['hotel'] ?? '') ?>"<?= !empty($sBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
@@ -508,7 +523,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                     <span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>
                                 <?php endif; ?>
                             </div>
-                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fDish['name']) ?></h3></div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fDish['name']) ?></h3></div><?= ($fDish['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fDish['hotel']) . '</p>' : '' ?>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($fDish) ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fDish['id'] ?>" data-type="dish" data-name="<?= lyaideu_featured_e($fDish['name']) ?>" data-price="<?= lyaideu_featured_price($fDish) ?>" data-unit=""<?= !empty($fDish['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
@@ -534,7 +549,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php endif; ?>
                                 <?php if ($fMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fMart['tag']) ?></span><?php endif; ?>
                             </div>
-                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div><?= ($fMart['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fMart['hotel']) . '</p>' : '' ?>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($fMart) ?><?= lyaideu_featured_unit($fMart) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fMart)) . '</span>' : '' ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= lyaideu_featured_price($fMart) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fMart)) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>"<?= !empty($fMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
@@ -560,7 +575,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php endif; ?>
                                 <?php if ($fOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fOther['tag']) ?></span><?php endif; ?>
                             </div>
-                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div><?= ($fOther['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fOther['hotel']) . '</p>' : '' ?>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($fOther) ?><?= lyaideu_featured_unit($fOther) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fOther)) . '</span>' : '' ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= lyaideu_featured_price($fOther) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fOther)) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>"<?= !empty($fOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
@@ -586,7 +601,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php endif; ?>
                                 <?php if ($fBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fBev['tag']) ?></span><?php endif; ?>
                             </div>
-                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fBev['name']) ?></h3></div>
+                            <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fBev['name']) ?></h3></div><?= ($fBev['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fBev['hotel']) . '</p>' : '' ?>
                             <div class="dish-foot"><span class="price"><small>Rs.</small> <?= lyaideu_featured_price($fBev) ?><?= lyaideu_featured_unit($fBev) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fBev)) . '</span>' : '' ?></span>
                             <button class="btn-order add-cart" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-price="<?= lyaideu_featured_price($fBev) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fBev)) ?>" data-hotel="<?= lyaideu_featured_e($fBev['hotel'] ?? '') ?>"<?= !empty($fBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
