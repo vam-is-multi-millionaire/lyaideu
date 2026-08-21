@@ -196,6 +196,14 @@ $FEATURED_BEVERAGE_ICONS = [
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .dish-grid.home-grid .dish-hotel i{font-size:.55rem;color:var(--orange-400,#f5974e);margin-right:.24rem;}
+  /* Product title stays on one line too — same “…” truncation */
+  .dish-grid.home-grid .dish-top{min-width:0;}
+  .dish-grid.home-grid .dish-top h3{
+    min-width:0;flex:0 1 auto;max-width:100%;
+    font-size:.78rem;line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    overflow-wrap:normal;
+  }
   /* Mobile hero shows only the slider — trim its heavy vertical padding */
   .hero.hero-split{padding:1.25rem .95rem 1.75rem;}
   /* Random Picks sits right under the hero on phones — no top gap */
