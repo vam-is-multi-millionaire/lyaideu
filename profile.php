@@ -325,7 +325,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="stylesheet" href="css/style.css?v=36">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
@@ -490,6 +490,8 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <?php endif; ?>
         </form>
     </div>
+
+    <a class="btn btn-primary btn-block profile-mobile-logout" href="logout" style="background:#c93a3a;border-color:#c93a3a;box-shadow:0 5px 0 #a02a2a;margin-top:1.4rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
 </main>
 
 <script>

@@ -1570,6 +1570,13 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .loc-banner{bottom:calc(env(safe-area-inset-bottom,0px) + 100px) !important;}
 }
 
+/* ---- Profile page: desktop has Log Out in the header dropdown, so the
+   red button at the end of the page is for phones only ---- */
+.profile-mobile-logout{display:none;}
+@media (max-width:960px){
+  .profile-mobile-logout{display:inline-flex;}
+}
+
 /* ==========================================================
    CATEGORIES PAGE — grouped category cards (mobile-first)
    ========================================================== */
