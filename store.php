@@ -147,7 +147,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=32">
+<link rel="stylesheet" href="css/style.css?v=35">
 <style>
 @media (max-width:960px){
   footer.footer{display:none !important;}
@@ -264,7 +264,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                                 if ($defVar === null) { $defVar = $p['variants'][0]; }
                             }
                             $price = $defVar ? (int)$defVar['price'] : (int)$p['price'];
-                            $unitLabel = $defVar && (string)$defVar['label'] !== '' ? (string)$defVar['label'] : (string)$p['unit'];
+                            $unitLabel = $defVar && (string)$defVar['label'] !== '' ? (string)$defVar['label'] : (string)($p['unit'] ?? '');
                             $unitHtml = $hasUnit && $unitLabel !== '' ? ' <span class="unit">/ ' . e($unitLabel) . '</span>' : '';
                             $img = (string)$p['img'];
                             $catIcon = $isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($isOther ? ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift') : ($BEVERAGE_CAT_ICONS[$p['cat']] ?? 'fa-glass-water'));

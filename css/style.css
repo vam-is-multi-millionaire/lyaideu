@@ -238,9 +238,9 @@ section{scroll-margin-top:96px;}
                    display:grid;place-items:center;font-size:3.4rem;overflow:hidden;}
 .store-hero-avatar .hotel-logo{width:100%;height:100%;object-fit:contain;display:block;background:#fff;padding:10px;border-radius:22px;}
 .store-hero-info{min-width:0;flex:1;}
-.store-hero-info h1{margin:.2rem 0 .15rem;}
+.store-hero-info h1{margin:.2rem 0 .15rem;overflow-wrap:anywhere;}
 .store-hero-type{font-size:.95rem;font-weight:800;color:var(--muted);margin:.15rem 0;}
-.store-hero-desc{font-size:.9rem;color:#6b4a2b;font-weight:600;line-height:1.55;margin:.6rem 0 0;}
+.store-hero-desc{font-size:.9rem;color:#6b4a2b;font-weight:600;line-height:1.55;margin:.6rem 0 0;overflow-wrap:anywhere;}
 .store-hero-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem;}
 .store-hero-actions .btn{margin:0;}
 .store-products-title{font-family:var(--font-display);font-size:1.5rem;color:var(--orange-900);
@@ -872,7 +872,7 @@ input,select,textarea{transition:border-color var(--fe-transition),box-shadow va
 }
 
 /* ==========================================================
-   CATEGORIES � sub-chips, breadcrumbs, admin category tree
+   CATEGORIES — sub-chips, breadcrumbs, admin category tree
    ========================================================== */
 .chip.sub-chip{font-weight:700;font-size:.78rem;padding:.4rem .95rem;border-style:dashed;background:var(--orange-50);color:var(--orange-800);display:none;}
 .chip-row .chip.sub-chip:hover{border-style:dashed;}
@@ -1003,19 +1003,21 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .delivery-body .empty-state{display:block;}
 .empty-state h3{font-family:var(--font-display);font-weight:400;font-size:1.4rem;color:var(--orange-950);margin-bottom:.35rem;}
 
-/* Vendor store editor — /vendor_store */
+/* Vendor store editor — /vendor_store
+   NOTE: scoped under .store-edit so these rules never leak onto the
+   customer-facing store page (store.php) which has its own .store-hero. */
 .store-edit{margin-top:1.6rem;}
-.store-hero{display:flex;align-items:center;gap:1.4rem;background:#fff;border:1px solid var(--orange-100);border-radius:20px;padding:1.4rem 1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.4rem;flex-wrap:wrap;}
-.store-hero-logo{width:96px;height:96px;border-radius:24px;background:var(--orange-100);border:2px solid var(--orange-200);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;}
-.store-hero-logo img{width:100%;height:100%;object-fit:cover;}
-.store-hero-logo i{font-size:2.1rem;color:var(--orange-500);}
-.store-hero-info{flex:1;min-width:220px;}
-.store-hero-info .kicker{margin-bottom:.35rem;}
-.store-hero-info h2{font-size:1.6rem;line-height:1.15;margin-bottom:.2rem;}
-.store-hero-tag{color:var(--muted);font-weight:800;margin:.1rem 0 .6rem;}
-.store-hero-badges{display:flex;flex-wrap:wrap;gap:.5rem;}
-.store-hero-badges span{display:inline-flex;align-items:center;gap:.4rem;background:var(--orange-50);border:1px solid var(--orange-200);color:var(--orange-900);font-size:.76rem;font-weight:800;border-radius:999px;padding:.35rem .75rem;}
-.store-hero-badges i{color:var(--orange-600);}
+.store-edit .store-hero{display:flex;align-items:center;gap:1.4rem;background:#fff;border:1px solid var(--orange-100);border-radius:20px;padding:1.4rem 1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.4rem;flex-wrap:wrap;}
+.store-edit .store-hero-logo{width:96px;height:96px;border-radius:24px;background:var(--orange-100);border:2px solid var(--orange-200);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;}
+.store-edit .store-hero-logo img{width:100%;height:100%;object-fit:cover;}
+.store-edit .store-hero-logo i{font-size:2.1rem;color:var(--orange-500);}
+.store-edit .store-hero-info{flex:1;min-width:220px;}
+.store-edit .store-hero-info .kicker{margin-bottom:.35rem;}
+.store-edit .store-hero-info h2{font-size:1.6rem;line-height:1.15;margin-bottom:.2rem;}
+.store-edit .store-hero-tag{color:var(--muted);font-weight:800;margin:.1rem 0 .6rem;}
+.store-edit .store-hero-badges{display:flex;flex-wrap:wrap;gap:.5rem;}
+.store-edit .store-hero-badges span{display:inline-flex;align-items:center;gap:.4rem;background:var(--orange-50);border:1px solid var(--orange-200);color:var(--orange-900);font-size:.76rem;font-weight:800;border-radius:999px;padding:.35rem .75rem;}
+.store-edit .store-hero-badges i{color:var(--orange-600);}
 .store-form{padding:1.6rem 1.6rem 1.4rem;}
 .store-form>h3{border:0;display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;color:var(--orange-950);}
 .store-form>h3 i{color:var(--orange-600);}
@@ -1040,8 +1042,8 @@ a.delivery-role-badge:hover{background:var(--orange-200);color:var(--orange-950)
 .store-logo-upload .delete-check{margin-top:.55rem;}
 .store-form-actions{display:flex;justify-content:flex-end;gap:.7rem;margin-top:1.5rem;padding-top:1.2rem;border-top:2px dashed var(--orange-100);}
 @media(max-width:560px){
-  .store-hero{flex-direction:column;text-align:center;}
-  .store-hero-badges{justify-content:center;}
+  .store-edit .store-hero{flex-direction:column;text-align:center;}
+  .store-edit .store-hero-badges{justify-content:center;}
   .store-field-row{flex-direction:column;gap:0;}
   .store-form-actions{flex-direction:column;}
   .store-form-actions .btn{width:100%;}
