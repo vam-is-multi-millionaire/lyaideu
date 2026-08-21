@@ -1,0 +1,107 @@
+/* ==========================================================
+   LyaiDeu — Mobile product-card styling (phones only)
+   Shared by menu / mart / beverages / others / store /
+   categories (mc-open) / product (related) pages.
+   Mirrors the card styles already live on index.php:
+   - bare orange cart-plus icon button (no pill/border)
+   - one-line truncated product title
+   - one-line vendor/store line under the title
+   - 3 products per row on phones (grids listed below)
+   Desktop stays untouched: every visual rule lives inside a
+   media query and .dish-hotel is display:none outside phones.
+   ========================================================== */
+
+/* Vendor/store line is a phone-only feature */
+.dish-hotel{display:none;}
+
+@media (max-width:960px){
+  /* Hide the "/ unit" text after prices on phones */
+  .dish-card .price .unit{display:none;}
+
+  /* Add button shows only the cart-plus glyph on phones */
+  .dish-card .btn-order.add-cart .add-label{display:none;}
+  .dish-card .btn-order.add-cart{
+    width:2.25rem;height:2.25rem;min-height:0;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    background:transparent!important;
+    color:var(--orange-600,#e76608)!important;
+    border:0!important;
+    border-radius:.72rem;
+    box-shadow:none!important;
+    transition:color .2s ease,transform .2s ease;
+  }
+  .dish-card .btn-order.add-cart::after{display:none;}
+  .dish-card .btn-order.add-cart i{display:none;}
+  .dish-card .btn-order.add-cart::before{
+    font-family:"Font Awesome 6 Free";
+    font-weight:900;
+    content:"\f217"; /* fa-cart-plus */
+    display:inline-block;
+    font-style:normal;
+    font-size:.95rem;
+    line-height:1;
+    -webkit-font-smoothing:antialiased;
+  }
+  .dish-card .btn-order.add-cart:hover{
+    color:var(--orange-700,#a03c07)!important;
+    transform:none!important;box-shadow:none!important;background:transparent!important;
+  }
+  .dish-card .btn-order.add-cart:active{transform:scale(.88);color:var(--orange-800,#742a05)!important;}
+
+  /* Product title stays on one line — same "..." truncation */
+  .dish-card{min-width:0;}
+  .dish-top{min-width:0;}
+  .dish-top h3{
+    min-width:0;flex:0 1 auto;max-width:100%;
+    font-size:.78rem;line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    overflow-wrap:normal;
+  }
+  /* Vendor/store name under the title — one line, truncated */
+  .dish-hotel{
+    display:block;margin:.16rem 0 0;max-width:100%;
+    font-size:.62rem;font-weight:800;line-height:1.2;
+    color:var(--orange-600,#e76608);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .dish-hotel i{font-size:.55rem;color:var(--orange-400,#f5974e);margin-right:.24rem;}
+
+  /* Related Products cards (product.php) share the same treatment */
+  .related-info{min-width:0;align-items:stretch;}
+  .related-info h4{
+    min-width:0;max-width:100%;
+    font-size:.8rem;line-height:1.3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    overflow-wrap:normal;
+  }
+}
+
+/* Phones: product grids go 3-per-row like the home page.
+   categories mc-open is intentionally NOT listed — its rail
+   layout keeps 2-per-row. */
+@media (max-width:560px){
+  #menu-grid,#mart-grid,#others-grid,#beverages-grid,
+  .store-grid,.related-grid{grid-template-columns:repeat(3,1fr);gap:.55rem;}
+}
+
+/* Very small phones — same compact tweaks as the home page */
+@media (max-width:360px){
+  #menu-grid,#mart-grid,#others-grid,#beverages-grid,
+  .store-grid,.related-grid{gap:.45rem;}
+  #menu-grid .dish-body,#mart-grid .dish-body,#others-grid .dish-body,
+  #beverages-grid .dish-body,.store-grid .dish-body{padding:.45rem .4rem .5rem;}
+  #menu-grid .dish-top h3,#mart-grid .dish-top h3,#others-grid .dish-top h3,
+  #beverages-grid .dish-top h3,.store-grid .dish-top h3{font-size:.72rem;}
+  #menu-grid .price,#mart-grid .price,#others-grid .price,
+  #beverages-grid .price,.store-grid .price{font-size:.8rem;}
+  #menu-grid .dish-hotel,#mart-grid .dish-hotel,#others-grid .dish-hotel,
+  #beverages-grid .dish-hotel,.store-grid .dish-hotel{font-size:.58rem;}
+  #menu-grid .dish-hotel i,#mart-grid .dish-hotel i,#others-grid .dish-hotel i,
+  #beverages-grid .dish-hotel i,.store-grid .dish-hotel i{font-size:.52rem;}
+  #menu-grid .btn-order.add-cart,#mart-grid .btn-order.add-cart,
+  #others-grid .btn-order.add-cart,#beverages-grid .btn-order.add-cart,
+  .store-grid .btn-order.add-cart{width:2.05rem;height:2.05rem;}
+  #menu-grid .btn-order.add-cart::before,#mart-grid .btn-order.add-cart::before,
+  #others-grid .btn-order.add-cart::before,#beverages-grid .btn-order.add-cart::before,
+  .store-grid .btn-order.add-cart::before{font-size:.8rem;}
+}

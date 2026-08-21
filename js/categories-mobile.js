@@ -223,11 +223,12 @@
     var addBtn = '<button class="btn-order add-cart" data-id="' + id + '" data-type="' + dataType +
       '" data-name="' + name + '" data-price="' + price + '" data-unit="' + unit +
       '" data-hotel="' + hotel + '"' + (p.has_variants ? ' data-has-variants="1"' : '') +
-      ' type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button>';
+      ' type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>';
     return '<article class="dish-card reveal visible" data-id="' + id + '" data-slug="' + esc(slug) +
       '" data-cats="' + cats.join(',') + '" data-url="' + esc(url) + '">' +
       '<div class="dish-art mart-art">' + art + (tag ? '<span class="dish-tag">' + tag + '</span>' : '') + '</div>' +
       '<div class="dish-body"><div class="dish-top"><h3>' + name + '</h3></div>' +
+      (hotel ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' + hotel + '</p>' : '') +
       '<div class="dish-foot"><span class="price"><small>Rs.</small> ' + price +
       (unit ? ' <span class="unit">/ ' + unit + '</span>' : '') + '</span>' + addBtn + '</div></div>' +
     '</article>';

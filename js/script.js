@@ -135,9 +135,9 @@ function renderDishes(dishes){
     return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
       <div class="dish-art">${art}
       </div>
-      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
+      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
@@ -162,7 +162,7 @@ function beverageCatIcon(cat){const ic=BEVERAGE_CAT_ICONS[cat]||'fa-glass-water'
 function renderMart(items){
   const grid=$('#mart-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
-    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat);
+    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
     const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
@@ -171,9 +171,9 @@ function renderMart(items){
       <div class="dish-art mart-art">${art}
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
-      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
+      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
@@ -181,7 +181,7 @@ function renderMart(items){
 function renderOthers(items){
   const grid=$('#others-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
-    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat);
+    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
     const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
@@ -190,9 +190,9 @@ function renderOthers(items){
       <div class="dish-art mart-art">${art}
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
-      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
+      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#others-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('other',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyOthersFilters();
@@ -219,7 +219,7 @@ function initOthersFilters(){const chips=$$('.chip[data-ocat]');chips.forEach(ch
 function renderBeverages(items){
   const grid=$('#beverages-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
-    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat);
+    const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
     const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
@@ -228,9 +228,9 @@ function renderBeverages(items){
       <div class="dish-art mart-art">${art}
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
-      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>
+      <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
       <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${esc(m.hotel||'')}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i> Add</button></div></div></article>`;
+      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#beverages-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('beverage',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyBeveragesFilters();
