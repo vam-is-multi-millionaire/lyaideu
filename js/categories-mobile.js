@@ -28,7 +28,6 @@
   var empty = document.getElementById('mcEmpty');
   var headLabel = document.getElementById('mcHeadLabel');
   var headSub = document.getElementById('mcHeadSub');
-  var viewAll = document.getElementById('mcViewAll');
   var backBtn = document.getElementById('mcBack');
 
   var cache = null;
@@ -275,7 +274,6 @@
     var cat = findCat(type, slug);
     headLabel.textContent = GROUPS[type].label;
     headSub.textContent = cat ? cat.name : slug;
-    viewAll.href = GROUPS[type].page + '?' + GROUPS[type].param + '=' + encodeURIComponent(scope);
     renderRail(type, scope, slug);
     renderProducts(type, slug);
     view.classList.add('open');
