@@ -1882,6 +1882,7 @@ function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVar
         );
         $sort = 0;
         $defaultSet = false;
+        $firstRowId = 0;
         foreach ($options as $opt) {
             $label = trim(strip_tags((string)($opt['label'] ?? '')));
             if ($label === '') {
@@ -1894,7 +1895,15 @@ function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVar
                 $defaultSet = true;
             }
             $ins->execute([$type, $itemId, $label, $price, $info, $isDefault, $sort]);
+            if ($firstRowId === 0) {
+                $firstRowId = (int)$pdo->lastInsertId();
+            }
             $sort++;
+        }
+        // Never leave a variants-enabled product without a preselected option:
+        // the customer side always shows one as chosen, so default to the first.
+        if (!$defaultSet && $firstRowId > 0) {
+            $pdo->prepare('UPDATE product_variants SET is_default = 1 WHERE id = ?')->execute([$firstRowId]);
         }
     } catch (Throwable $e) {
         // ignore

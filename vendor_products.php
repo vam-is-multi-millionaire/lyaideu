@@ -534,7 +534,13 @@ delivery_header(
         var d = row.querySelector(".pv-default-input");
         if (d && d.checked && !defRow) defRow = row;
       });
-      var src = defRow || form.querySelector(".pv-row");
+      var src = (defRow && parseInt(defRow.querySelector(".pv-price").value, 10) > 0) ? defRow : null;
+      if (!src) {
+        form.querySelectorAll(".pv-row").forEach(function(row){
+          if (!src && parseInt(row.querySelector(".pv-price").value, 10) > 0) src = row;
+        });
+      }
+      if (!src) src = defRow || form.querySelector(".pv-row");
       var v = src ? parseInt(src.querySelector(".pv-price").value, 10) : NaN;
       if (!isNaN(v) && v > 0) priceInput.value = v;
     } else {
@@ -564,6 +570,6 @@ delivery_header(
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=3"></script>
+<script src="js/admin-variants.js?v=4"></script>
 <?php
 delivery_footer();

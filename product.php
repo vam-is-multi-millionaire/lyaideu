@@ -332,7 +332,7 @@ if ($hasVariants) {
                                 if ($rDef === null) { $rDef = $rItem['variants'][0]; }
                             }
                             $rPrice = $rDef ? (int)$rDef['price'] : (int)$rItem['price'];
-                            $rUnit = $rDef && (string)$rDef['label'] !== '' ? (string)$rDef['label'] : (string)$rItem['unit'];
+                            $rUnit = $rDef && (string)$rDef['label'] !== '' ? (string)$rDef['label'] : (string)($rItem['unit'] ?? '');
                         ?>
                         <div class="related-card">
                             <a class="related-link" href="<?= $type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : ($type === 'beverage' ? 'beverages' : 'menu')) ?>/<?= $relPath !== '' ? e($relPath) . '/' : '' ?><?= e($rItem['slug'] !== '' ? $rItem['slug'] : lyaideu_slugify((string)$rItem['name'])) ?>">

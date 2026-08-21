@@ -18,18 +18,29 @@
     });
   }
 
+  /* Reset a cloned/cleared row for fresh input. Checkboxes must keep their
+     value attribute (the "Default" boxes submit value="1") — only uncheck
+     them, otherwise a checked box would submit an empty value and the
+     server would silently drop the default flag. */
+  function resetRowInputs(row) {
+    row.querySelectorAll('input').forEach(function (input) {
+      if (input.type === 'checkbox') {
+        input.checked = false;
+      } else {
+        input.value = '';
+      }
+      input.removeAttribute('checked');
+      input.classList.remove('invalid');
+    });
+  }
+
   function addRow(block, templateRow) {
     var list = block.querySelector('.pv-list');
     if (!list) return;
     var proto = templateRow || list.querySelector('.pv-row');
     var row = proto ? proto.cloneNode(true) : null;
     if (!row) return;
-    row.querySelectorAll('input').forEach(function (input) {
-      input.value = '';
-      input.checked = false;
-      input.removeAttribute('checked');
-      input.classList.remove('invalid');
-    });
+    resetRowInputs(row);
     var labelInput = row.querySelector('.pv-label');
     if (labelInput) labelInput.focus();
     list.insertBefore(row, list.querySelector('.pv-add'));
@@ -39,10 +50,7 @@
   function removeRow(row, list) {
     var remaining = list.querySelectorAll('.pv-row');
     if (remaining.length <= 1) {
-      row.querySelectorAll('input').forEach(function (input) {
-        input.value = '';
-        input.checked = false;
-      });
+      resetRowInputs(row);
       return;
     }
     row.parentNode.removeChild(row);
@@ -65,6 +73,16 @@
 
     toggle.addEventListener('change', function () {
       list.style.display = toggle.checked ? '' : 'none';
+    });
+
+    /* "Default" acts like a radio: picking one option unmarks the others so
+       the saved product always has exactly one preselected option. */
+    list.addEventListener('change', function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains('pv-default-input') && e.target.checked) {
+        list.querySelectorAll('.pv-default-input').forEach(function (other) {
+          if (other !== e.target) other.checked = false;
+        });
+      }
     });
 
     var form = block.closest('form');
