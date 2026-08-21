@@ -183,12 +183,12 @@ $products = [];
 try {
     $st = $pdo->prepare(
 $isMart
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY name'
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id DESC'
 : ($isOther
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM other_items WHERE vendor_id = ? ORDER BY name'
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id DESC'
 : ($isBeverage
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY name'
-: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img, has_variants FROM dishes WHERE vendor_id = ? ORDER BY name'))
+? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id DESC'
+: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img, has_variants FROM dishes WHERE vendor_id = ? ORDER BY id DESC'))
     );
     $st->execute([$vendorId]);
     $products = $st->fetchAll();
