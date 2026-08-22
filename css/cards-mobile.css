@@ -22,6 +22,9 @@
   .product-pg .product-price .unit{display:none;}
   .related-card .price .unit{display:none;}
 
+  /* Product page: hide the small helper notes on phones */
+  .product-pg .small-note{display:none;}
+
   /* Add button shows only the cart-plus glyph on phones */
   .dish-card .btn-order.add-cart .add-label{display:none;}
   .dish-card .btn-order.add-cart{
