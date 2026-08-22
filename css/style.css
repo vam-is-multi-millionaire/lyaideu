@@ -1623,3 +1623,157 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 @media(max-width:340px){
   .cat-grid{grid-template-columns:1fr;}
 }
+
+/* ==========================================================
+   PROFILE PAGE — MOBILE UI/UX REFRESH
+   - The top search bar is removed entirely on phones; navigation
+     is handled by the compact .profile-mheader + bottom tab bar.
+   - Desktop (>=961px) is completely untouched.
+   ========================================================== */
+.profile-mheader,.profile-idcard{display:none;}
+
+@media (max-width:960px){
+  /* ---- Remove the top nav bar on the profile page ---- */
+  .profile-body .topbar{display:none !important;}
+
+  /* ---- Compact app-style sticky header ---- */
+  .profile-mheader{
+    position:sticky;
+    top:0;
+    z-index:70;
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    padding:calc(env(safe-area-inset-top,0px) + .5rem) .8rem .5rem;
+    background:rgba(255,253,250,.96);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--orange-100);
+  }
+  .pmh-title{
+    flex:1;
+    text-align:center;
+    font-family:var(--font-display);
+    font-size:1.05rem;
+    letter-spacing:.4px;
+    color:var(--orange-950);
+    min-width:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .pmh-btn{
+    flex:0 0 auto;
+    width:40px;height:40px;
+    border-radius:13px;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:#fff;
+    border:1.5px solid var(--orange-200);
+    color:var(--orange-700);
+    font-size:.95rem;
+    text-decoration:none!important;
+    box-shadow:0 2px 6px rgba(120,60,15,.08);
+    transition:transform .15s ease,background .2s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pmh-btn:active{transform:scale(.92);background:var(--orange-50);}
+
+  /* ---- Page rhythm ---- */
+  .profile-body .profile-page{padding:.95rem .9rem 2rem;}
+  .profile-body .section-head{display:none;} /* title now lives in the mobile header */
+
+  /* ---- Identity card ---- */
+  .profile-idcard{
+    display:flex;
+    align-items:center;
+    gap:.85rem;
+    background:linear-gradient(135deg,#fff 55%,var(--orange-50));
+    border:1.5px solid var(--orange-200);
+    border-radius:20px;
+    padding:.95rem 1rem;
+    margin-bottom:1rem;
+    box-shadow:0 10px 26px rgba(160,80,10,.09);
+  }
+  .pidc-avatar{
+    width:62px;height:62px;
+    font-size:1.35rem;
+    border-radius:50%;
+    border:3px solid #fff;
+    box-shadow:0 4px 14px rgba(231,102,8,.35);
+    flex-shrink:0;
+  }
+  .pidc-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:.14rem;}
+  .pidc-name{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:1.1rem;
+    line-height:1.2;
+    color:var(--orange-950);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .pidc-line{
+    display:flex;align-items:center;gap:.35rem;
+    font-size:.76rem;font-weight:800;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .pidc-line i{color:var(--orange-500);width:1rem;text-align:center;flex-shrink:0;}
+  .profile-idcard .order-status-pill{flex-shrink:0;}
+
+  /* ---- Cards ---- */
+  .profile-body .profile-grid{gap:.9rem;}
+  .profile-body .profile-card{
+    border-radius:18px;
+    padding:1.15rem 1rem 1.25rem;
+    border:1.5px solid var(--orange-100);
+    box-shadow:0 6px 18px rgba(150,75,10,.07);
+  }
+  .profile-body .profile-card h2{
+    font-size:1.12rem;
+    display:flex;align-items:center;gap:.55rem;
+    margin-bottom:.9rem;padding-bottom:.7rem;
+    border-bottom:1.5px dashed var(--orange-100);
+  }
+  .profile-body .profile-card h2 i{color:var(--orange-600);}
+
+  /* ---- Touch-friendly inputs (16px stops iOS zoom-on-focus) ---- */
+  .profile-body .profile-card input,
+  .profile-body .profile-card select,
+  .profile-body .profile-card textarea{
+    font-size:16px;
+    padding:.8rem .85rem;
+    border-radius:12px;
+    background:#fffdfb;
+  }
+  .profile-body .profile-card label{font-size:.86rem;margin-bottom:.95rem;}
+  .profile-body .profile-card .btn{min-height:48px;}
+
+  /* ---- Avatar upload ---- */
+  .avatar-upload{gap:.8rem;}
+  .avatar-preview{width:118px;height:118px;}
+  .small-note{font-size:.78rem;line-height:1.5;}
+
+  /* ---- Map ---- */
+  .loc-map{height:230px;border-radius:14px;}
+  .map-actions .btn{flex:1 1 auto;}
+
+  /* ---- KYC bits ---- */
+  .kyc-gate-banner{font-size:.84rem;padding:.8rem .9rem;border-radius:16px;gap:.55rem;margin-bottom:1rem;}
+  .kyc-status-row{gap:.6rem;}
+  .kyc-check{font-size:.82rem;padding:.65rem .7rem;border-radius:12px;}
+  .kyc-doc-list li{padding:.7rem .75rem;border-radius:14px;flex-wrap:wrap;row-gap:.45rem;}
+  .kyc-doc-name small{font-size:.66rem;}
+  .kyc-doc-row select{min-height:46px;}
+  .kyc-doc-row input[type=file]{font-size:.8rem;padding:.65rem .7rem;}
+
+  /* ---- Full-width actions ---- */
+  .profile-card .btn-block{margin-top:.9rem;}
+  .profile-mobile-logout{margin-top:1rem !important;min-height:50px;border-radius:14px;font-size:.98rem;}
+}
+
+@media (max-width:360px){
+  .profile-body .profile-page{padding:.85rem .7rem 1.8rem;}
+  .profile-idcard{padding:.85rem .8rem;gap:.65rem;}
+  .pidc-avatar{width:54px;height:54px;font-size:1.15rem;}
+  .pidc-name{font-size:1rem;}
+  .pidc-line{font-size:.72rem;}
+}

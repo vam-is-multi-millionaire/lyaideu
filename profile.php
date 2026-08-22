@@ -325,10 +325,17 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=37">
+<link rel="stylesheet" href="css/style.css?v=38">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
-<body>
+<body class="profile-body">
+
+<!-- Mobile-only compact header: replaces the topbar on phones (desktop keeps the standard nav) -->
+<header class="profile-mheader">
+    <a class="pmh-btn" href="index" aria-label="Back to home"><i class="fa-solid fa-arrow-left"></i></a>
+    <span class="pmh-title">My Profile</span>
+    <a class="pmh-btn" href="orders" aria-label="My orders"><i class="fa-solid fa-box"></i></a>
+</header>
 
 <header class="topbar">
     <nav class="nav">
@@ -364,6 +371,17 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 </header>
 
 <main class="profile-page container">
+    <!-- Mobile-only identity card (desktop shows this info in the topbar dropdown) -->
+    <section class="profile-idcard">
+        <span class="avatar pidc-avatar"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></span>
+        <div class="pidc-meta">
+            <strong class="pidc-name"><?= htmlspecialchars($profile['name']) ?></strong>
+            <span class="pidc-line"><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($profile['email']) ?></span>
+            <span class="pidc-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($profile['phone']) ?></span>
+        </div>
+        <span class="order-status-pill <?= $kycPillClass ?>"><?= htmlspecialchars($kycStatusLabels[$kycStatus] ?? $kycStatus, ENT_QUOTES, 'UTF-8') ?></span>
+    </section>
+
     <div class="section-head">
         <h1 class="display">My Profile</h1>
         <p class="section-sub">Keep your details up to date and complete the KYC verification so you can order.</p>
