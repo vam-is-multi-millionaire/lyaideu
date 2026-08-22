@@ -52,13 +52,14 @@ foreach ($rows as $row) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="stylesheet" href="css/style.css?v=41">
 </head>
 <body>
 
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
+        <a class="back-link top-back-link" href="profile" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i> Back</a>
         <form class="nav-search" action="menu" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
@@ -132,4 +133,26 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=26"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script></body></html>
+<script src="js/script.js?v=26"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script>
+<script>
+(function(){
+  /* Back button: use browser history when the user came from this site so
+     the previous page restores instantly; the static href is only followed
+     when the page was opened directly (shared link / new tab). */
+  var backLinks = document.querySelectorAll('.back-link');
+  if (!backLinks.length || !window.history) return;
+  var sameOriginRef = false;
+  try {
+    sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+  } catch (err) { sameOriginRef = false; }
+  backLinks.forEach(function (backLink) {
+    backLink.addEventListener('click', function (e) {
+      if (sameOriginRef && window.history.length > 1) {
+        e.preventDefault();
+        window.history.back();
+      }
+    });
+  });
+})();
+</script>
+</body></html>
