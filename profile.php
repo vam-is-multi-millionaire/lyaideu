@@ -325,7 +325,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=38">
+<link rel="stylesheet" href="css/style.css?v=41">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="profile-body">
@@ -334,7 +334,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <header class="profile-mheader">
     <a class="pmh-btn" href="index" aria-label="Back to home"><i class="fa-solid fa-arrow-left"></i></a>
     <span class="pmh-title">My Profile</span>
-    <a class="pmh-btn" href="orders" aria-label="My orders"><i class="fa-solid fa-box"></i></a>
+    <button class="pmh-btn" id="pmhSettings" type="button" aria-label="Edit photo and personal info" aria-expanded="false" aria-controls="profileEditGroup"><i class="fa-solid fa-gear"></i></button>
 </header>
 
 <header class="topbar">
@@ -372,7 +372,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 
 <main class="profile-page container">
     <!-- Mobile-only identity card (desktop shows this info in the topbar dropdown) -->
-    <section class="profile-idcard">
+    <section class="profile-idcard" id="profileIdCard">
         <span class="avatar pidc-avatar"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></span>
         <div class="pidc-meta">
             <strong class="pidc-name"><?= htmlspecialchars($profile['name']) ?></strong>
@@ -381,6 +381,13 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
         </div>
         <span class="order-status-pill <?= $kycPillClass ?>"><?= htmlspecialchars($kycStatusLabels[$kycStatus] ?? $kycStatus, ENT_QUOTES, 'UTF-8') ?></span>
     </section>
+
+    <!-- Mobile-only quick link: My Orders lives here instead of the header -->
+    <a class="orders-row" href="orders">
+        <span class="or-ico"><i class="fa-solid fa-box"></i></span>
+        <span class="or-txt"><strong>My Orders</strong><small>Track your khaja, mart &amp; beverage orders</small></span>
+        <i class="fa-solid fa-chevron-right or-chev" aria-hidden="true"></i>
+    </a>
 
     <div class="section-head">
         <h1 class="display">My Profile</h1>
@@ -402,20 +409,40 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     <?php endif; ?>
 
     <div class="profile-grid">
-        <form class="profile-card" method="POST" enctype="multipart/form-data" action="profile">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-            <h2><i class="fa-solid fa-camera"></i> Profile photo</h2>
-            <div class="avatar-upload">
-                <div class="avatar-preview" id="avatarPreview"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')" data-lightbox="' . $avatarUrl . '" data-lightbox-caption="' . htmlspecialchars($profile['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></div>
-                <label class="btn btn-outline" for="avatarFile" style="cursor:pointer;"><i class="fa-solid fa-upload"></i> Upload photo</label>
-                <input type="file" id="avatarFile" name="avatar_file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
-                <p class="small-note">A clear photo of your face. Compulsory for KYC verification.</p>
-                <?php if ($avatarUrl !== ''): ?>
-                <button type="submit" name="remove_avatar" value="1" class="btn btn-outline btn-sm"><i class="fa-solid fa-trash"></i> Remove photo</button>
-                <?php endif; ?>
-                <button type="submit" name="save_avatar" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save photo</button>
+        <!-- Photo + personal info live inside this group. Desktop renders it in
+             the grid as usual; on phones it becomes a bottom-sheet overlay
+             opened by the gear button in the header. -->
+        <div class="profile-edit-group" id="profileEditGroup">
+            <div class="peg-chrome">
+                <strong class="peg-title"><i class="fa-solid fa-user-pen"></i> Edit your details</strong>
+                <button type="button" class="peg-close" id="peClose" aria-label="Close editor">&times;</button>
             </div>
-        </form>
+            <form class="profile-card" method="POST" enctype="multipart/form-data" action="profile">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                <h2><i class="fa-solid fa-camera"></i> Profile photo</h2>
+                <div class="avatar-upload">
+                    <div class="avatar-preview" id="avatarPreview"<?= $avatarUrl !== '' ? ' style="background-image:url(\'' . $avatarUrl . '\')" data-lightbox="' . $avatarUrl . '" data-lightbox-caption="' . htmlspecialchars($profile['name'], ENT_QUOTES, 'UTF-8') . '"' : '' ?>><?= $avatarUrl === '' ? htmlspecialchars($initials) : '' ?></div>
+                    <label class="btn btn-outline" for="avatarFile" style="cursor:pointer;"><i class="fa-solid fa-upload"></i> Upload photo</label>
+                    <input type="file" id="avatarFile" name="avatar_file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+                    <p class="small-note">A clear photo of your face. Compulsory for KYC verification.</p>
+                    <?php if ($avatarUrl !== ''): ?>
+                    <button type="submit" name="remove_avatar" value="1" class="btn btn-outline btn-sm"><i class="fa-solid fa-trash"></i> Remove photo</button>
+                    <?php endif; ?>
+                    <button type="submit" name="save_avatar" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save photo</button>
+                </div>
+            </form>
+
+            <form class="profile-card" method="POST" action="profile">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                <h2><i class="fa-solid fa-user"></i> Personal information</h2>
+                <label>Full Name<input name="name" value="<?= htmlspecialchars($profile['name'], ENT_QUOTES, 'UTF-8') ?>" required></label>
+                <label>Gmail <span class="muted">(login email)</span><input value="<?= htmlspecialchars($profile['email'], ENT_QUOTES, 'UTF-8') ?>" readonly disabled></label>
+                <label>Phone<input name="phone" value="<?= htmlspecialchars($profile['phone'], ENT_QUOTES, 'UTF-8') ?>" required inputmode="numeric" maxlength="10"></label>
+                <label>Date of Birth<input type="date" name="dob" value="<?= htmlspecialchars($profile['dob'], ENT_QUOTES, 'UTF-8') ?>" required></label>
+                <label>Location / Address<input name="address" value="<?= htmlspecialchars($profile['address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="Area / street / tole"></label>
+                <button type="submit" name="save_profile" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
+            </form>
+        </div>
 
         <form class="profile-card" method="POST" action="profile">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
@@ -430,17 +457,6 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             </div>
             <p class="small-note" id="homeLocMsg"></p>
             <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
-        </form>
-
-        <form class="profile-card" method="POST" action="profile">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-            <h2><i class="fa-solid fa-user"></i> Personal information</h2>
-            <label>Full Name<input name="name" value="<?= htmlspecialchars($profile['name'], ENT_QUOTES, 'UTF-8') ?>" required></label>
-            <label>Gmail <span class="muted">(login email)</span><input value="<?= htmlspecialchars($profile['email'], ENT_QUOTES, 'UTF-8') ?>" readonly disabled></label>
-            <label>Phone<input name="phone" value="<?= htmlspecialchars($profile['phone'], ENT_QUOTES, 'UTF-8') ?>" required inputmode="numeric" maxlength="10"></label>
-            <label>Date of Birth<input type="date" name="dob" value="<?= htmlspecialchars($profile['dob'], ENT_QUOTES, 'UTF-8') ?>" required></label>
-            <label>Location / Address<input name="address" value="<?= htmlspecialchars($profile['address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="Area / street / tole"></label>
-            <button type="submit" name="save_profile" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
         </form>
 
         <form class="profile-card profile-card-wide" method="POST" enctype="multipart/form-data" action="profile">
@@ -512,8 +528,38 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     <a class="btn btn-primary btn-block profile-mobile-logout" href="logout" style="background:#c93a3a;border-color:#c93a3a;box-shadow:0 5px 0 #a02a2a;margin-top:1.4rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
 </main>
 
+<!-- Mobile-only backdrop for the edit bottom sheet -->
+<div class="pe-backdrop" id="peBackdrop"></div>
+
 <script>
 (function () {
+    var gear = document.getElementById('pmhSettings'),
+        sheet = document.getElementById('profileEditGroup'),
+        backdrop = document.getElementById('peBackdrop'),
+        closeBtn = document.getElementById('peClose');
+    function sheetOpen() { return !!(sheet && sheet.classList.contains('open')); }
+    function openSheet() {
+        if (!sheet) return;
+        sheet.classList.add('open');
+        if (backdrop) backdrop.classList.add('show');
+        document.body.classList.add('pe-lock');
+        if (gear) gear.setAttribute('aria-expanded', 'true');
+    }
+    function closeSheet() {
+        if (!sheet) return;
+        sheet.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('show');
+        document.body.classList.remove('pe-lock');
+        if (gear) gear.setAttribute('aria-expanded', 'false');
+    }
+    if (gear && sheet) {
+        gear.addEventListener('click', function () {
+            if (sheetOpen()) { closeSheet(); } else { openSheet(); }
+        });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', closeSheet);
+    if (backdrop) backdrop.addEventListener('click', closeSheet);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
     var av = document.getElementById('avatarPreview');
     var af = document.getElementById('avatarFile');
     if (av && af) {

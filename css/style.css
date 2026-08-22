@@ -1630,7 +1630,11 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
      is handled by the compact .profile-mheader + bottom tab bar.
    - Desktop (>=961px) is completely untouched.
    ========================================================== */
-.profile-mheader,.profile-idcard{display:none;}
+.profile-mheader,.profile-idcard,.orders-row{display:none;}
+/* Photo + personal info wrapper: transparent on desktop so its two forms
+   behave exactly like direct grid children; becomes a bottom sheet on phones. */
+.profile-edit-group{display:contents;}
+.pe-backdrop,.peg-chrome{display:none;}
 
 @media (max-width:960px){
   /* ---- Remove the top nav bar on the profile page ---- */
@@ -1719,6 +1723,87 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .pidc-line i{color:var(--orange-500);width:1rem;text-align:center;flex-shrink:0;}
   .profile-idcard .order-status-pill{flex-shrink:0;}
 
+  /* ---- Full-screen overlay: edit photo + personal info.
+         Opened by the gear button in the mobile header. ---- */
+  .pe-backdrop{
+    display:block;
+    position:fixed;inset:0;z-index:135;
+    background:rgba(40,20,5,.55);
+    opacity:0;pointer-events:none;
+    transition:opacity .28s ease;
+  }
+  .pe-backdrop.show{opacity:1;pointer-events:auto;}
+  body.pe-lock{overflow:hidden;}
+  .profile-body .profile-edit-group{
+    display:flex;flex-direction:column;
+    position:fixed;inset:0;z-index:140;
+    background:#fffcf8;
+    padding:0 0 calc(env(safe-area-inset-bottom,0px) + 1.1rem);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    transform:translateY(100%);
+    visibility:hidden;
+    transition:transform .32s cubic-bezier(.32,.72,.33,1),visibility .32s;
+  }
+  .profile-body .profile-edit-group.open{transform:none;visibility:visible;}
+  .peg-chrome{
+    position:sticky;top:0;z-index:2;
+    flex:0 0 auto;
+    display:flex;align-items:center;gap:.6rem;
+    padding:calc(env(safe-area-inset-top,0px) + .9rem) 1rem .65rem;
+    background:#fffcf8;
+    border-bottom:1.5px dashed var(--orange-100);
+  }
+  .peg-title{
+    flex:1;min-width:0;
+    font-family:var(--font-display);
+    font-weight:400;font-size:1.08rem;color:var(--orange-900);
+    display:flex;align-items:center;gap:.5rem;
+  }
+  .peg-title i{color:var(--orange-600);}
+  .peg-close{
+    flex:0 0 auto;
+    width:36px;height:36px;border-radius:50%;
+    border:1.5px solid var(--orange-200);
+    background:#fff;color:var(--orange-800);
+    font-size:1.1rem;line-height:1;cursor:pointer;
+    display:grid;place-items:center;
+    transition:.18s ease;-webkit-tap-highlight-color:transparent;
+  }
+  .peg-close:active{transform:scale(.92);}
+  .profile-body .profile-edit-group .profile-card{margin:.95rem 1rem 0;}
+
+  /* ---- My Orders quick link (moved out of the header) ---- */
+  .orders-row{
+    display:flex;
+    align-items:center;
+    gap:.8rem;
+    background:#fff;
+    border:1.5px solid var(--orange-100);
+    border-radius:16px;
+    padding:.8rem .9rem;
+    margin-bottom:1rem;
+    text-decoration:none!important;
+    box-shadow:0 6px 18px rgba(150,75,10,.07);
+    transition:transform .15s ease,border-color .2s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .orders-row:active{transform:scale(.98);border-color:var(--orange-300);}
+  .or-ico{
+    flex:0 0 auto;
+    width:44px;height:44px;
+    border-radius:13px;
+    display:grid;place-items:center;
+    background:var(--orange-100);
+    color:var(--orange-600);
+    font-size:1.1rem;
+  }
+  .or-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:.1rem;}
+  .or-txt strong{font-size:.95rem;font-weight:900;color:var(--ink);line-height:1.25;}
+  .or-txt small{font-size:.74rem;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .or-chev{flex:0 0 auto;color:var(--orange-300);font-size:.8rem;}
+
   /* ---- Cards ---- */
   .profile-body .profile-grid{gap:.9rem;}
   .profile-body .profile-card{
@@ -1776,4 +1861,7 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .pidc-avatar{width:54px;height:54px;font-size:1.15rem;}
   .pidc-name{font-size:1rem;}
   .pidc-line{font-size:.72rem;}
+  .orders-row{padding:.7rem .75rem;gap:.65rem;}
+  .or-ico{width:40px;height:40px;font-size:1rem;}
+  .or-txt strong{font-size:.88rem;}
 }
