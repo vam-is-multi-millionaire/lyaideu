@@ -1669,18 +1669,20 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .pmh-btn{
     flex:0 0 auto;
     width:40px;height:40px;
-    border-radius:13px;
+    border-radius:50%;
     display:inline-flex;align-items:center;justify-content:center;
     background:#fff;
-    border:1.5px solid var(--orange-200);
+    border:2px solid var(--orange-200);
     color:var(--orange-700);
-    font-size:.95rem;
+    font-size:1.05rem;
     text-decoration:none!important;
-    box-shadow:0 2px 6px rgba(120,60,15,.08);
-    transition:transform .15s ease,background .2s ease;
+    box-shadow:var(--shadow-sm);
+    line-height:1;
+    transition:border-color .2s ease,transform .15s ease;
     -webkit-tap-highlight-color:transparent;
   }
-  .pmh-btn:active{transform:scale(.92);background:var(--orange-50);}
+  .pmh-btn:hover{border-color:var(--orange-500);}
+  .pmh-btn:active{transform:scale(.92);border-color:var(--orange-500);}
 
   /* ---- Page rhythm ---- */
   .profile-body .profile-page{padding:.95rem .9rem 2rem;}

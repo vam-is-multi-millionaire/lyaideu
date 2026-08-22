@@ -325,14 +325,14 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=41">
+<link rel="stylesheet" href="css/style.css?v=42">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="profile-body">
 
 <!-- Mobile-only compact header: replaces the topbar on phones (desktop keeps the standard nav) -->
 <header class="profile-mheader">
-    <a class="pmh-btn" href="index" aria-label="Back to home"><i class="fa-solid fa-arrow-left"></i></a>
+    <a class="pmh-btn" id="pmhBack" href="index" aria-label="Go back"><i class="fa-solid fa-arrow-left"></i></a>
     <span class="pmh-title">My Profile</span>
     <button class="pmh-btn" id="pmhSettings" type="button" aria-label="Edit photo and personal info" aria-expanded="false" aria-controls="profileEditGroup"><i class="fa-solid fa-gear"></i></button>
 </header>
@@ -533,6 +533,19 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 
 <script>
 (function () {
+    var backBtn = document.getElementById('pmhBack');
+    if (backBtn && window.history) {
+        var sameOriginRef = false;
+        try {
+            sameOriginRef = !!document.referrer && new URL(document.referrer).origin === location.origin;
+        } catch (err) { sameOriginRef = false; }
+        backBtn.addEventListener('click', function (e) {
+            if (sameOriginRef && window.history.length > 1) {
+                e.preventDefault();
+                window.history.back();
+            }
+        });
+    }
     var gear = document.getElementById('pmhSettings'),
         sheet = document.getElementById('profileEditGroup'),
         backdrop = document.getElementById('peBackdrop'),
