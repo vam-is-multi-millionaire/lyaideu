@@ -18,6 +18,10 @@
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
+  /* Product page: hide "/ unit" after the main price and in Related cards */
+  .product-pg .product-price .unit{display:none;}
+  .related-card .price .unit{display:none;}
+
   /* Add button shows only the cart-plus glyph on phones */
   .dish-card .btn-order.add-cart .add-label{display:none;}
   .dish-card .btn-order.add-cart{
