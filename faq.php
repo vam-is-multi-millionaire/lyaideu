@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
@@ -176,7 +176,7 @@ require_once __DIR__ . '/site_config.php';
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=26"></script>
+<script src="js/script.js?v=28"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 </body>

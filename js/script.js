@@ -79,6 +79,19 @@ function initMobileNav(){
   else if(leaf==='store'||(base&&path.indexOf(base+'/store')===0))key='stores';
   else if(leaf==='profile'||leaf==='orders')key='profile';
   if(key){const el=nav.querySelector('[data-nav="'+key+'"]');if(el)el.classList.add('active');}
+  /* Home tab acts as "back to top" when the user is already on the home
+     page and has scrolled down — no reload, just a smooth scroll up. */
+  if(key==='home'){
+    const homeItem=nav.querySelector('[data-nav="home"]');
+    if(homeItem)homeItem.addEventListener('click',e=>{
+      if((window.pageYOffset||0)<=10)return;
+      e.preventDefault();
+      let smooth=true;
+      try{smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(err){}
+      try{window.scrollTo({top:0,behavior:smooth?'smooth':'auto'});}catch(err){window.scrollTo(0,0);}
+      nav.classList.remove('bn-hidden');
+    });
+  }
 }
 /* Hide the bottom nav while scrolling down, reveal it on the first upward
    scroll. Works for the injected nav AND static copies (login page). */

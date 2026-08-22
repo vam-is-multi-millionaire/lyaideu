@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
@@ -122,7 +122,7 @@ $bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=27"></script>
+<script src="js/script.js?v=28"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 </body>

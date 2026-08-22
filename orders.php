@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
@@ -133,7 +133,7 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=26"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script>
+<script src="js/script.js?v=28"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=6"></script>
 <script>
 (function(){
   /* Back button: use browser history when the user came from this site so
