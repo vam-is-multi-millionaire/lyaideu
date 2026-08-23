@@ -174,7 +174,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
             return;
         }
         if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Delivery spot confirmed. You can now place your order.';
-        okBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Location confirmed ?';
+        okBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Location confirmed &#10003;';
     });
 })();
 </script>
