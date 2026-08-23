@@ -64,6 +64,25 @@ function site_setting(string $key, ?string $default = null): string {
     return $value;
 }
 
+/* Control Panel: global KYC gate. ON = only users with an APPROVED KYC can
+   place orders (original behaviour, the default). OFF = anyone can order.
+   Stored in the settings table under the key `kyc_required`. */
+function lyaideu_kyc_required(): bool {
+    return site_setting('kyc_required', '1') === '1';
+}
+
+function lyaideu_set_kyc_required(bool $required): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    lyaideu_ensure_settings_table();
+    $st = $pdo->prepare('INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                         ON DUPLICATE KEY UPDATE sval = VALUES(sval)');
+    $st->execute([':skey' => 'kyc_required', ':sval' => $required ? '1' : '0']);
+    lyaideu_settings_clear();
+}
+
 function lyaideu_ensure_settings_table(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {

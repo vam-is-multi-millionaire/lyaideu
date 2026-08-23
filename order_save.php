@@ -18,7 +18,8 @@ function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'er
 
 $kycUser = lyaideu_user_profile((int)$_SESSION['user']['id']);
 $kycStatus = $kycUser ? (string)$kycUser['kyc_status'] : 'none';
-if ($kycStatus !== 'approved') {
+/* Control Panel toggle: when KYC is switched OFF, everyone can order. */
+if (lyaideu_kyc_required() && $kycStatus !== 'approved') {
     if ($kycStatus === 'pending') {
         $msg = 'Your KYC documents are still under review. You can order once an admin verifies your identity.';
     } elseif ($kycStatus === 'rejected') {

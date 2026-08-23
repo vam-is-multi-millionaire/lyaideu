@@ -44,12 +44,14 @@ if (!is_array($body)) {
 
 $id = (int)($body['id'] ?? 0);
 $type = strtolower(trim((string)($body['type'] ?? '')));
+$setting = strtolower(trim((string)($body['setting'] ?? '')));
 $active = !empty($body['active']) ? 1 : 0;
 
 $VALID_TYPES = ['menu', 'mart', 'other', 'beverage'];
 
-if ($id <= 0 && !in_array($type, $VALID_TYPES, true)) {
-    ctrl_res(['ok' => false, 'error' => 'Missing category id or type.'], 422);
+$isKyc = $setting === 'kyc';
+if ($id <= 0 && !in_array($type, $VALID_TYPES, true) && !$isKyc) {
+    ctrl_res(['ok' => false, 'error' => 'Missing category id, type or setting.'], 422);
 }
 
 $pdo = lyaideu_load_pdo();
@@ -59,7 +61,10 @@ if (!$pdo instanceof PDO) {
 
 try {
     lyaideu_ensure_categories_table();
-    if ($id > 0) {
+    if ($isKyc) {
+        /* Ordering rule: require approved KYC before placing an order. */
+        lyaideu_set_kyc_required(!empty($active));
+    } elseif ($id > 0) {
         $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE id = :id');
         $st->execute([':a' => $active, ':id' => $id]);
         if ($st->rowCount() === 0) {
@@ -133,8 +138,9 @@ try {
         'ok' => true,
         'id' => $id,
         'type' => $type,
+        'setting' => $setting,
         'active' => $active,
-        'state' => ['cats' => $effMap, 'hidden' => $hidden, 'groups' => $groups],
+        'state' => ['cats' => $effMap, 'hidden' => $hidden, 'groups' => $groups, 'kyc' => lyaideu_kyc_required()],
     ]);
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Toggle saved, but the refresh state could not be read.'], 500);

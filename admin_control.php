@@ -55,6 +55,9 @@ foreach (array_keys($TYPE_LABELS) as $t) {
 
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
+/* Ordering rules: global KYC gate (ON = only approved-KYC users can order). */
+$kycOn = lyaideu_kyc_required();
+
 admin_page_start('Control Panel', 'control', 'Control Panel');
 ?>
 <style>
@@ -110,6 +113,25 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
 </div>
 
 <div class="ctrl-groups" id="ctrlGroups">
+<section class="ctrl-group">
+    <div class="ctrl-group-head">
+        <i class="fa-solid fa-shield-halved"></i>
+        <h3>Ordering Rules</h3>
+        <small>Checkout requirements</small>
+    </div>
+    <div class="ctrl-list">
+        <div class="ctrl-row" data-kyc-row>
+            <div class="ctrl-main">
+                <span class="ctrl-name"><i class="fa-solid fa-id-card" style="color:var(--orange-600);margin-right:.35rem;"></i> KYC verification required to order</span>
+                <span class="ctrl-path">ON = only users with an approved KYC can place orders. OFF = everyone can order without verification.</span>
+            </div>
+            <div class="ctrl-meta">
+                <span class="ctrl-pill <?= $kycOn ? 'ctrl-pill-live' : 'ctrl-pill-off' ?>" data-kyc-pill><?= $kycOn ? 'Required' : 'Optional' ?></span>
+            </div>
+            <button type="button" class="ctrl-toggle ctrl-kyc-toggle<?= $kycOn ? ' on' : '' ?>" id="ctrlKycToggle" data-active="<?= $kycOn ? '1' : '0' ?>" aria-pressed="<?= $kycOn ? 'true' : 'false' ?>" aria-label="Turn <?= $kycOn ? 'off' : 'on' ?> KYC verification" title="Turn KYC verification <?= $kycOn ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
+        </div>
+    </div>
+</section>
 <?php foreach ($TYPE_LABELS as $type => $label): ?>
     <?php $flat = lyaideu_categories_flat((string)$type); ?>
     <section class="ctrl-group">
@@ -212,6 +234,20 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
       gb.classList.toggle('on', on);
       gb.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
+    /* Sync the KYC ordering-rule switch. */
+    if (typeof state.kyc === 'boolean') {
+      var kt = document.getElementById('ctrlKycToggle');
+      if (kt) {
+        kt.dataset.active = state.kyc ? '1' : '0';
+        kt.classList.toggle('on', state.kyc);
+        kt.setAttribute('aria-pressed', state.kyc ? 'true' : 'false');
+      }
+      var kp = document.querySelector('[data-kyc-pill]');
+      if (kp) {
+        kp.className = 'ctrl-pill ' + (state.kyc ? 'ctrl-pill-live' : 'ctrl-pill-off');
+        kp.textContent = state.kyc ? 'Required' : 'Optional';
+      }
+    }
   }
 
   function sendToggle(payload, btn, msg) {
@@ -235,6 +271,13 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
   }
 
   document.getElementById('ctrlGroups').addEventListener('click', function (e) {
+    var kycBtn = e.target.closest('.ctrl-kyc-toggle');
+    if (kycBtn) {
+      var kNext = kycBtn.dataset.active === '1' ? 0 : 1;
+      sendToggle({ setting: 'kyc', active: kNext }, kycBtn,
+        'KYC verification turned ' + (kNext ? 'ON' : 'OFF') + '. ' + (kNext ? 'Only approved-KYC users can order now.' : 'Everyone can order without verification now.'));
+      return;
+    }
     var groupBtn = e.target.closest('.ctrl-group-toggle');
     if (groupBtn) {
       var gType = groupBtn.dataset.type;
