@@ -396,7 +396,7 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=36"></script>
+<script src="js/script.js?v=37"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>

@@ -181,7 +181,7 @@ function initSearchTyping(){
   inp.addEventListener('focus',()=>{idle=true;stop();if(!inp.value)inp.placeholder='Search'});
   inp.addEventListener('blur',()=>{idle=false;if(inp.value)return;ci=0;del=false;stop();timer=setTimeout(tick,500)});
   if(inp.value)return;
-  timer=setTimeout(tick,700);
+  timer=setTimeout(tick,450);
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
