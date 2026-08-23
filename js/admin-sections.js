@@ -90,9 +90,9 @@
       return;
     }
     wrap.innerHTML = boxes.map(function (cb) {
-      var key = cb.dataset.t + ':' + cb.value;
+      var key = cb.value; /* checkbox values are "type:id" tokens */
       return '<span class="cat-pill"><i class="fa-solid fa-link"></i> ' + esc(NAMES[key] || cb.textContent.trim()) +
-        ' <small style="opacity:.65;font-weight:800;">(' + poolLabel(cb.dataset.t) + ')</small></span>';
+        ' <small style="opacity:.65;font-weight:800;">(' + poolLabel(key.split(':')[0]) + ')</small></span>';
     }).join('');
   }
 
@@ -104,7 +104,7 @@
       linked[pair[0] + ':' + pair[1]] = true;
     });
     form.querySelectorAll('.assign-check').forEach(function (cb) {
-      cb.checked = !!linked[cb.dataset.t + ':' + cb.value];
+      cb.checked = !!linked[cb.value];
     });
     renderAssigned();
   }

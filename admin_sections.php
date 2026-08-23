@@ -262,7 +262,7 @@ admin_page_start('Sections', 'sections', 'Sections');
                         <?php else: ?>
                             <?php foreach ($cfg['items'] as $it): ?>
                             <label class="assign-row" data-search="<?= $ce(strtolower((string)$it['name'])) ?>">
-                                <input type="checkbox" class="assign-check" name="assign[]" data-t="<?= $ce($t) ?>" value="<?= (int)$it['id'] ?>">
+                                <input type="checkbox" class="assign-check" name="assign[]" data-t="<?= $ce($t) ?>" value="<?= $ce($t) ?>:<?= (int)$it['id'] ?>">
                                 <span class="assign-name"><?= $ce($it['name']) ?></span>
                             </label>
                             <?php endforeach; ?>
@@ -309,6 +309,6 @@ admin_page_start('Sections', 'sections', 'Sections');
 window.LY_ASSIGN_LINKS = <?= json_encode($linkMap, $jsonFlags) ?>;
 window.LY_ASSIGN_NAMES = <?= json_encode($itemNameMap, $jsonFlags) ?>;
 </script>
-<script src="js/admin-sections.js?v=1"></script>
+<script src="js/admin-sections.js?v=2"></script>
 <?php
 admin_page_end();
