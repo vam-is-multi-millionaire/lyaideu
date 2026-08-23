@@ -40,6 +40,15 @@
   /* Beverages page: hide the "View Cart" button — the cart FAB covers phones */
   #beverages .section-head .hero-actions{display:none;}
 
+  /* Others page: remove the kicker badge above the heading on mobile */
+  #others .section-head .kicker{display:none;}
+  /* Others page: remove the sub-heading text on mobile */
+  #others .section-head .section-sub{display:none;}
+  /* Others page: no top padding on the section on mobile */
+  #others.section{padding-top:0;}
+  /* Others page: hide the "View Cart" button — the cart FAB covers phones */
+  #others .section-head .hero-actions{display:none;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
