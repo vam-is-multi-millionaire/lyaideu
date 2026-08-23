@@ -686,9 +686,10 @@ section{scroll-margin-top:96px;}
 .checkout-card label{display:block;font-weight:800;margin-bottom:1rem}
 .checkout-card input,.checkout-card textarea,.checkout-card select{display:block;width:100%;margin-top:.4rem;border:2px solid var(--orange-200);border-radius:10px;padding:.75rem;font:inherit;background:#fff}
 .checkout-card textarea{min-height:90px;resize:vertical}.muted,.small-note{color:var(--muted);font-size:.82rem;font-weight:700}
-/* Checkout: hide the "Secure checkout" kicker pill on phones only */
+/* Checkout: hide the "Secure checkout" kicker pill + zero top padding on phones only */
 @media (max-width:960px){
   .checkout-body .kicker{display:none;}
+  .checkout-body .checkout-page{padding-top:0;}
 }
 .promo-box{display:flex;gap:.5rem;margin:1rem 0}.promo-box input{flex:1;border:2px solid var(--orange-200);border-radius:10px;padding:.7rem;font:inherit}
 .checkout-item{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px dashed var(--orange-200)}
