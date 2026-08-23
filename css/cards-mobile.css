@@ -49,6 +49,11 @@
   /* Others page: hide the "View Cart" button — the cart FAB covers phones */
   #others .section-head .hero-actions{display:none;}
 
+  /* Stores pages (listing + detail): no top padding on the section on mobile */
+  #hotels.section,#store.section{padding-top:0;}
+  /* Store detail: hide the "View Cart" button — the cart FAB covers phones */
+  #store .store-hero-actions{display:none;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
