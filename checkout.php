@@ -25,7 +25,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 <?= lyaideu_base_tag() ?>
 <title>Checkout | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=43">
+<link rel="stylesheet" href="css/style.css?v=44">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head><body class="checkout-body">
 <header class="topbar">
@@ -178,6 +178,6 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     });
 })();
 </script>
-<script src="js/script.js?v=29"></script>
+<script src="js/script.js?v=30"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script></body></html>

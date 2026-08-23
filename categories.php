@@ -80,7 +80,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=43">
+<link rel="stylesheet" href="css/style.css?v=44">
 <link rel="stylesheet" href="css/categories-mobile.css?v=6">
 <link rel="stylesheet" href="css/cards-mobile.css?v=2">
 </head>
@@ -198,13 +198,13 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
   <div class="cart-summary"><div class="summary-row"><span>Subtotal</span><strong id="cartSubtotal">Rs. 0</strong></div><div class="summary-row"><span>Delivery</span><strong id="cartDelivery">Rs. 50</strong></div><div class="summary-row total"><span>Estimated total</span><strong id="cartTotal">Rs. 50</strong></div><a href="checkout" class="btn btn-primary btn-block" id="checkoutBtn">Checkout <i class="fa-solid fa-arrow-right"></i></a><button class="btn btn-outline btn-block" id="clearCart" type="button">Clear Cart</button></div>
 </aside>
 
-<script src="js/script.js?v=29"></script>
+<script src="js/script.js?v=30"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
 </script>
-<script src="js/categories-mobile.js?v=14"></script>
+<script src="js/categories-mobile.js?v=15"></script>
 </body>
 </html>
