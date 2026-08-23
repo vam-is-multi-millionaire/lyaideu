@@ -336,6 +336,19 @@
     openView(type, slug);
   });
 
+  /* Bottom-nav "Categories" tab: while the browse overlay is open, tapping
+     it must return to the categories grid instantly. Letting the link
+     navigate would reload the page — and the saved-state restore below
+     would just reopen the overlay, so the tap looked like it did nothing. */
+  document.addEventListener('click', function (e) {
+    if (!isMobile()) return;
+    var tab = e.target.closest('.bottom-nav [data-nav="categories"]');
+    if (!tab || !view.classList.contains('open')) return;
+    e.preventDefault();
+    closeView();
+    window.scrollTo(0, 0);
+  }, true);
+
   rail.addEventListener('click', function (e) {
     var btn = e.target.closest('.mc-rail-item');
     if (btn && btn.dataset.slug) selectCat(btn.dataset.slug);
