@@ -561,8 +561,8 @@ function initCheckout(){
       const res=await fetch('api/promo.php?code='+encodeURIComponent(code)+'&subtotal='+subtotalOf(),{cache:'no-store'});
       const d=await res.json();
       if(d&&d.ok&&d.promo){promo=d.promo;if(msg)msg.innerHTML='<i class="fa-solid fa-circle-check"></i> '+esc(d.msg||'Promo applied!');input.value=promo.code;input.disabled=true;btn.innerHTML='<i class="fa-solid fa-xmark"></i> Remove'}
-      else{promo=null;if(msg)msg.innerHTML='<i class="fa-solid fa-circle-xmark"></i> '+esc((d&&d.msg)||'This code cannot be used.')}
-    }catch(e){if(msg)msg.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Could not check this code right now. Please try again.'}
+      else{promo=null;if(msg)msg.innerHTML='<i class="fa-solid fa-circle-xmark"></i> '+esc((d&&d.msg)||'This code cannot be used.');btn.innerHTML='Apply'}
+    }catch(e){if(msg)msg.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Could not check this code right now. Please try again.';btn.innerHTML='Apply'}
     btn.disabled=false;update();
   }
   $('#promoBtn')?.addEventListener('click',applyPromo);
