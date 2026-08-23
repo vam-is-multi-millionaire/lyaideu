@@ -28,6 +28,13 @@ function team_redirect(bool $saved, ?string $error = null): void {
     exit;
 }
 
+/** Number of ACTIVE superadmin accounts, excluding $excludeId. */
+function team_active_super_count(PDO $pdo, int $excludeId = 0): int {
+    $st = $pdo->prepare("SELECT COUNT(*) FROM admin_users WHERE role = 'superadmin' AND is_active = 1 AND id <> :x");
+    $st->execute([':x' => $excludeId]);
+    return (int)$st->fetchColumn();
+}
+
 /** Checkbox grid of grantable admin pages, grouped by area. */
 function team_pages_grid(string $inputName, array $selected): string {
     $navItems = admin_nav_items();
@@ -71,6 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 array_map('strval', (array)($_POST['pages'] ?? [])),
                 fn($k) => in_array($k, admin_grantable_page_keys(), true)
             ));
+            /* Superadmins implicitly open every page - grants are irrelevant. */
+            if ($role === 'superadmin') {
+                $pages = [];
+            }
 
             if (!preg_match('/^[a-zA-Z0-9_.\-]{3,40}$/', $username)) {
                 team_redirect(false, 'Username must be 3-40 characters (letters, numbers, dot, dash, underscore).');
@@ -81,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 team_redirect(false, 'That email address does not look valid.');
             }
-            if (!in_array($role, ['admin', 'manager'], true)) {
-                team_redirect(false, 'Please choose a valid role (Admin or Manager).');
+            if (!in_array($role, ['superadmin', 'admin', 'manager'], true)) {
+                team_redirect(false, 'Please choose a valid role (Super Admin, Admin or Manager).');
             }
             if ($action === 'add_staff') {
                 if (strlen($password) < 8) {
@@ -127,8 +138,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cur = $pdo->prepare('SELECT id, role FROM admin_users WHERE id = :id LIMIT 1');
                 $cur->execute([':id' => $id]);
                 $row = $cur->fetch();
-                if (!$row || $row['role'] === 'superadmin') {
-                    team_redirect(false, 'Superadmin accounts cannot be edited.');
+                if (!$row) {
+                    team_redirect(false, 'Staff account not found.');
+                }
+                if ($row['role'] === 'superadmin' && $role !== 'superadmin'
+                    && team_active_super_count($pdo, $id) === 0) {
+                    team_redirect(false, 'At least one active Super Admin must remain - promote another Super Admin first.');
                 }
                 $dupe = $pdo->prepare('SELECT id FROM admin_users WHERE username = :u AND id <> :id LIMIT 1');
                 $dupe->execute([':u' => $username, ':id' => $id]);
@@ -161,11 +176,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id <= 0 || $id === (int)$_SESSION['admin_id']) {
                 team_redirect(false, 'You cannot change your own account status.');
             }
-            $cur = $pdo->prepare('SELECT id, role FROM admin_users WHERE id = :id LIMIT 1');
+            $cur = $pdo->prepare('SELECT id, role, is_active FROM admin_users WHERE id = :id LIMIT 1');
             $cur->execute([':id' => $id]);
             $row = $cur->fetch();
-            if (!$row || $row['role'] === 'superadmin') {
-                team_redirect(false, 'Superadmin accounts cannot be disabled.');
+            if (!$row) {
+                team_redirect(false, 'Staff account not found.');
+            }
+            if ($row['role'] === 'superadmin' && (int)$row['is_active'] === 1
+                && team_active_super_count($pdo, $id) === 0) {
+                team_redirect(false, 'At least one active Super Admin must stay enabled.');
             }
             $pdo->prepare('UPDATE admin_users SET is_active = 1 - is_active WHERE id = :id')->execute([':id' => $id]);
             team_redirect(true);
@@ -176,11 +195,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($id <= 0 || $id === (int)$_SESSION['admin_id']) {
                 team_redirect(false, 'You cannot delete your own account.');
             }
-            $cur = $pdo->prepare('SELECT id, name, role FROM admin_users WHERE id = :id LIMIT 1');
+            $cur = $pdo->prepare('SELECT id, name, role, is_active FROM admin_users WHERE id = :id LIMIT 1');
             $cur->execute([':id' => $id]);
             $row = $cur->fetch();
-            if (!$row || $row['role'] === 'superadmin') {
-                team_redirect(false, 'Superadmin accounts cannot be deleted.');
+            if (!$row) {
+                team_redirect(false, 'Staff account not found.');
+            }
+            if ($row['role'] === 'superadmin' && (int)$row['is_active'] === 1
+                && team_active_super_count($pdo, $id) === 0) {
+                team_redirect(false, 'At least one active Super Admin must remain.');
             }
             $pdo->prepare('DELETE FROM admin_user_pages WHERE admin_id = :id')->execute([':id' => $id]);
             $pdo->prepare('DELETE FROM admin_users WHERE id = :id')->execute([':id' => $id]);
@@ -244,7 +267,7 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
 
 <section class="admin-section">
     <div class="admin-section-top">
-        <p class="section-sub">Create <strong>Admin</strong> and <strong>Manager</strong> logins and choose exactly which admin pages each person can open. Superadmins always see everything. Changes take effect the next time that person loads a page.</p>
+        <p class="section-sub">Create <strong>Super Admin</strong>, <strong>Admin</strong> and <strong>Manager</strong> logins and choose exactly which admin pages each person can open. Super Admins always see everything. Changes take effect the next time that person loads a page.</p>
         <span class="admin-count-badge"><?= count($staff) ?> staff</span>
     </div>
 </section>
@@ -267,14 +290,16 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
         </div>
         <div class="admin-field-row">
             <div><label>Email <span class="small-note">(optional)</span></label><input type="email" name="email" value="<?= $ce((string)$editUser['email']) ?>"></div>
-            <div><label>Role</label><select name="role"><option value="admin"<?= $editUser['role'] === 'admin' ? ' selected' : '' ?>>Admin</option><option value="manager"<?= $editUser['role'] === 'manager' ? ' selected' : '' ?>>Manager</option></select></div>
+            <div><label>Role</label><select name="role" class="team-role-select"><option value="manager"<?= $editUser['role'] === 'manager' ? ' selected' : '' ?>>Manager</option><option value="admin"<?= $editUser['role'] === 'admin' ? ' selected' : '' ?>>Admin</option><option value="superadmin"<?= $editUser['role'] === 'superadmin' ? ' selected' : '' ?>>Super Admin</option></select></div>
         </div>
         <div class="admin-field-row">
             <div><label>New Password <span class="small-note">(leave blank to keep current)</span></label><input type="password" name="password" minlength="8" autocomplete="new-password"></div>
             <div><label>Confirm New Password</label><input type="password" name="password_confirm" autocomplete="new-password"></div>
         </div>
-        <label style="margin-top:.4rem">Page Access</label>
+        <label style="margin-top:.4rem">Page Access <span class="small-note">(Super Admins open every page)</span></label>
+        <div class="team-pages-wrap"<?= $editUser['role'] === 'superadmin' ? ' style="display:none"' : '' ?>>
         <?= team_pages_grid('pages', isset($grants[(int)$editUser['id']]) ? $grants[(int)$editUser['id']] : []) ?>
+        </div>
         <div class="pm-add-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
             <a class="btn btn-outline" href="admin_team">Cancel</a>
@@ -293,14 +318,16 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
         </div>
         <div class="admin-field-row">
             <div><label>Email <span class="small-note">(optional)</span></label><input type="email" name="email" placeholder="staff@example.com"></div>
-            <div><label>Role</label><select name="role"><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+            <div><label>Role</label><select name="role" class="team-role-select"><option value="manager">Manager</option><option value="admin">Admin</option><option value="superadmin">Super Admin</option></select></div>
         </div>
         <div class="admin-field-row">
             <div><label>Password</label><input type="password" name="password" minlength="8" placeholder="Min 8 characters" required autocomplete="new-password"></div>
             <div><label>Confirm Password</label><input type="password" name="password_confirm" required autocomplete="new-password"></div>
         </div>
-        <label style="margin-top:.4rem">Page Access <span class="small-note">(unticked pages will be hidden for this person)</span></label>
+        <label style="margin-top:.4rem">Page Access <span class="small-note">(Super Admins open every page)</span></label>
+        <div class="team-pages-wrap">
         <?= team_pages_grid('pages', []) ?>
+        </div>
         <div class="pm-add-actions">
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create Account</button>
             <button type="button" class="btn btn-outline" id="addStaffCancel">Cancel</button>
@@ -331,8 +358,8 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
                     <span>Last login: <?= $s['last_login'] !== null ? $ce(substr((string)$s['last_login'], 0, 16)) : 'never' ?></span>
                 </span>
                 <span class="pm-actions">
-                    <?php if ($isSuper): ?>
-                        <span class="team-lock"><i class="fa-solid fa-shield-halved"></i> Protected</span>
+                    <?php if ($isSelf): ?>
+                        <span class="team-lock"><i class="fa-solid fa-circle-user"></i> You — <a href="admin_account">My Account</a></span>
                     <?php elseif ($editId === $sid): ?>
                         <a class="pm-act pm-edit" href="admin_team"><i class="fa-solid fa-xmark"></i> Close</a>
                     <?php else: ?>
@@ -355,7 +382,7 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
         </div>
         <?php endforeach; ?>
         <?php if (count($staff) === 1): ?>
-            <p class="pm-empty" style="display:block"><i class="fa-solid fa-user-plus"></i> Only the superadmin exists so far — add your first admin or manager above.</p>
+            <p class="pm-empty" style="display:block"><i class="fa-solid fa-user-plus"></i> Only the superadmin exists so far — add your first staff account above.</p>
         <?php endif; ?>
     </div>
     <p class="pm-empty" id="staffEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i> No staff match your search.</p>
@@ -387,6 +414,14 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
       var btn=form.querySelector('.pm-del-btn');
       if(btn&&!window.confirm(btn.getAttribute('data-confirm')))e.preventDefault();
     });
+  });
+
+  document.querySelectorAll('.team-role-select').forEach(function(sel){
+    var sync=function(){
+      var f=sel.closest('form'),w=f?f.querySelector('.team-pages-wrap'):null;
+      if(w)w.style.display=sel.value==='superadmin'?'none':'';
+    };
+    sel.addEventListener('change',sync);sync();
   });
 })();
 </script>

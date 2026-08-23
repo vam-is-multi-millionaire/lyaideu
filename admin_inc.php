@@ -45,6 +45,7 @@ function admin_nav_items(): array {
         'team' => ['label' => 'Staff & Roles', 'href' => 'admin_team', 'icon' => '<i class="fa-solid fa-user-shield"></i>'],
         'kyc' => ['label' => 'KYC', 'href' => 'admin_kyc', 'icon' => '<i class="fa-solid fa-shield-halved"></i>'],
         'settings' => ['label' => 'Settings', 'href' => 'admin_settings', 'icon' => '<i class="fa-solid fa-gear"></i>'],
+        'account' => ['label' => 'My Account', 'href' => 'admin_account', 'icon' => '<i class="fa-solid fa-id-badge"></i>'],
     ];
 }
 
@@ -143,13 +144,14 @@ function admin_granted_pages(): array {
 
 /**
  * May the current staff member open this admin page?
- * superadmin → always; dashboard → every signed-in staff; team → superadmin only.
+ * superadmin → always; dashboard + My Account → every signed-in staff;
+ * team → superadmin only; everything else → per granted page rows.
  */
 function admin_can(string $pageKey): bool {
     if (!admin_is_logged_in()) {
         return false;
     }
-    if ($pageKey === 'dashboard') {
+    if ($pageKey === 'dashboard' || $pageKey === 'account') {
         return true;
     }
     if (!in_array($pageKey, admin_grantable_page_keys(), true)) {
