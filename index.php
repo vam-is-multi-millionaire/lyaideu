@@ -455,7 +455,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php if ($sMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sMart['tag']) ?></span><?php endif; ?>
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sMart['name']) ?></h3></div><?= ($sMart['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sMart['hotel']) . '</p>' : '' ?>
-                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sMart) ?><?= lyaideu_featured_unit($sMart) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sMart)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($sMart) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sMart) . '%</span>' : '' ?>
+                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sMart) ?></span><?= lyaideu_featured_deal_pct($sMart) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sMart) . '%</span>' : '' ?>
                         <button class="btn-order add-cart" data-id="<?= (int)$sMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($sMart['name']) ?>" data-price="<?= lyaideu_featured_deal_price($sMart) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sMart)) ?>" data-hotel="<?= lyaideu_featured_e($sMart['hotel'] ?? '') ?>"<?= !empty($sMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
                     <?php endforeach; ?>
@@ -481,7 +481,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php if ($sOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sOther['tag']) ?></span><?php endif; ?>
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sOther['name']) ?></h3></div><?= ($sOther['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sOther['hotel']) . '</p>' : '' ?>
-                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sOther) ?><?= lyaideu_featured_unit($sOther) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sOther)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($sOther) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sOther) . '%</span>' : '' ?>
+                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sOther) ?></span><?= lyaideu_featured_deal_pct($sOther) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sOther) . '%</span>' : '' ?>
                         <button class="btn-order add-cart" data-id="<?= (int)$sOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($sOther['name']) ?>" data-price="<?= lyaideu_featured_deal_price($sOther) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sOther)) ?>" data-hotel="<?= lyaideu_featured_e($sOther['hotel'] ?? '') ?>"<?= !empty($sOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
                     <?php endforeach; ?>
@@ -507,7 +507,7 @@ $FEATURED_BEVERAGE_ICONS = [
                             <?php if ($sBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($sBev['tag']) ?></span><?php endif; ?>
                         </div>
                         <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($sBev['name']) ?></h3></div><?= ($sBev['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($sBev['hotel']) . '</p>' : '' ?>
-                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sBev) ?><?= lyaideu_featured_unit($sBev) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($sBev)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($sBev) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sBev) . '%</span>' : '' ?>
+                        <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($sBev) ?></span><?= lyaideu_featured_deal_pct($sBev) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($sBev) . '%</span>' : '' ?>
                         <button class="btn-order add-cart" data-id="<?= (int)$sBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($sBev['name']) ?>" data-price="<?= lyaideu_featured_deal_price($sBev) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($sBev)) ?>" data-hotel="<?= lyaideu_featured_e($sBev['hotel'] ?? '') ?>"<?= !empty($sBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                     </article>
                     <?php endforeach; ?>
@@ -599,7 +599,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php if ($fMart['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fMart['tag']) ?></span><?php endif; ?>
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fMart['name']) ?></h3></div><?= ($fMart['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fMart['hotel']) . '</p>' : '' ?>
-                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fMart) ?><?= lyaideu_featured_unit($fMart) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fMart)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($fMart) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fMart) . '%</span>' : '' ?>
+                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fMart) ?></span><?= lyaideu_featured_deal_pct($fMart) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fMart) . '%</span>' : '' ?>
                             <button class="btn-order add-cart" data-id="<?= (int)$fMart['id'] ?>" data-type="mart" data-name="<?= lyaideu_featured_e($fMart['name']) ?>" data-price="<?= lyaideu_featured_deal_price($fMart) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fMart)) ?>" data-hotel="<?= lyaideu_featured_e($fMart['hotel'] ?? '') ?>"<?= !empty($fMart['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
                         <?php endforeach; ?>
@@ -625,7 +625,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php if ($fOther['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fOther['tag']) ?></span><?php endif; ?>
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fOther['name']) ?></h3></div><?= ($fOther['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fOther['hotel']) . '</p>' : '' ?>
-                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fOther) ?><?= lyaideu_featured_unit($fOther) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fOther)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($fOther) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fOther) . '%</span>' : '' ?>
+                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fOther) ?></span><?= lyaideu_featured_deal_pct($fOther) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fOther) . '%</span>' : '' ?>
                             <button class="btn-order add-cart" data-id="<?= (int)$fOther['id'] ?>" data-type="other" data-name="<?= lyaideu_featured_e($fOther['name']) ?>" data-price="<?= lyaideu_featured_deal_price($fOther) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fOther)) ?>" data-hotel="<?= lyaideu_featured_e($fOther['hotel'] ?? '') ?>"<?= !empty($fOther['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
                         <?php endforeach; ?>
@@ -651,7 +651,7 @@ $FEATURED_BEVERAGE_ICONS = [
                                 <?php if ($fBev['tag'] !== ''): ?><span class="dish-tag"><?= lyaideu_featured_e($fBev['tag']) ?></span><?php endif; ?>
                             </div>
                             <div class="dish-body"><div class="dish-top"><h3><?= lyaideu_featured_e($fBev['name']) ?></h3></div><?= ($fBev['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . lyaideu_featured_e($fBev['hotel']) . '</p>' : '' ?>
-                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fBev) ?><?= lyaideu_featured_unit($fBev) !== '' ? ' <span class="unit">/ ' . lyaideu_featured_e(lyaideu_featured_unit($fBev)) . '</span>' : '' ?></span><?= lyaideu_featured_deal_pct($fBev) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fBev) . '%</span>' : '' ?>
+                            <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= lyaideu_featured_deal_price($fBev) ?></span><?= lyaideu_featured_deal_pct($fBev) > 0 ? '<span class="deal-badge deal-badge-inline">-' . lyaideu_featured_deal_pct($fBev) . '%</span>' : '' ?>
                             <button class="btn-order add-cart" data-id="<?= (int)$fBev['id'] ?>" data-type="beverage" data-name="<?= lyaideu_featured_e($fBev['name']) ?>" data-price="<?= lyaideu_featured_deal_price($fBev) ?>" data-unit="<?= lyaideu_featured_e(lyaideu_featured_unit($fBev)) ?>" data-hotel="<?= lyaideu_featured_e($fBev['hotel'] ?? '') ?>"<?= !empty($fBev['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div>
                         </article>
                         <?php endforeach; ?>
@@ -854,7 +854,7 @@ $FEATURED_BEVERAGE_ICONS = [
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=40"></script>
+<script src="js/script.js?v=41"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 </body>

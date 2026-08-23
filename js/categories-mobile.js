@@ -283,7 +283,7 @@
       '<div class="dish-body"><div class="dish-top"><h3>' + name + '</h3></div>' +
       (hotel ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' + hotel + '</p>' : '') +
       '<div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ' + deal.now +
-      (unit ? ' <span class="unit">/ ' + unit + '</span>' : '') + '</span>' + dealTag(deal) + addBtn + '</div></div>' +
+      '</span>' + dealTag(deal) + addBtn + '</div></div>' +
     '</article>';
   }
 

@@ -257,7 +257,7 @@ $secDesc = (string)$sectionRow['desc'];
                         <div class="dish-top"><h3><?= $sce((string)$p['name']) ?></h3></div>
                         <?php if ($hotel !== ''): ?><p class="dish-hotel"><i class="fa-solid fa-store"></i> <?= $sce($hotel) ?></p><?php endif; ?>
                         <div class="dish-foot">
-                            <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= (int)$now ?><?php if ($unit !== ''): ?> <span class="unit">/ <?= $sce($unit) ?></span><?php endif; ?></span>
+                            <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= (int)$now ?></span>
                             <?php if ($pct > 0 && $basePrice > 0): ?><span class="deal-badge deal-badge-inline">-<?= $pct ?>%</span><?php endif; ?>
                             <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $sce($itype) ?>" data-name="<?= $sce((string)$p['name']) ?>" data-price="<?= (int)$now ?>" data-unit="<?= $sce($unit) ?>" data-hotel="<?= $sce($hotel) ?>" data-cats="<?= $sce($catsAttr) ?>" data-slug="<?= $sce((string)$p['slug']) ?>" data-url="<?= $cardHref($p) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                         </div>
@@ -289,7 +289,7 @@ document.addEventListener('click', function (e) {
     if (url) window.location.href = url;
 });
 </script>
-<script src="js/script.js?v=40"></script>
+<script src="js/script.js?v=41"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 </body>

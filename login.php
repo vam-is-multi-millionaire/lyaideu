@@ -185,7 +185,7 @@ require_once __DIR__ . '/site_config.php';
     <a class="bn-item" data-nav="profile" href="profile"><span class="bn-ico"><i class="fa-solid fa-user"></i></span><span class="bn-label">Profile</span></a>
 </nav>
 
-<script src="js/script.js?v=40"></script>
+<script src="js/script.js?v=41"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 <script>

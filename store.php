@@ -276,7 +276,6 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             $dealPct = lyaideu_deal_percent($p['discount_percent'] ?? 0);
                             $dealNow = lyaideu_deal_price($price, $dealPct);
                             $unitLabel = $defVar && (string)$defVar['label'] !== '' ? (string)$defVar['label'] : (string)($p['unit'] ?? '');
-                            $unitHtml = $hasUnit && $unitLabel !== '' ? ' <span class="unit">/ ' . e($unitLabel) . '</span>' : '';
                             $img = (string)$p['img'];
                             $catIcon = $isMart ? ($MART_CAT_ICONS[$p['cat']] ?? 'fa-basket-shopping') : ($isOther ? ($OTHER_CAT_ICONS[$p['cat']] ?? 'fa-gift') : ($BEVERAGE_CAT_ICONS[$p['cat']] ?? 'fa-glass-water'));
                             $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($catIcon) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
@@ -287,7 +286,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
-                                <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $dealNow ?><?= $unitHtml ?></span><?= $dealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $dealPct . '%</span>' : '' ?>
+                                <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $dealNow ?></span><?= $dealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $dealPct . '%</span>' : '' ?>
                                 <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $dealNow ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
                             </div>
                         </article>
@@ -340,7 +339,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=40"></script>
+<script src="js/script.js?v=41"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 <script>
