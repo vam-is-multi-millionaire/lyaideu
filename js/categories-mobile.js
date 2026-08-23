@@ -18,7 +18,11 @@
   if (!window.LY_CATS || !window.LY_GROUPS) return;
 
   var TREES = window.LY_CATS;    // { type: [ {id,name,slug,parent_id,image,icon,depth} ] }
-  var GROUPS = window.LY_GROUPS; // { type: {label,page,param,pool} }
+  var GROUPS = window.LY_GROUPS; // { type: {label,page,param,pool,custom} }
+
+  /* Custom sections hold no products of their own — their cards are links
+     into existing pools, resolved via api "links" (t = item source type). */
+  var SRC_GROUPS = { dish: 'menu', mart: 'mart', other: 'other', beverage: 'beverage' };
 
   var view = document.getElementById('mcView');
   if (!view) return;
@@ -143,6 +147,43 @@
     });
   }
   function poolItems(type) { return (cache && cache[GROUPS[type].pool]) || []; }
+
+  /* Products linked (admin) into a custom section's category, including the
+     whole subtree — mirrors how native pools match via the cats path. */
+  function linkedRows(type, slug) {
+    if (!cache) return null;
+    var cat = findCat(type, slug);
+    if (!cat) return [];
+    var list = TREES[type] || [];
+    var ids = {};
+    var frontier = [cat.id];
+    while (frontier.length) {
+      var curId = frontier.shift();
+      if (ids[curId]) continue;
+      ids[curId] = true;
+      list.forEach(function (c) {
+        if (c.parent_id !== null && c.parent_id === curId) frontier.push(c.id);
+      });
+    }
+    var out = [];
+    var seen = {};
+    (cache.links || []).forEach(function (l) {
+      if (!ids[l.c]) return;
+      var src = SRC_GROUPS[l.t];
+      if (!src || !GROUPS[src] || !GROUPS[src].pool) return;
+      var key = l.t + ':' + l.id;
+      if (seen[key]) return;
+      var pool = cache[GROUPS[src].pool] || [];
+      for (var i = 0; i < pool.length; i++) {
+        if (Number(pool[i].id) === Number(l.id)) {
+          seen[key] = true;
+          out.push({ p: pool[i], src: src });
+          break;
+        }
+      }
+    });
+    return out;
+  }
   function startSync() {
     stopSync();
     syncTimer = setInterval(function () {
@@ -248,8 +289,26 @@
 
   function renderProducts(type, slug) {
     var cat = findCat(type, slug);
-    var items = cache ? poolItems(type) : null;
-    if (!items) {
+    var group = GROUPS[type];
+    var isCustom = !!(group && group.custom);
+
+    var rows = null;
+    if (isCustom) {
+      rows = linkedRows(type, slug);
+    } else {
+      var items = cache ? poolItems(type) : null;
+      if (items === null) {
+        rows = null;
+      } else {
+        var list = items.filter(function (p) {
+          var cats = (p.cats && p.cats.length) ? p.cats : [p.cat || ''];
+          return cats.indexOf(slug) !== -1;
+        });
+        rows = list.map(function (p) { return { p: p, src: type }; });
+      }
+    }
+
+    if (rows === null) {
       products.style.display = '';
       products.hidden = false;
       empty.hidden = true;
@@ -260,15 +319,11 @@
     }
     products.classList.remove('is-loading');
     products.removeAttribute('aria-busy');
-    var list = items.filter(function (p) {
-      var cats = (p.cats && p.cats.length) ? p.cats : [p.cat || ''];
-      return cats.indexOf(slug) !== -1;
-    });
-    if (list.length) {
+    if (rows.length) {
       products.style.display = '';
       products.hidden = false;
       empty.hidden = true;
-      products.innerHTML = list.map(function (p) { return cardHTML(p, type); }).join('');
+      products.innerHTML = rows.map(function (r) { return cardHTML(r.p, r.src); }).join('');
     } else {
       /* No products in this category — show a short friendly message. */
       products.innerHTML = '';

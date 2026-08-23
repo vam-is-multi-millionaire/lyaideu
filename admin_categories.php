@@ -6,6 +6,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_categories_table();
+lyaideu_ensure_sections_tables();
 
 $allCats = lyaideu_categories();
 
@@ -79,14 +80,23 @@ foreach ($pdo->query('SELECT category_id, COUNT(*) AS c FROM beverage_items GROU
     $beverageCounts[(int)$r['category_id']] = (int)$r['c'];
 }
 
-$menuCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'menu'));
-$martCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'mart'));
-$otherCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'other'));
-$beverageCats = array_values(array_filter($allCats, fn($c) => $c['type'] === 'beverage'));
-$menuFlat = tree_flat_rows($menuCats);
-$martFlat = tree_flat_rows($martCats);
-$otherFlat = tree_flat_rows($otherCats);
-$beverageFlat = tree_flat_rows($beverageCats);
+$countsByType = ['menu' => $dishCounts, 'mart' => $martCounts, 'other' => $otherCounts, 'beverage' => $beverageCounts];
+
+$allGroups = lyaideu_section_groups();
+
+$TYPE_LABELS = [];
+$TYPE_ICONS  = [];
+$groupCats   = [];
+foreach ($allGroups as $grpKey => $grpDef) {
+    $grpKey = (string)$grpKey;
+    $TYPE_LABELS[$grpKey] = (string)$grpDef['label'];
+    $TYPE_ICONS[$grpKey]  = (string)$grpDef['icon'];
+    $groupCats[$grpKey]   = array_values(array_filter($allCats, fn($c) => (string)$c['type'] === $grpKey));
+}
+$groupFlats = [];
+foreach ($groupCats as $grpKey => $grpCats) {
+    $groupFlats[$grpKey] = tree_flat_rows($grpCats);
+}
 
 $ICON_OPTIONS = [
     'fa-drumstick-bite', 'fa-pizza-slice', 'fa-bowl-rice', 'fa-bowl-food', 'fa-cookie',
@@ -96,9 +106,6 @@ $ICON_OPTIONS = [
     'fa-bouquet', 'fa-candle-holder', 'fa-jar', 'fa-gift',
     'fa-champagne-glasses', 'fa-faucet-drip', 'fa-wine-bottle', 'fa-mug-saucer',
 ];
-
-$TYPE_LABELS = ['menu' => 'Menu', 'mart' => 'Mart', 'other' => 'Other', 'beverage' => 'Beverages'];
-$TYPE_ICONS  = ['menu' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other' => 'fa-gift', 'beverage' => 'fa-glass-water'];
 
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
@@ -128,9 +135,9 @@ function render_category_group(array $flat, string $type, array $counts, array $
         return $names;
     };
     $html = '<div class="wp-cat-group">';
-    $html .= '<h3 class="wp-cat-group-title"><i class="fa-solid ' . $TYPE_ICONS[$type] . '"></i> ' . $TYPE_LABELS[$type] . ' <span class="wp-cat-group-count">' . count($flat) . '</span></h3>';
+    $html .= '<h3 class="wp-cat-group-title"><i class="fa-solid ' . ($TYPE_ICONS[$type] ?? 'fa-tags') . '"></i> ' . ($TYPE_LABELS[$type] ?? ucfirst($type)) . ' <span class="wp-cat-group-count">' . count($flat) . '</span></h3>';
     if (!$flat) {
-        $html .= '<p class="wp-cat-none">No ' . strtolower($TYPE_LABELS[$type]) . ' categories yet. Add one on the right.</p>';
+        $html .= '<p class="wp-cat-none">No ' . strtolower($TYPE_LABELS[$type] ?? $type) . ' categories yet. Add one on the right.</p>';
     }
     foreach ($flat as $i => $c) {
         $id = (int)$c['id'];
@@ -284,10 +291,9 @@ admin_page_start('Categories', 'categories', 'Categories');
             </div>
 
             <div class="wp-cat-list" id="catList">
-                <?= render_category_group($menuFlat, 'menu', $dishCounts, $menuCats, $ICON_OPTIONS) ?>
-                <?= render_category_group($martFlat, 'mart', $martCounts, $martCats, $ICON_OPTIONS) ?>
-                <?= render_category_group($beverageFlat, 'beverage', $beverageCounts, $beverageCats, $ICON_OPTIONS) ?>
-                <?= render_category_group($otherFlat, 'other', $otherCounts, $otherCats, $ICON_OPTIONS) ?>
+                <?php foreach ($allGroups as $grpKey => $grpDef): ?>
+                <?= render_category_group($groupFlats[(string)$grpKey], (string)$grpKey, $countsByType[(string)$grpKey] ?? [], $groupCats[(string)$grpKey], $ICON_OPTIONS) ?>
+                <?php endforeach; ?>
             </div>
             <p class="wp-cat-empty" id="catEmpty" style="display:none"><i class="fa-solid fa-magnifying-glass"></i> No categories match your search.</p>
         </section>
@@ -301,10 +307,10 @@ admin_page_start('Categories', 'categories', 'Categories');
                 <input type="hidden" name="section" value="categories">
                 <label>Type</label>
                 <select name="new_category[type]" id="newCatType">
-                    <option value="menu">Menu (dishes)</option>
-                    <option value="mart">Mart (groceries)</option>
-                    <option value="beverage">Beverages (cold drinks, alcohol &amp; water)</option>
-                    <option value="other">Other (gifts, decor &amp; achar)</option>
+                    <?php $typeHints = ['menu' => 'Menu (dishes)', 'mart' => 'Mart (groceries)', 'beverage' => 'Beverages (cold drinks, alcohol &amp; water)', 'other' => 'Other (gifts, decor &amp; achar)']; ?>
+                    <?php foreach ($allGroups as $optType => $optGroup): ?>
+                    <option value="<?= $ce((string)$optType) ?>"><?= $typeHints[(string)$optType] ?? $ce((string)$optGroup['label']) ?></option>
+                    <?php endforeach; ?>
                 </select>
                 <label>Name</label>
                 <input type="text" name="new_category[name]" placeholder="e.g. Steamed Momos" required>
@@ -315,10 +321,9 @@ admin_page_start('Categories', 'categories', 'Categories');
                 <label>Parent Category <span style="text-transform:none;font-weight:700;">(optional)</span></label>
                 <select name="new_category[parent_id]" id="newCatParent">
                     <option value="0">— No parent (top level) —</option>
-                    <optgroup label="Menu Categories" data-type="menu"><?= category_select_options($menuFlat, 'menu') ?></optgroup>
-                    <optgroup label="Mart Categories" data-type="mart"><?= category_select_options($martFlat, 'mart') ?></optgroup>
-                    <optgroup label="Beverage Categories" data-type="beverage"><?= category_select_options($beverageFlat, 'beverage') ?></optgroup>
-                    <optgroup label="Other Categories" data-type="other"><?= category_select_options($otherFlat, 'other') ?></optgroup>
+                    <?php foreach ($allGroups as $optType => $optGroup): ?>
+                    <optgroup label="<?= $ce((string)$optGroup['label']) ?> Categories" data-type="<?= $ce((string)$optType) ?>"><?= category_select_options($groupFlats[(string)$optType], (string)$optType) ?></optgroup>
+                    <?php endforeach; ?>
                 </select>
                 <label>Icon</label>
                 <div class="wp-cat-icon-wrap">

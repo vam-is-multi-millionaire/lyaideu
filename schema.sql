@@ -375,3 +375,27 @@ INSERT INTO categories (name, slug, type, parent_id, sort_order, icon) VALUES
 ('Chips & Biscuits','chips-biscuits','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='mart') t),1,'fa-cookie'),
 ('Chocolates','chocolates','mart',(SELECT id FROM (SELECT id FROM categories WHERE slug='snacks' AND type='mart') t),2,'fa-chocolate-bar')
 ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon);
+
+-- Custom sections (beyond Menu/Mart/Beverages/Others) + product links into them.
+-- Managed at runtime via lyaideu_ensure_sections_tables() / admin_sections.php.
+CREATE TABLE IF NOT EXISTS category_sections (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  slug VARCHAR(40) NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  icon VARCHAR(60) NOT NULL DEFAULT '',
+  `desc` VARCHAR(190) NOT NULL DEFAULT '',
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_section_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS section_item_links (
+  item_type VARCHAR(10) NOT NULL,
+  item_id INT UNSIGNED NOT NULL,
+  category_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (item_type, item_id, category_id),
+  KEY idx_sil_category (category_id),
+  KEY idx_sil_item (item_type, item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

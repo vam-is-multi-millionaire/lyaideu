@@ -105,6 +105,18 @@ try {
     lyaideu_attach_variants($others, 'other');
     lyaideu_attach_variants($beverages, 'beverage');
 
+    lyaideu_ensure_sections_tables();
+
+    $customSections = [];
+    foreach (lyaideu_custom_sections(true) as $s) {
+        $customSections[] = [
+            'slug' => (string)$s['slug'],
+            'name' => (string)$s['name'],
+            'icon' => (string)$s['icon'] !== '' ? (string)$s['icon'] : 'fa-layer-group',
+            'desc' => (string)$s['desc'],
+        ];
+    }
+
     echo json_encode([
         'dishes' => $dishes,
         'hotels' => $hotels,
@@ -113,6 +125,8 @@ try {
         'others' => $others,
         'beverages' => $beverages,
         'categories' => lyaideu_visible_categories(),
+        'sections' => $customSections,
+        'links' => lyaideu_public_section_links(),
         'delivery' => lyaideu_delivery_config(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {

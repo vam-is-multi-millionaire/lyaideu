@@ -13,13 +13,9 @@ $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_categories_table();
+lyaideu_ensure_sections_tables();
 
-$catGroups = [
-    'menu'     => ['label' => 'Menu',            'icon' => 'fa-utensils',        'param' => 'cat',  'page' => 'menu',      'desc' => 'Dishes from our partner kitchens'],
-    'mart'     => ['label' => 'Mart',            'icon' => 'fa-basket-shopping', 'param' => 'mcat', 'page' => 'mart',      'desc' => 'Fresh groceries & daily essentials'],
-    'other'    => ['label' => 'Other Products',  'icon' => 'fa-gift',            'param' => 'ocat', 'page' => 'others',    'desc' => 'Flowers, decor, achar & gifts'],
-    'beverage' => ['label' => 'Beverages',       'icon' => 'fa-glass-water',     'param' => 'bcat', 'page' => 'beverages', 'desc' => 'Cold drinks, water & more'],
-];
+$catGroups = lyaideu_section_groups();
 
 $catTrees = [];
 foreach (array_keys($catGroups) as $type) {
@@ -37,12 +33,12 @@ foreach (array_keys($catGroups) as $type) {
 $catGroupsJson = [];
 $catTreesJson = [];
 foreach ($catGroups as $type => $group) {
-    $pool = $type === 'menu' ? 'dishes' : ($type === 'mart' ? 'mart' : ($type === 'other' ? 'others' : 'beverages'));
     $catGroupsJson[$type] = [
-        'label' => $group['label'],
-        'page'  => $group['page'],
-        'param' => $group['param'],
-        'pool'  => $pool,
+        'label'  => $group['label'],
+        'page'   => $group['page'],
+        'param'  => $group['param'],
+        'pool'   => (string)($group['pool'] ?? ''),
+        'custom' => !empty($group['custom']),
     ];
     $flat = [];
     $walk = function (array $parents, int $depth) use (&$walk, &$flat, &$catTrees, $type): void {
@@ -151,7 +147,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                         $pcImg = lyaideu_category_image_url($pc);
                     ?>
                     <div class="cat-card<?= $pcImg !== '' ? ' has-img' : '' ?>">
-                        <a class="cat-card-main" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($pc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($pc['slug']) ?>">
+                        <a class="cat-card-main" href="<?= lyaideu_group_category_href($group, (string)$pc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($pc['slug']) ?>">
                             <?php if ($pcImg !== ''): ?><span class="cat-card-img-wrap"><img class="cat-card-img" src="<?= $ce($pcImg) ?>" alt="<?= $ce($pc['name']) ?>" loading="lazy"></span><?php endif; ?>
                             <strong><?= $ce($pc['name']) ?></strong>
                             <i class="cat-card-arrow fa-solid fa-chevron-right"></i>
@@ -159,7 +155,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                         <?php if (!empty($tree['children'][(int)$pc['id']])): ?>
                         <div class="cat-card-children">
                             <?php foreach ($tree['children'][(int)$pc['id']] as $cc): ?>
-                            <a class="cat-pill" href="<?= $ce($group['page']) ?>?<?= $ce($group['param']) ?>=<?= $ce($cc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($cc['slug']) ?>"><?= $ce($cc['name']) ?></a>
+                            <a class="cat-pill" href="<?= lyaideu_group_category_href($group, (string)$cc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($cc['slug']) ?>"><?= $ce($cc['name']) ?></a>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
@@ -205,6 +201,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
 </script>
-<script src="js/categories-mobile.js?v=16"></script>
+<script src="js/categories-mobile.js?v=17"></script>
 </body>
 </html>

@@ -169,7 +169,7 @@ function variant_base_price(int $price, array $row): int {
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'category_reorder', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'category_reorder', 'sections', 'section_reorder', 'section_links', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -184,6 +184,9 @@ require_once __DIR__ . '/site_config.php';
    The ensure_* calls inside the handlers below then short-circuit via their
    request guards. */
 if ($section === 'categories' || $section === 'category_reorder') {
+    lyaideu_ensure_categories_table();
+} elseif ($section === 'sections' || $section === 'section_reorder' || $section === 'section_links') {
+    lyaideu_ensure_sections_tables();
     lyaideu_ensure_categories_table();
 } elseif ($section === 'others') {
     lyaideu_ensure_other_table();
@@ -218,6 +221,7 @@ try {
             if (!empty($d['delete'])) {
                 $deleteDish->execute([$id]);
                 lyaideu_delete_item_variants($pdo, 'dish', $id);
+                lyaideu_purge_item_links('dish', $id);
                 continue;
             }
 
@@ -320,6 +324,7 @@ try {
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
                 lyaideu_delete_item_variants($pdo, 'mart', $id);
+                lyaideu_purge_item_links('mart', $id);
                 continue;
             }
 
@@ -429,6 +434,7 @@ try {
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
                 lyaideu_delete_item_variants($pdo, 'other', $id);
+                lyaideu_purge_item_links('other', $id);
                 continue;
             }
 
@@ -538,6 +544,7 @@ try {
             if (!empty($m['delete'])) {
                 $deleteItem->execute([$id]);
                 lyaideu_delete_item_variants($pdo, 'beverage', $id);
+                lyaideu_purge_item_links('beverage', $id);
                 continue;
             }
 
@@ -885,6 +892,7 @@ try {
 
             if (!empty($cat['delete'])) {
                 $ids = array_merge([$id], $descOf($id));
+                lyaideu_purge_category_links($ids);
                 foreach ($ids as $did) {
                     $nullDish->execute([$did]);
                     $nullMart->execute([$did]);
@@ -907,7 +915,8 @@ try {
             if ($name === '') {
                 continue;
             }
-            $type = in_array(clean_text($cat['type'] ?? 'menu'), ['menu', 'mart', 'other', 'beverage'], true) ? clean_text($cat['type']) : 'menu';
+            $validTypes = lyaideu_valid_category_types();
+            $type = in_array(clean_text($cat['type'] ?? 'menu'), $validTypes, true) ? clean_text($cat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($cat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);
@@ -949,7 +958,8 @@ try {
         $newCat = $_POST['new_category'] ?? [];
         if (clean_text($newCat['name'] ?? '') !== '') {
             $name = clean_text($newCat['name']);
-            $type = in_array(clean_text($newCat['type'] ?? 'menu'), ['menu', 'mart', 'other', 'beverage'], true) ? clean_text($newCat['type']) : 'menu';
+            $validTypesNew = lyaideu_valid_category_types();
+            $type = in_array(clean_text($newCat['type'] ?? 'menu'), $validTypesNew, true) ? clean_text($newCat['type']) : 'menu';
             $slug = lyaideu_slugify(clean_text($newCat['slug'] ?? ''));
             if ($slug === '' || $slug === 'category') {
                 $slug = lyaideu_slugify($name);
@@ -1011,6 +1021,186 @@ try {
             foreach (array_values($ids) as $pos => $cid) {
                 $updOrder->execute([':o' => $pos, ':id' => $cid]);
             }
+        }
+    }
+
+    if ($section === 'sections') {
+        lyaideu_ensure_sections_tables();
+
+        $iconSafe = static function ($value): string {
+            return preg_replace('/[^a-z0-9-]/', '', clean_text((string)$value));
+        };
+        $normalizeSlug = static function (string $raw, string $name): string {
+            /* lyaideu_slugify() never returns an empty string (it falls back
+               to "category" on its own), so an untouched/empty input must be
+               detected BEFORE calling it and re-derived from the name. */
+            $raw = trim($raw);
+            $slug = ($raw === '') ? '' : lyaideu_slugify($raw);
+            if ($slug === '' || $slug === 'section' || $slug === 'category') {
+                $slug = lyaideu_slugify($name);
+            }
+            return $slug;
+        };
+
+        $updSection = $pdo->prepare(
+            'UPDATE category_sections SET slug = :slug, name = :name, icon = :icon, `desc` = :descr, is_active = :active WHERE id = :id'
+        );
+        $delSection = $pdo->prepare('DELETE FROM category_sections WHERE id = :id');
+        $dupeSection = $pdo->prepare('SELECT id FROM category_sections WHERE slug = :slug AND id <> :id');
+        $slugOf = $pdo->prepare('SELECT slug FROM category_sections WHERE id = :id');
+
+        foreach (($_POST['sections'] ?? []) as $s) {
+            $id = (int)($s['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($s['delete'])) {
+                $slugOf->execute([':id' => $id]);
+                $oldSlug = (string)$slugOf->fetchColumn();
+                if ($oldSlug !== '') {
+                    $stCats = $pdo->prepare('SELECT id, image FROM categories WHERE type = :t');
+                    $stCats->execute([':t' => $oldSlug]);
+                    $rows = $stCats->fetchAll(PDO::FETCH_ASSOC);
+                    $catIds = array_map('intval', array_column($rows, 'id'));
+                    foreach ($rows as $row) {
+                        $oldImg = (string)$row['image'];
+                        if ($oldImg !== '' && str_starts_with($oldImg, 'uploads/')) {
+                            @unlink(__DIR__ . '/' . $oldImg);
+                        }
+                    }
+                    if ($catIds) {
+                        lyaideu_purge_category_links($catIds);
+                        $placeholders = implode(',', array_fill(0, count($catIds), '?'));
+                        $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders)")->execute($catIds);
+                    }
+                }
+                $delSection->execute([':id' => $id]);
+                continue;
+            }
+
+            $name = clean_text($s['name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+            $slug = $normalizeSlug(clean_text($s['slug'] ?? ''), $name);
+            if (lyaideu_section_slug_reserved($slug)) {
+                throw new RuntimeException('The section URL "' . $slug . '" is reserved by the system. Pick a different URL.');
+            }
+            $dupeSection->execute([':slug' => $slug, ':id' => $id]);
+            if ($dupeSection->fetchColumn()) {
+                throw new RuntimeException('A section with the URL "' . $slug . '" already exists.');
+            }
+
+            $slugOf->execute([':id' => $id]);
+            $oldSlug = (string)$slugOf->fetchColumn();
+
+            $updSection->execute([
+                ':slug' => $slug,
+                ':name' => mb_substr($name, 0, 80),
+                ':icon' => $iconSafe($s['icon'] ?? '') ?: 'fa-layer-group',
+                ':descr' => mb_substr(clean_text($s['desc'] ?? ''), 0, 190),
+                ':active' => !empty($s['is_active']) ? 1 : 0,
+                ':id' => $id,
+            ]);
+
+            /* Categories store their section's slug as `type`, so a renamed
+               section drags its whole category tree along. A failure here means
+               some category slug already exists inside the new type key. */
+            if ($oldSlug !== '' && $oldSlug !== $slug) {
+                try {
+                    $pdo->prepare('UPDATE categories SET type = :new WHERE type = :old')
+                        ->execute([':new' => $slug, ':old' => $oldSlug]);
+                } catch (Throwable $e) {
+                    throw new RuntimeException('Could not rename the section: one of its category URLs already exists under "' . $slug . '". Nothing was saved.');
+                }
+            }
+        }
+
+        $newSection = $_POST['new_section'] ?? [];
+        if (clean_text($newSection['name'] ?? '') !== '') {
+            $name = mb_substr(clean_text($newSection['name']), 0, 80);
+            $slug = $normalizeSlug(clean_text($newSection['slug'] ?? ''), $name);
+            if (lyaideu_section_slug_reserved($slug)) {
+                throw new RuntimeException('The section URL "' . $slug . '" is reserved by the system. Pick a different URL.');
+            }
+            $dupeNew = $pdo->prepare('SELECT id FROM category_sections WHERE slug = :slug');
+            $dupeNew->execute([':slug' => $slug]);
+            if ($dupeNew->fetchColumn()) {
+                throw new RuntimeException('A section with the URL "' . $slug . '" already exists.');
+            }
+            $maxSort = (int)$pdo->query('SELECT COALESCE(MAX(sort_order), -1) FROM category_sections')->fetchColumn();
+            $pdo->prepare(
+                'INSERT INTO category_sections (slug, name, icon, `desc`, sort_order, is_active, created_at)
+                 VALUES (:slug, :name, :icon, :descr, :sort, 1, :created)'
+            )->execute([
+                ':slug' => $slug,
+                ':name' => $name,
+                ':icon' => $iconSafe($newSection['icon'] ?? '') ?: 'fa-layer-group',
+                ':descr' => mb_substr(clean_text($newSection['desc'] ?? ''), 0, 190),
+                ':sort' => $maxSort + 1,
+                ':created' => date('Y-m-d H:i:s'),
+            ]);
+        }
+    }
+
+    if ($section === 'section_reorder') {
+        lyaideu_ensure_sections_tables();
+
+        $ids = [];
+        foreach ((array)($_POST['order'] ?? []) as $sid) {
+            $sid = (int)$sid;
+            if ($sid > 0 && !in_array($sid, $ids, true)) {
+                $ids[] = $sid;
+            }
+        }
+        if ($ids) {
+            $updOrder = $pdo->prepare('UPDATE category_sections SET sort_order = :o WHERE id = :id');
+            foreach (array_values($ids) as $pos => $sid) {
+                $updOrder->execute([':o' => $pos, ':id' => $sid]);
+            }
+        }
+    }
+
+    if ($section === 'section_links') {
+        lyaideu_ensure_sections_tables();
+
+        $cid = (int)($_POST['category_id'] ?? 0);
+        $stCat = $pdo->prepare('SELECT id, type FROM categories WHERE id = :id');
+        $stCat->execute([':id' => $cid]);
+        $catRow = $stCat->fetch(PDO::FETCH_ASSOC);
+        $builtinTypes = ['menu', 'mart', 'other', 'beverage'];
+        if (!$catRow || !in_array((string)$catRow['type'], lyaideu_valid_category_types(), true) || in_array((string)$catRow['type'], $builtinTypes, true)) {
+            throw new RuntimeException('Pick a category that belongs to one of your custom sections.');
+        }
+
+        $pdo->prepare('DELETE FROM section_item_links WHERE category_id = :cid')->execute([':cid' => $cid]);
+
+        $tableOf = ['dish' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items', 'beverage' => 'beverage_items'];
+        $validTypes = lyaideu_link_item_types();
+        $seen = [];
+        $insLink = $pdo->prepare('INSERT IGNORE INTO section_item_links (item_type, item_id, category_id) VALUES (:t, :iid, :cid)');
+        foreach ((array)($_POST['assign'] ?? []) as $token) {
+            $parts = explode(':', (string)$token, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+            $t = trim($parts[0]);
+            $iid = (int)$parts[1];
+            if (!in_array($t, $validTypes, true) || $iid <= 0) {
+                continue;
+            }
+            $key = $t . ':' . $iid;
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $chk = $pdo->prepare("SELECT id FROM `{$tableOf[$t]}` WHERE id = :id");
+            $chk->execute([':id' => $iid]);
+            if (!$chk->fetchColumn()) {
+                continue;
+            }
+            $insLink->execute([':t' => $t, ':iid' => $iid, ':cid' => $cid]);
         }
     }
 

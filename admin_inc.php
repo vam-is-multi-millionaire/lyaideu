@@ -36,6 +36,7 @@ function admin_nav_items(): array {
         'dashboard' => ['label' => 'Dashboard', 'href' => 'admin', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
         'control' => ['label' => 'Control Panel', 'href' => 'admin_control', 'icon' => '<i class="fa-solid fa-sliders"></i>'],
         'categories' => ['label' => 'Categories', 'href' => 'admin_categories', 'icon' => '<i class="fa-solid fa-tags"></i>'],
+        'sections' => ['label' => 'Sections', 'href' => 'admin_sections', 'icon' => '<i class="fa-solid fa-layer-group"></i>'],
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
@@ -176,6 +177,9 @@ function admin_section_redirect(string $section, bool $saved, ?string $error = n
     $routes = [
         'categories' => 'admin_categories',
         'category_reorder' => 'admin_categories',
+        'sections' => 'admin_sections',
+        'section_reorder' => 'admin_sections',
+        'section_links' => 'admin_sections',
         'dishes' => 'admin_dishes',
         'mart' => 'admin_mart',
         'beverages' => 'admin_beverages',

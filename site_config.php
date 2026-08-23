@@ -736,6 +736,246 @@ function lyaideu_category_image_url(array $cat): string {
     return $img !== '' ? $img : '';
 }
 
+/**
+ * Custom storefront sections (beyond the four built-in ones). Admin-managed
+ * via admin_sections.php. Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_sections_tables(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS category_sections (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                slug VARCHAR(40) NOT NULL,
+                name VARCHAR(80) NOT NULL,
+                icon VARCHAR(60) NOT NULL DEFAULT \'\',
+                `desc` VARCHAR(190) NOT NULL DEFAULT \'\',
+                sort_order INT NOT NULL DEFAULT 0,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_section_slug (slug)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS section_item_links (
+                item_type VARCHAR(10) NOT NULL,
+                item_id INT UNSIGNED NOT NULL,
+                category_id INT UNSIGNED NOT NULL,
+                PRIMARY KEY (item_type, item_id, category_id),
+                KEY idx_sil_category (category_id),
+                KEY idx_sil_item (item_type, item_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Rows from `category_sections`. $onlyActive=true returns live-only sections
+ * in display order; results are cached per request.
+ */
+function lyaideu_custom_sections(bool $onlyActive = false): array {
+    static $cache = [];
+    $key = $onlyActive ? 'active' : 'all';
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+    $out = [];
+    $pdo = lyaideu_load_pdo();
+    if ($pdo instanceof PDO && lyaideu_ensure_sections_tables()) {
+        try {
+            $sql = 'SELECT id, slug, name, icon, `desc`, sort_order, is_active FROM category_sections';
+            if ($onlyActive) {
+                $sql .= ' WHERE is_active = 1';
+            }
+            $sql .= ' ORDER BY sort_order, name';
+            $rows = $pdo->query($sql)->fetchAll();
+            foreach ($rows as &$r) {
+                $r['id'] = (int)$r['id'];
+                $r['sort_order'] = (int)$r['sort_order'];
+                $r['is_active'] = (int)$r['is_active'];
+            }
+            unset($r);
+            $out = $rows;
+        } catch (Throwable $e) {
+            $out = [];
+        }
+    }
+    $cache[$key] = $out;
+    return $out;
+}
+
+/**
+ * Single source of truth for the section groups shown on the Categories page.
+ * The four built-in sections keep their exact legacy configuration; custom
+ * sections are appended in admin-chosen order and point at section.php.
+ */
+function lyaideu_section_groups(): array {
+    $groups = [
+        'menu'     => ['label' => 'Menu',            'icon' => 'fa-utensils',        'param' => 'cat',  'page' => 'menu',      'desc' => 'Dishes from our partner kitchens', 'pool' => 'dishes',    'custom' => false],
+        'mart'     => ['label' => 'Mart',            'icon' => 'fa-basket-shopping', 'param' => 'mcat', 'page' => 'mart',      'desc' => 'Fresh groceries & daily essentials', 'pool' => 'mart',   'custom' => false],
+        'other'    => ['label' => 'Other Products',  'icon' => 'fa-gift',            'param' => 'ocat', 'page' => 'others',    'desc' => 'Flowers, decor, achar & gifts', 'pool' => 'others',     'custom' => false],
+        'beverage' => ['label' => 'Beverages',       'icon' => 'fa-glass-water',     'param' => 'bcat', 'page' => 'beverages', 'desc' => 'Cold drinks, water & more', 'pool' => 'beverages', 'custom' => false],
+    ];
+    foreach (lyaideu_custom_sections(true) as $s) {
+        $groups[$s['slug']] = [
+            'label'      => (string)$s['name'],
+            'icon'       => (string)$s['icon'] !== '' ? (string)$s['icon'] : 'fa-layer-group',
+            'param'      => 'cat',
+            'page'       => 'section?s=' . rawurlencode((string)$s['slug']),
+            'desc'       => (string)$s['desc'],
+            'pool'       => '',
+            'custom'     => true,
+            'section_id' => (int)$s['id'],
+        ];
+    }
+    return $groups;
+}
+
+/** Category types that may be assigned: built-ins + active custom slugs. */
+function lyaideu_valid_category_types(): array {
+    $types = ['menu', 'mart', 'other', 'beverage'];
+    foreach (lyaideu_custom_sections(true) as $s) {
+        $types[] = (string)$s['slug'];
+    }
+    return $types;
+}
+
+/** Slugs a custom section may never take (route/type collisions). */
+function lyaideu_section_slug_reserved(string $slug): bool {
+    $reserved = [
+        'menu', 'mart', 'other', 'others', 'beverage', 'beverages', 'section', 'sections',
+        'index', 'admin', 'api', 'login', 'logout', 'auth', 'orders', 'checkout', 'product',
+        'profile', 'store', 'stores', 'hotels', 'hotel', 'contact', 'faq', 'terms', 'categories',
+        'category', 'vendor', 'vendors', 'rider', 'riders', 'uploads', 'css', 'js', 'migrate',
+    ];
+    return in_array(strtolower(trim($slug)), $reserved, true);
+}
+
+/** Item-type whitelist for section links (maps 1:1 onto the product tables). */
+function lyaideu_link_item_types(): array {
+    return ['dish', 'mart', 'other', 'beverage'];
+}
+
+/**
+ * Public-safe section links: every row whose target category belongs to an
+ * ACTIVE custom section and is itself visible (Control Panel aware).
+ * Shape: [ ['t' => 'dish', 'id' => 5, 'c' => 12], … ].
+ */
+function lyaideu_public_section_links(): array {
+    lyaideu_ensure_sections_tables();
+    $sections = lyaideu_custom_sections(true);
+    if (!$sections) {
+        return [];
+    }
+    $slugs = array_column($sections, 'slug');
+    $visibleIds = [];
+    foreach (lyaideu_visible_categories() as $c) {
+        if (in_array((string)$c['type'], $slugs, true)) {
+            $visibleIds[(int)$c['id']] = true;
+        }
+    }
+    if (!$visibleIds) {
+        return [];
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    $out = [];
+    try {
+        $validTypes = lyaideu_link_item_types();
+        $chunk = array_chunk(array_keys($visibleIds), 200);
+        foreach ($chunk as $ids) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $rows = $pdo->prepare("SELECT item_type, item_id, category_id FROM section_item_links WHERE category_id IN ($placeholders)");
+            $rows->execute($ids);
+            foreach ($rows->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $t = (string)$r['item_type'];
+                if (!in_array($t, $validTypes, true) || !isset($visibleIds[(int)$r['category_id']])) {
+                    continue;
+                }
+                $out[] = ['t' => $t, 'id' => (int)$r['item_id'], 'c' => (int)$r['category_id']];
+            }
+        }
+    } catch (Throwable $e) {
+        return [];
+    }
+    return $out;
+}
+
+/** Raw link rows for one category (admin side, no visibility filtering). */
+function lyaideu_links_for_category(int $categoryId): array {
+    lyaideu_ensure_sections_tables();
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $categoryId <= 0) {
+        return [];
+    }
+    try {
+        $st = $pdo->prepare('SELECT item_type, item_id FROM section_item_links WHERE category_id = ?');
+        $st->execute([$categoryId]);
+        return $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/** Removes every link pointing at the given categories (cascade cleanup). */
+function lyaideu_purge_category_links(array $categoryIds): void {
+    $ids = array_values(array_unique(array_filter(array_map('intval', $categoryIds))));
+    if (!$ids) {
+        return;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare('DELETE FROM section_item_links WHERE category_id = ?');
+        foreach ($ids as $id) {
+            $st->execute([$id]);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/** Removes every link pointing at one product (cascade cleanup). */
+function lyaideu_purge_item_links(string $itemType, int $itemId): void {
+    if ($itemId <= 0 || !in_array($itemType, lyaideu_link_item_types(), true)) {
+        return;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        $st = $pdo->prepare('DELETE FROM section_item_links WHERE item_type = ? AND item_id = ?');
+        $st->execute([$itemType, $itemId]);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/** Builds the href for a category card inside a section group. */
+function lyaideu_group_category_href(array $group, string $slug): string {
+    if (!empty($group['custom'])) {
+        return htmlspecialchars($group['page'] . '&cat=' . rawurlencode($slug), ENT_QUOTES, 'UTF-8');
+    }
+    return htmlspecialchars($group['page'] . '?' . $group['param'] . '=' . rawurlencode($slug), ENT_QUOTES, 'UTF-8');
+}
+
 function lyaideu_item_cats(?int $categoryId, string $fallbackCat): array {
     $slugs = [];
     foreach (lyaideu_category_path((int)$categoryId) as $c) {
