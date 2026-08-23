@@ -1501,6 +1501,7 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 
   /* ---- Content clearance so nothing hides behind the fixed nav ---- */
   body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px);}
+  .product-wrap{padding-top:0;}
 
   /* ---- Floating bottom navigation ---- */
   .bottom-nav{
