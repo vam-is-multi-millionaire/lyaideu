@@ -221,6 +221,15 @@ function dealOf(it,base){
 }
 /* Inline "-X%" pill shown next to the price inside the card body. */
 function dealTag(deal){return deal&&deal.pct>0?`<span class="deal-badge deal-badge-inline">-${deal.pct}%</span>`:''}
+/* Price a cart line should charge: variant lines keep their stored (already
+   discounted) snapshot; plain lines are re-priced from the live catalog so
+   discounts always apply — even on qty changes and old saved carts. */
+function linePrice(d,r){
+  if(r&&r.variant)return Number(r.price)||0;
+  if(!d)return Number(r&&r.price)||0;
+  const dv=defVar(d),base=dv?(Number(dv.price)||0):(Number(d.price)||0);
+  return dealOf(d,base).now;
+}
 function effPriceOf(pool,id){
   const it=(pool||[]).find(d=>String(d.id)===String(id));
   if(!it)return 0;
@@ -401,7 +410,7 @@ function showVendorModal(n,fee,eta){
   o.classList.add('show');
 }
 function hideVendorModal(){const o=$('#vendorModalOverlay');if(o)o.classList.remove('show')}
-function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:(type==='other'?allOthers:allDishes)).push(d);}if(!d)return;id=Number(id);type=type||'dish';const variant=(btn&&btn.dataset.variant)||'';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type&&(x.variant||'')===variant);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=Number(btn&&btn.dataset.price?btn.dataset.price:d.price)||0;i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:Number(btn&&btn.dataset.price?btn.dataset.price:d.price)||0,unit:d.unit||'',shop,variant});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n,cartHasHotel(c)));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n,cartHasHotel(c))+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
+function addToCart(id,type,openDrawer,btn){let d=findItem(id,type);if(!d&&btn){d={id:Number(id),name:btn.dataset.name||'Item',price:Number(btn.dataset.price)||0,unit:btn.dataset.unit||'',img:btn.dataset.img||'',hotel:btn.dataset.hotel||'',type:type||'dish'};(type==='mart'?allMart:(type==='other'?allOthers:allDishes)).push(d);}if(!d)return;id=Number(id);type=type||'dish';const variant=(btn&&btn.dataset.variant)||'';let c=getCart();const before=cartShops(c);const shop=shopOfItem(d);let i=c.find(x=>Number(x.id)===id&&(x.type||'dish')===type&&(x.variant||'')===variant);if(i){i.qty=Math.min(20,i.qty+1);i.name=d.name;i.price=(i.variant?Number(i.price)||0:(btn&&btn.dataset.price?Number(btn.dataset.price)||0:linePrice(d,null)));i.unit=d.unit||'';i.shop=shop;}else c.push({id,type,qty:1,name:d.name,price:(btn&&btn.dataset.price?Number(btn.dataset.price)||0:linePrice(d,null)),unit:d.unit||'',shop,variant});saveCart(c);const after=cartShops(c);if(after.length>1&&!before.includes(shop)){const n=after.length;showVendorModal(n,deliveryFeeFor(n),deliveryEtaFor(n,cartHasHotel(c)));toast('<i class="fa-solid fa-store"></i> Ordering from <b>'+n+' vendors</b> — about '+deliveryEtaFor(n,cartHasHotel(c))+' min delivery · Rs. '+deliveryFeeFor(n));}else{toast('<i class="fa-solid fa-cart-shopping"></i> '+esc(d.name)+' added to cart');}if(openDrawer!==false)openCart();}
 function changeQty(id,type,delta,variant){type=type||'dish';variant=variant||'';let c=getCart(),i=c.find(x=>Number(x.id)===Number(id)&&(x.type||'dish')===type&&(x.variant||'')===variant);if(!i)return;id=Number(id);i.qty+=delta;if(i.qty<=0)c=c.filter(x=>!(Number(x.id)===id&&(x.type||'dish')===type&&(x.variant||'')===variant));saveCart(c)}
 function renderCart(){
   const box=$('#cartItems'),empty=$('#cartEmpty'),countEls=$$('.cart-count'),c=getCart();const count=c.length;countEls.forEach(e=>e.textContent=count);if(!box)return;
@@ -413,13 +422,13 @@ function renderCart(){
     if(shops.length>1){html+='<div class="cart-eta-note"><i class="fa-solid fa-store"></i> <b>'+shops.length+' vendors</b> about <b>'+deliveryEtaFor(shops.length,cartHasHotel(c))+' min</b> delivery · <b>Rs. '+deliveryFeeFor(shops.length)+'</b> fee</div>'}
     Object.keys(groups).forEach(s=>{
       html+='<div class="cart-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>';
-      html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');const price=Number(r.variant?r.price:d.price)||0;const variant=r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:'';return `<div class="cart-item"><div><strong>${esc(d.name)}${variant}</strong><small>Rs. ${price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">+</button></div><strong>Rs. ${price*r.qty}</strong></div>`}).join('');
+      html+=groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const unit=esc(d.unit||'');const price=linePrice(d,r);const variant=r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:'';return `<div class="cart-item"><div><strong>${esc(d.name)}${variant}</strong><small>Rs. ${price} ${unit?unit+' ':''}each</small></div><div class="qty"><button data-q="-1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">−</button><b>${r.qty}</b><button data-q="1" data-id="${d.id}" data-type="${r.type||'dish'}" data-variant="${esc(r.variant||'')}" type="button">+</button></div><strong>Rs. ${price*r.qty}</strong></div>`}).join('');
     });
     box.innerHTML=html;
     $$('[data-q]').forEach(b=>b.addEventListener('click',()=>changeQty(Number(b.dataset.id),b.dataset.type,Number(b.dataset.q),b.dataset.variant)));
     $('#checkoutBtn')?.classList.remove('disabled');
   }
-  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||r;return a+(d?Number(r.variant?r.price:d.price)*r.qty:0)},0);
+  const sub=c.reduce((a,r)=>{const d=findItem(r.id,r.type)||null;return a+linePrice(d,r)*r.qty},0);
   const fee=c.length?deliveryFeeFor(cartShops(c).length):0;
   if($('#cartSubtotal'))$('#cartSubtotal').textContent='Rs. '+sub;
   if($('#cartDelivery'))$('#cartDelivery').textContent='Rs. '+fee;
@@ -525,7 +534,7 @@ function startLiveCatalogSync(){
 function initCheckout(){
   const form=$('#checkoutForm');
   let promo=null; /* {code,type,value,min_order,discount,free_delivery} */
-  function subtotalOf(){return getCart().reduce((s,r)=>{const d=findItem(r.id,r.type)||r;return s+Number(r.variant?r.price:d.price)*r.qty},0)}
+  function subtotalOf(){return getCart().reduce((s,r)=>{const d=findItem(r.id,r.type)||null;return s+linePrice(d,r)*r.qty},0)}
   function update(){
     const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}
@@ -533,7 +542,7 @@ function initCheckout(){
     const shops=cartShops(c);
     const groups={};c.forEach(r=>{const d=findItem(r.id,r.type)||r;if(!d)return;const s=r.shop||shopOfItem(d);(groups[s]=groups[s]||[]).push(r)});
     let html='';
-    Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(r.variant?r.price:d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)}${r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:''} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
+    Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=linePrice(d,r)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)}${r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:''} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
     box.innerHTML=html;
     const hasHotel=cartHasHotel(c);
     const delivery=deliveryFeeFor(shops.length),freeDel=!!(promo&&promo.free_delivery),discount=promo?(Number(promo.discount)||0):0;
