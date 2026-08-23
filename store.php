@@ -149,7 +149,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=47">
-<link rel="stylesheet" href="css/cards-mobile.css?v=9">
+<link rel="stylesheet" href="css/cards-mobile.css?v=10">
 <style>
 /* Hide the per-store "Call" button on the stores listing (all viewports);
    "View Store" stays as the card's single action. */

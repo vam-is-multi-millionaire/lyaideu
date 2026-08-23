@@ -54,6 +54,15 @@
   /* Store detail: hide the "View Cart" button — the cart FAB covers phones */
   #store .store-hero-actions{display:none;}
 
+  /* Listing pages: pull the filter chips closer to the page title on
+     mobile — with kicker + sub hidden, the old 1.8rem gap looks huge.
+     Toolbar-to-grid spacing tightens a touch too so everything below
+     stays visually connected. */
+  #menu .section-head,#mart .section-head,#beverages .section-head,
+  #others .section-head,#hotels .section-head{margin-bottom:.55rem;}
+  #menu .menu-toolbar,#mart .menu-toolbar,#beverages .menu-toolbar,
+  #others .menu-toolbar,#hotels .menu-toolbar{margin-bottom:1rem;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
