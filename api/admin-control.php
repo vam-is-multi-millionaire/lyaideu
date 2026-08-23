@@ -43,10 +43,13 @@ if (!is_array($body)) {
 }
 
 $id = (int)($body['id'] ?? 0);
+$type = strtolower(trim((string)($body['type'] ?? '')));
 $active = !empty($body['active']) ? 1 : 0;
 
-if ($id <= 0) {
-    ctrl_res(['ok' => false, 'error' => 'Missing category id.'], 422);
+$VALID_TYPES = ['menu', 'mart', 'other', 'beverage'];
+
+if ($id <= 0 && !in_array($type, $VALID_TYPES, true)) {
+    ctrl_res(['ok' => false, 'error' => 'Missing category id or type.'], 422);
 }
 
 $pdo = lyaideu_load_pdo();
@@ -56,14 +59,20 @@ if (!$pdo instanceof PDO) {
 
 try {
     lyaideu_ensure_categories_table();
-    $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE id = :id');
-    $st->execute([':a' => $active, ':id' => $id]);
-    if ($st->rowCount() === 0) {
-        $chk = $pdo->prepare('SELECT COUNT(*) FROM categories WHERE id = ?');
-        $chk->execute([$id]);
-        if (!(int)$chk->fetchColumn()) {
-            ctrl_res(['ok' => false, 'error' => 'Category not found.'], 404);
+    if ($id > 0) {
+        $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE id = :id');
+        $st->execute([':a' => $active, ':id' => $id]);
+        if ($st->rowCount() === 0) {
+            $chk = $pdo->prepare('SELECT COUNT(*) FROM categories WHERE id = ?');
+            $chk->execute([$id]);
+            if (!(int)$chk->fetchColumn()) {
+                ctrl_res(['ok' => false, 'error' => 'Category not found.'], 404);
+            }
         }
+    } else {
+        /* Bulk: flip every category of one type (Control Panel group switch). */
+        $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE type = :t');
+        $st->execute([':a' => $active, ':t' => $type]);
     }
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Could not save the toggle.'], 500);
@@ -101,19 +110,31 @@ try {
     $effMap = ctrl_effective_map($pdo);
     $tables = ['menu' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items', 'beverage' => 'beverage_items'];
     $hidden = ['menu' => 0, 'mart' => 0, 'other' => 0, 'beverage' => 0];
-    foreach ($tables as $type => $table) {
+    foreach ($tables as $type2 => $table) {
         foreach ($pdo->query("SELECT category_id, COUNT(*) c FROM `$table` GROUP BY category_id")->fetchAll(PDO::FETCH_ASSOC) as $r) {
             $cid = (int)$r['category_id'];
             if ($cid > 0 && isset($effMap[$cid]) && !$effMap[$cid]['effective']) {
-                $hidden[$type] += (int)$r['c'];
+                $hidden[$type2] += (int)$r['c'];
             }
         }
+    }
+    /* Group switch state: a section counts as ON while any of its categories
+       is still active. */
+    $groups = [];
+    foreach ($VALID_TYPES as $vt) {
+        if (isset($groups[$vt])) {
+            continue;
+        }
+        $q = $pdo->prepare('SELECT COUNT(*) FROM categories WHERE type = ? AND is_active = 1');
+        $q->execute([$vt]);
+        $groups[$vt] = ((int)$q->fetchColumn()) > 0;
     }
     ctrl_res([
         'ok' => true,
         'id' => $id,
+        'type' => $type,
         'active' => $active,
-        'state' => ['cats' => $effMap, 'hidden' => $hidden],
+        'state' => ['cats' => $effMap, 'hidden' => $hidden, 'groups' => $groups],
     ]);
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Toggle saved, but the refresh state could not be read.'], 500);

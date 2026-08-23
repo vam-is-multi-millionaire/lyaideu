@@ -47,6 +47,12 @@ $totalCats = count($allCats);
 $liveCats = count(array_filter($allCats, fn($c) => !empty($c['_eff'])));
 $hiddenCats = $totalCats - $liveCats;
 
+/* Group switch: a section counts as ON while any of its categories is on. */
+$groupOn = [];
+foreach (array_keys($TYPE_LABELS) as $t) {
+    $groupOn[$t] = count(array_filter($allCats, fn($c) => $c['type'] === $t && !empty($c['is_active']))) > 0;
+}
+
 $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
 admin_page_start('Control Panel', 'control', 'Control Panel');
@@ -62,10 +68,11 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
 .ctrl-note i{margin-right:.35rem;}
 .ctrl-groups{display:flex;flex-direction:column;gap:1rem;}
 .ctrl-group{background:#fff;border:1px solid var(--orange-100);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);}
-.ctrl-group-head{display:flex;align-items:center;gap:.6rem;padding:.85rem 1rem;background:linear-gradient(90deg,var(--orange-50),#fff);border-bottom:1px solid var(--orange-100);}
-.ctrl-group-head i{color:var(--orange-600);}
-.ctrl-group-head h3{font-size:1rem;font-weight:900;color:var(--orange-900);}
-.ctrl-group-head small{margin-left:auto;font-size:.72rem;font-weight:800;color:var(--muted);}
+.ctrl-group-head{display:flex;align-items:center;gap:.6rem;padding:.85rem 1rem;background:linear-gradient(90deg,var(--orange-50),#fff);border-bottom:1px solid var(--orange-100);flex-wrap:wrap;}
+.ctrl-group-head i{color:var(--orange-600);flex:none;}
+.ctrl-group-head h3{font-size:1rem;font-weight:900;color:var(--orange-900);min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ctrl-group-head small{margin-left:auto;font-size:.72rem;font-weight:800;color:var(--muted);white-space:nowrap;}
+.ctrl-group-head .ctrl-toggle{margin-left:.4rem;}
 .ctrl-list{display:flex;flex-direction:column;}
 .ctrl-row{display:flex;align-items:center;gap:.8rem;padding:.55rem 1rem;border-bottom:1px dashed var(--orange-100);transition:background .15s ease;}
 .ctrl-row:last-child{border-bottom:0;}
@@ -87,6 +94,9 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
 @media (max-width:640px){
   .ctrl-path{display:none;}
   .ctrl-row{padding:.5rem .7rem;gap:.5rem;}
+  .ctrl-group-head{padding:.65rem .7rem;gap:.45rem;}
+  .ctrl-group-head h3{font-size:.9rem;}
+  .ctrl-group-head small{font-size:.64rem;}
 }
 </style>
 
@@ -107,6 +117,7 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
             <i class="fa-solid <?= $ce($TYPE_ICONS[$type]) ?>"></i>
             <h3><?= $ce($label) ?></h3>
             <small><?= count($flat) ?> categor<?= count($flat) === 1 ? 'y' : 'ies' ?> · <?= $hiddenItems[$type] ?> products hidden</small>
+            <button type="button" class="ctrl-toggle ctrl-group-toggle<?= !empty($groupOn[$type]) ? ' on' : '' ?>" data-type="<?= $ce($type) ?>" data-active="<?= !empty($groupOn[$type]) ? '1' : '0' ?>"<?= !$flat ? ' disabled' : '' ?> aria-pressed="<?= !empty($groupOn[$type]) ? 'true' : 'false' ?>" aria-label="Turn <?= !empty($groupOn[$type]) ? 'off' : 'on' ?> all <?= $ce($label) ?> categories" title="Turn all <?= $ce($label) ?> categories <?= !empty($groupOn[$type]) ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
         </div>
         <div class="ctrl-list" data-type="<?= $ce($type) ?>">
         <?php if (!$flat): ?>
@@ -192,29 +203,53 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
       var type = list.dataset.type;
       sm.textContent = sm.textContent.replace(/·\s*\d+ products? hidden$/, '· ' + (hidden[type] || 0) + ' products hidden');
     });
+    /* Sync the section (group) switches from the fresh state. */
+    var groups = state.groups || {};
+    document.querySelectorAll('.ctrl-group-toggle').forEach(function (gb) {
+      if (!(gb.dataset.type in groups)) return;
+      var on = !!groups[gb.dataset.type];
+      gb.dataset.active = on ? '1' : '0';
+      gb.classList.toggle('on', on);
+      gb.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
 
-  document.getElementById('ctrlGroups').addEventListener('click', function (e) {
-    var btn = e.target.closest('.ctrl-toggle');
-    if (!btn || busy.has(btn)) return;
-    var id = parseInt(btn.dataset.id, 10);
-    var next = btn.dataset.active === '1' ? 0 : 1;
+  function sendToggle(payload, btn, msg) {
+    if (busy.has(btn)) return;
     busy.add(btn);
     btn.disabled = true;
     fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
-      body: JSON.stringify({ id: id, active: next })
+      body: JSON.stringify(payload)
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (!d.ok) throw new Error(d.error || 'Could not save the toggle.');
       applyState(d.state);
-      banner('Category turned ' + (next ? 'ON' : 'OFF') + '. Live across the site within ~5 seconds.', true);
+      banner(msg, true);
     }).catch(function (err) {
       banner(err.message || 'Network error — try again.', false);
     }).finally(function () {
       busy.delete(btn);
       btn.disabled = false;
     });
+  }
+
+  document.getElementById('ctrlGroups').addEventListener('click', function (e) {
+    var groupBtn = e.target.closest('.ctrl-group-toggle');
+    if (groupBtn) {
+      var gType = groupBtn.dataset.type;
+      var gNext = groupBtn.dataset.active === '1' ? 0 : 1;
+      var gLabel = groupBtn.closest('.ctrl-group-head').querySelector('h3').textContent.trim();
+      sendToggle({ type: gType, active: gNext }, groupBtn,
+        'All ' + gLabel + ' categories turned ' + (gNext ? 'ON' : 'OFF') + '. Live across the site within ~5 seconds.');
+      return;
+    }
+    var btn = e.target.closest('.ctrl-toggle');
+    if (!btn || busy.has(btn)) return;
+    var id = parseInt(btn.dataset.id, 10);
+    var next = btn.dataset.active === '1' ? 0 : 1;
+    sendToggle({ id: id, active: next }, btn,
+      'Category turned ' + (next ? 'ON' : 'OFF') + '. Live across the site within ~5 seconds.');
   });
 })();
 </script>
