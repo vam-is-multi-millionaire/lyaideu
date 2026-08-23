@@ -195,6 +195,8 @@ if ($section === 'categories' || $section === 'category_reorder') {
 }
 lyaideu_ensure_variant_tables();
 lyaideu_ensure_discount_columns();
+/* The sections helpers (valid_category_types / custom_sections / link purges) can be reached from ANY save branch inside the transaction below, and their first call per request would otherwise run CREATE TABLE (DDL), silently committing everything done so far and breaking commit(). */
+lyaideu_ensure_sections_tables();
 
 try {
     $pdo->beginTransaction();
