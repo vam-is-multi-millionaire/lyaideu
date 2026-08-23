@@ -690,6 +690,22 @@ section{scroll-margin-top:96px;}
 @media (max-width:960px){
   .checkout-body .kicker{display:none;}
   .checkout-body .checkout-page{padding-top:0;}
+
+  /* ---- Narrow-screen fix: stack the cards and stop the min-width:auto
+         blow-out that pushed cards past the viewport edge ---- */
+  .checkout-body .checkout-grid{grid-template-columns:1fr;gap:1rem;}
+  .checkout-body .checkout-grid>section{min-width:0;width:100%;}
+  .checkout-body .checkout-card{max-width:100%;}
+  .checkout-body .section-head h1.display,
+  .checkout-body .checkout-card h2,
+  .checkout-body .co-location-title,
+  .checkout-body .small-note,
+  .checkout-body .summary-row span,
+  .checkout-body .summary-row strong{overflow-wrap:anywhere;}
+  .checkout-body .checkout-item{gap:.8rem;}
+  .checkout-body .checkout-item span{min-width:0;overflow-wrap:anywhere;}
+  .checkout-body .map-actions{flex-direction:column;align-items:stretch;}
+  .checkout-body .map-actions .btn{width:100%;}
 }
 .promo-box{display:flex;gap:.5rem;margin:1rem 0}.promo-box input{flex:1;border:2px solid var(--orange-200);border-radius:10px;padding:.7rem;font:inherit}
 .checkout-item{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px dashed var(--orange-200)}
