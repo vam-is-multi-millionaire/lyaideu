@@ -1499,8 +1499,6 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   /* ---- Cart FAB is replaced by the bottom-nav Cart tab on mobile ---- */
   .cart-fab{display:none !important;}
 
-  /* ---- Content clearance so nothing hides behind the fixed nav ---- */
-  body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px);}
   .product-wrap{padding-top:0;}
 
   /* ---- Floating bottom navigation ---- */
