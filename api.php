@@ -89,6 +89,17 @@ try {
     }
     unset($b);
 
+    /* Control Panel: drop every product whose category subtree is switched
+       off. Items without a category stay visible. */
+    $keepVisible = function (array $item): bool {
+        $cid = (int)($item['category_id'] ?? 0);
+        return $cid <= 0 || lyaideu_category_is_active($cid);
+    };
+    $dishes = array_values(array_filter($dishes, $keepVisible));
+    $mart = array_values(array_filter($mart, $keepVisible));
+    $others = array_values(array_filter($others, $keepVisible));
+    $beverages = array_values(array_filter($beverages, $keepVisible));
+
     lyaideu_attach_variants($dishes, 'dish');
     lyaideu_attach_variants($mart, 'mart');
     lyaideu_attach_variants($others, 'other');
@@ -101,7 +112,7 @@ try {
         'mart' => $mart,
         'others' => $others,
         'beverages' => $beverages,
-        'categories' => lyaideu_categories(),
+        'categories' => lyaideu_visible_categories(),
         'delivery' => lyaideu_delivery_config(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {

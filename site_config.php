@@ -321,6 +321,7 @@ function lyaideu_ensure_categories_table(): bool {
                 sort_order INT NOT NULL DEFAULT 0,
                 icon VARCHAR(60) NOT NULL DEFAULT \'\',
                 image VARCHAR(255) NOT NULL DEFAULT \'\',
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
                 PRIMARY KEY (id),
                 UNIQUE KEY uq_cat_slug_type (slug, type),
                 KEY idx_cat_parent (parent_id)
@@ -330,6 +331,12 @@ function lyaideu_ensure_categories_table(): bool {
         $catImageCol = $pdo->query("SHOW COLUMNS FROM categories LIKE 'image'")->fetchAll();
         if (!$catImageCol) {
             $pdo->exec("ALTER TABLE categories ADD COLUMN image VARCHAR(255) NOT NULL DEFAULT ''");
+        }
+
+        // Control Panel toggle: 1 = live, 0 = hidden (subtree + products hide too).
+        $catActiveCol = $pdo->query("SHOW COLUMNS FROM categories LIKE 'is_active'")->fetchAll();
+        if (!$catActiveCol) {
+            $pdo->exec('ALTER TABLE categories ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1');
         }
 
         lyaideu_ensure_other_table();
@@ -593,7 +600,7 @@ function lyaideu_categories(?string $type = null): array {
     if (!$pdo instanceof PDO) {
         return [];
     }
-    $sql = 'SELECT id, name, slug, type, parent_id, sort_order, icon, image FROM categories';
+    $sql = 'SELECT id, name, slug, type, parent_id, sort_order, icon, image, is_active FROM categories';
     $params = [];
     if ($type !== null && $type !== '') {
         $sql .= ' WHERE type = :type';
@@ -658,6 +665,46 @@ function lyaideu_category_path(int $categoryId): array {
         $cur = isset($byId[(int)$cur['parent_id']]) ? $byId[(int)$cur['parent_id']] : null;
     }
     return array_reverse($path);
+}
+
+/**
+ * Control Panel toggle support. A category is effectively active only when it
+ * AND every ancestor are is_active=1 — turning a parent off hides the whole
+ * subtree. Categories missing from the table (deleted / legacy rows) count as
+ * active so unassigned products never disappear unexpectedly.
+ */
+function lyaideu_category_is_active(int $categoryId): bool {
+    static $activeMap = null;
+    if ($activeMap === null) {
+        $activeMap = [];
+        foreach (lyaideu_categories() as $row) {
+            $activeMap[(int)$row['id']] = !empty($row['is_active']);
+        }
+    }
+    if ($categoryId <= 0) {
+        return true;
+    }
+    foreach (lyaideu_category_path($categoryId) as $cat) {
+        $flag = $activeMap[(int)$cat['id']] ?? true;
+        if (!$flag) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Public-safe category list: same shape/order as lyaideu_categories() but with
+ * every category whose subtree is switched off (self or an ancestor) removed.
+ */
+function lyaideu_visible_categories(?string $type = null): array {
+    $out = [];
+    foreach (lyaideu_categories($type) as $cat) {
+        if (lyaideu_category_is_active((int)$cat['id'])) {
+            $out[] = $cat;
+        }
+    }
+    return $out;
 }
 
 /**

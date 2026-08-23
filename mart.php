@@ -14,7 +14,7 @@ $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? sub
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_mart_table();
 lyaideu_ensure_categories_table();
-$martCats = lyaideu_categories('mart');
+$martCats = lyaideu_visible_categories('mart');
 $martParents = array_values(array_filter($martCats, fn($c) => $c['parent_id'] === null));
 $martChildren = [];
 foreach ($martCats as $c) {

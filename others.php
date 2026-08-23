@@ -14,7 +14,7 @@ $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? sub
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_other_table();
 lyaideu_ensure_categories_table();
-$otherCats = lyaideu_categories('other');
+$otherCats = lyaideu_visible_categories('other');
 $otherParents = array_values(array_filter($otherCats, fn($c) => $c['parent_id'] === null));
 $otherChildren = [];
 foreach ($otherCats as $c) {

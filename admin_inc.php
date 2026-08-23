@@ -34,6 +34,7 @@ function admin_is_logged_in(): bool {
 function admin_nav_items(): array {
     return [
         'dashboard' => ['label' => 'Dashboard', 'href' => 'admin', 'icon' => '<i class="fa-solid fa-chart-simple"></i>'],
+        'control' => ['label' => 'Control Panel', 'href' => 'admin_control', 'icon' => '<i class="fa-solid fa-sliders"></i>'],
         'categories' => ['label' => 'Categories', 'href' => 'admin_categories', 'icon' => '<i class="fa-solid fa-tags"></i>'],
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],

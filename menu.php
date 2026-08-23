@@ -13,7 +13,7 @@ $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_categories_table();
-$menuCats = lyaideu_categories('menu');
+$menuCats = lyaideu_visible_categories('menu');
 $menuParents = array_values(array_filter($menuCats, fn($c) => $c['parent_id'] === null));
 $menuChildren = [];
 foreach ($menuCats as $c) {

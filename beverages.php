@@ -14,7 +14,7 @@ $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? sub
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_beverage_table();
 lyaideu_ensure_categories_table();
-$beverageCats = lyaideu_categories('beverage');
+$beverageCats = lyaideu_visible_categories('beverage');
 $beverageParents = array_values(array_filter($beverageCats, fn($c) => $c['parent_id'] === null));
 $beverageChildren = [];
 foreach ($beverageCats as $c) {

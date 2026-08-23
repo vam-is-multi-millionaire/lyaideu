@@ -128,6 +128,10 @@ if ($isDetail) {
         $products,
         $kind === 'mart' ? 'mart' : ($kind === 'other' ? 'other' : ($kind === 'beverage' ? 'beverage' : 'dish'))
     );
+
+    /* Control Panel: products in switched-off category subtrees don't show
+       on the store page. Uncategorised items stay visible. */
+    $products = array_values(array_filter($products, fn($p) => (int)($p['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$p['category_id'])));
 }
 
 $kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : ($kind === 'beverage' ? 'Beverages' : 'Hotel'));

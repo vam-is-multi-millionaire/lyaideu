@@ -23,7 +23,7 @@ $catGroups = [
 
 $catTrees = [];
 foreach (array_keys($catGroups) as $type) {
-    $cats = lyaideu_categories($type);
+    $cats = lyaideu_visible_categories($type);
     $parents = array_values(array_filter($cats, fn($c) => $c['parent_id'] === null));
     $children = [];
     foreach ($cats as $c) {

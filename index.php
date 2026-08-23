@@ -78,6 +78,16 @@ if ($featuredPdo instanceof PDO) {
              ORDER BY bi.id'
         )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels ORDER BY id')->fetchAll();
+
+        /* Control Panel: products in switched-off category subtrees never
+           reach the home page (Random Picks / partners stay consistent). */
+        $featVisible = function (array $rows): array {
+            return array_values(array_filter($rows, fn($r) => (int)($r['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$r['category_id'])));
+        };
+        $featured['dishes'] = $featVisible($featured['dishes']);
+        $featured['mart'] = $featVisible($featured['mart']);
+        $featured['others'] = $featVisible($featured['others']);
+        $featured['beverages'] = $featVisible($featured['beverages']);
     } catch (Throwable $e) {
 $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => [], 'partners' => []];
     }
@@ -151,6 +161,15 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         );
         $st->execute([$qp, $qp, $qp]);
         $searchResults['beverages'] = $st->fetchAll();
+
+        /* Control Panel: hide switched-off category products from search too. */
+        $searchVisible = function (array $rows): array {
+            return array_values(array_filter($rows, fn($r) => (int)($r['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$r['category_id'])));
+        };
+        $searchResults['dishes'] = $searchVisible($searchResults['dishes']);
+        $searchResults['mart'] = $searchVisible($searchResults['mart']);
+        $searchResults['others'] = $searchVisible($searchResults['others']);
+        $searchResults['beverages'] = $searchVisible($searchResults['beverages']);
         $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
         $st->execute([$qp, $qp]);
         $searchResults['hotels'] = $st->fetchAll();

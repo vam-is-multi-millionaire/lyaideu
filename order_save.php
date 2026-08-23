@@ -38,10 +38,17 @@ if (!is_array($cart) || empty($cart)) {
 
 $items = [];
 $subtotal = 0;
-$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, discount_percent, vendor_id, has_variants FROM dishes WHERE id = ? LIMIT 1');
-$martStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM mart_items WHERE id = ? LIMIT 1');
-$otherStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM other_items WHERE id = ? LIMIT 1');
-$beverageStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM beverage_items WHERE id = ? LIMIT 1');
+/* Control Panel: items inside switched-off category subtrees can't be
+   ordered — silently dropped like items that no longer exist. */
+function order_item_available(array $d): bool {
+    $cid = (int)($d['category_id'] ?? 0);
+    return $cid <= 0 || lyaideu_category_is_active($cid);
+}
+
+$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, discount_percent, vendor_id, has_variants, category_id FROM dishes WHERE id = ? LIMIT 1');
+$martStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM mart_items WHERE id = ? LIMIT 1');
+$otherStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM other_items WHERE id = ? LIMIT 1');
+$beverageStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM beverage_items WHERE id = ? LIMIT 1');
 
 function resolve_variant_price(PDO $pdo, string $type, int $id, string $variant): ?int {
     $st = $pdo->prepare('SELECT price FROM product_variants WHERE item_type = ? AND item_id = ? AND label = ? LIMIT 1');
@@ -64,7 +71,7 @@ foreach ($cart as $row) {
     if ($type === 'mart') {
         $martStmt->execute([$id]);
         $d = $martStmt->fetch();
-        if (!$d) {
+        if (!$d || !order_item_available($d)) {
             continue;
         }
         $item = [
@@ -79,7 +86,7 @@ foreach ($cart as $row) {
         lyaideu_ensure_other_table();
         $otherStmt->execute([$id]);
         $d = $otherStmt->fetch();
-        if (!$d) {
+        if (!$d || !order_item_available($d)) {
             continue;
         }
         $item = [
@@ -94,7 +101,7 @@ foreach ($cart as $row) {
         lyaideu_ensure_beverage_table();
         $beverageStmt->execute([$id]);
         $d = $beverageStmt->fetch();
-        if (!$d) {
+        if (!$d || !order_item_available($d)) {
             continue;
         }
         $item = [
@@ -108,7 +115,7 @@ foreach ($cart as $row) {
     } else {
         $dishStmt->execute([$id]);
         $d = $dishStmt->fetch();
-        if (!$d) {
+        if (!$d || !order_item_available($d)) {
             continue;
         }
         $vid = (int)($d['vendor_id'] ?? 0);

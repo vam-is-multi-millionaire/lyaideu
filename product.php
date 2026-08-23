@@ -115,10 +115,20 @@ try {
 }
 if ($item) {
     lyaideu_attach_variants($related, $type);
+    /* Control Panel: keep switched-off category products out of Related too. */
+    $related = array_values(array_filter($related, fn($r) => (int)($r['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$r['category_id'])));
 }
 
 if (!$item) {
     $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Product not found.'];
+    header('Location: ' . lyaideu_base_url() . $back);
+    exit;
+}
+
+/* Control Panel: the item sits inside a switched-off category subtree —
+   old links / stale carts get bounced back with a friendly message. */
+if ((int)($item['category_id'] ?? 0) > 0 && !lyaideu_category_is_active((int)$item['category_id'])) {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'This item is currently unavailable.'];
     header('Location: ' . lyaideu_base_url() . $back);
     exit;
 }
