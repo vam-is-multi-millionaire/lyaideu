@@ -167,7 +167,7 @@ function renderDishes(dishes){
       <div class="dish-art">${art}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}</span>${dealTag(deal)}
+      <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="dish" data-price="${deal.now}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
@@ -203,7 +203,7 @@ function renderMart(items){
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
+      <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
@@ -222,7 +222,7 @@ function renderOthers(items){
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
+      <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#others-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('other',c.dataset.slug,(c.dataset.cats||'').split(','))}));
@@ -260,7 +260,7 @@ function renderBeverages(items){
       ${tag?`<span class="dish-tag">${tag}</span>`:''}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
+      <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#beverages-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('beverage',c.dataset.slug,(c.dataset.cats||'').split(','))}));

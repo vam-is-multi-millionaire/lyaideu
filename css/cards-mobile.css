@@ -123,6 +123,17 @@
 @media (max-width:560px){
   #menu-grid,#mart-grid,#others-grid,#beverages-grid,
   .store-grid,.related-grid{grid-template-columns:repeat(3,1fr);gap:.55rem;}
+
+  /* Price + discount + icon button must fit ~91px card bodies.
+     Compact icon button + wrap as a graceful last resort (badge
+     drops under the price instead of clipping). */
+  .dish-foot,.related-foot{flex-wrap:wrap;row-gap:.12rem;}
+  #menu-grid .btn-order.add-cart,#mart-grid .btn-order.add-cart,
+  #others-grid .btn-order.add-cart,#beverages-grid .btn-order.add-cart,
+  .store-grid .btn-order.add-cart,.related-grid .btn-order.add-cart{width:1.9rem;height:1.9rem;border-radius:.6rem;}
+  #menu-grid .btn-order.add-cart::before,#mart-grid .btn-order.add-cart::before,
+  #others-grid .btn-order.add-cart::before,#beverages-grid .btn-order.add-cart::before,
+  .store-grid .btn-order.add-cart::before,.related-grid .btn-order.add-cart::before{font-size:.78rem;}
 }
 
 /* Very small phones — same compact tweaks as the home page */
@@ -141,8 +152,8 @@
   #beverages-grid .dish-hotel i,.store-grid .dish-hotel i{font-size:.52rem;}
   #menu-grid .btn-order.add-cart,#mart-grid .btn-order.add-cart,
   #others-grid .btn-order.add-cart,#beverages-grid .btn-order.add-cart,
-  .store-grid .btn-order.add-cart,.related-grid .btn-order.add-cart{width:2.05rem;height:2.05rem;}
+  .store-grid .btn-order.add-cart,.related-grid .btn-order.add-cart{width:1.7rem;height:1.7rem;}
   #menu-grid .btn-order.add-cart::before,#mart-grid .btn-order.add-cart::before,
   #others-grid .btn-order.add-cart::before,#beverages-grid .btn-order.add-cart::before,
-  .store-grid .btn-order.add-cart::before,.related-grid .btn-order.add-cart::before{font-size:.8rem;}
+  .store-grid .btn-order.add-cart::before,.related-grid .btn-order.add-cart::before{font-size:.7rem;}
 }

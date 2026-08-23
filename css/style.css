@@ -1896,7 +1896,11 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 /* Card price-row badge (dish cards, related cards): hugs the price,
    pushes the Add button to the far side of the foot. Text-only look:
    no background, red percentage text. */
-.dish-foot .deal-badge-inline,.related-foot .deal-badge-inline{margin-right:auto;background:none;box-shadow:none;color:#d92027;font-weight:900;padding:0 .12rem;}
+.dish-foot .deal-badge-inline,.related-foot .deal-badge-inline{margin-left:-.18rem;margin-right:auto;background:none;box-shadow:none;color:#d92027;font-weight:900;padding:0;}
+
+/* Card currency label: phones swap "Rs." for the compact "रु" symbol
+   (see cards-mobile.css media queries). */
+.price .rs-s{display:none;}
 
 /* Admin & vendor product-manager rows */
 .pm-was,.vp-was{margin-left:.35rem;color:var(--muted);font-weight:700;font-size:.82em;}
@@ -1909,5 +1913,7 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .product-price-was{font-size:1rem;}
   .product-deal-save{font-size:.72rem;}
   .dish-foot{gap:.28rem;}
-  .dish-foot .deal-badge-inline,.related-foot .deal-badge-inline{font-size:.5rem;padding:0 .08rem;}
+  .dish-foot .deal-badge-inline,.related-foot .deal-badge-inline{font-size:.5rem;padding:0;}
+  .dish-card .price .rs-l,.related-card .price .rs-l{display:none;}
+  .dish-card .price .rs-s,.related-card .price .rs-s{display:inline;}
 }

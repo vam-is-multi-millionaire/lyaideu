@@ -199,8 +199,8 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=45">
-<link rel="stylesheet" href="css/cards-mobile.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="stylesheet" href="css/cards-mobile.css?v=5">
 </head>
 <body class="product-pg" data-needs-catalog>
 
@@ -362,7 +362,7 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
                                 <h4><?= e($rItem['name']) ?></h4>
                                 <?= ($rItem['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . e($rItem['hotel']) . '</p>' : '' ?>
                                 <div class="related-foot">
-                                    <span class="price"><small>Rs.</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span><?= $rDealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $rDealPct . '%</span>' : '' ?>
+                                    <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span><?= $rDealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $rDealPct . '%</span>' : '' ?>
                                     <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                                 </div>
                             </div>

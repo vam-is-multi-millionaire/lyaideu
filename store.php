@@ -148,8 +148,8 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=45">
-<link rel="stylesheet" href="css/cards-mobile.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="stylesheet" href="css/cards-mobile.css?v=5">
 <style>
 /* Hide the per-store "Call" button on the stores listing (all viewports);
    "View Store" stays as the card's single action. */
@@ -283,7 +283,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
-                                <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $dealNow ?><?= $unitHtml ?></span><?= $dealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $dealPct . '%</span>' : '' ?>
+                                <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $dealNow ?><?= $unitHtml ?></span><?= $dealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $dealPct . '%</span>' : '' ?>
                                 <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $dealNow ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
                             </div>
                         </article>
