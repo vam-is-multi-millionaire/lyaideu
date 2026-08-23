@@ -31,6 +31,15 @@
   /* Mart page: hide the "View Cart" button — the cart FAB covers phones */
   #mart .section-head .hero-actions{display:none;}
 
+  /* Beverages page: remove the kicker badge above the heading on mobile */
+  #beverages .section-head .kicker{display:none;}
+  /* Beverages page: remove the sub-heading text on mobile */
+  #beverages .section-head .section-sub{display:none;}
+  /* Beverages page: no top padding on the section on mobile */
+  #beverages.section{padding-top:0;}
+  /* Beverages page: hide the "View Cart" button — the cart FAB covers phones */
+  #beverages .section-head .hero-actions{display:none;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
