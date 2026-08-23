@@ -342,7 +342,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <script src="js/script.js?v=37"></script>
 <script src="js/scroll-memory.js?v=5"></script>
-<script src="js/notify.js?v=7"></script>
+<script src="js/notify.js?v=8"></script>
 <script>
 (function(){
   /* Back link: use the browser's own history so the previous page is

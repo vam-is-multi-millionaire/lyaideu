@@ -126,6 +126,6 @@ require_once __DIR__ . '/site_config.php';
 
 <script src="js/script.js?v=37"></script>
 <script src="js/scroll-memory.js?v=5"></script>
-<script src="js/notify.js?v=7"></script>
+<script src="js/notify.js?v=8"></script>
 </body>
 </html>

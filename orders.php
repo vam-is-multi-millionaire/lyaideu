@@ -133,7 +133,7 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=37"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=7"></script>
+<script src="js/script.js?v=37"></script><script src="js/scroll-memory.js?v=5"></script><script src="js/notify.js?v=8"></script>
 <script>
 (function(){
   /* Back button: use browser history when the user came from this site so

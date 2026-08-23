@@ -89,7 +89,7 @@
             '<i class="fa-solid fa-bell"></i>' +
             '<span id="notifyBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#c93a3a;color:#fff;font-size:.7rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;line-height:18px;text-align:center;padding:0 4px;"></span>' +
             '</button>' +
-            '<div id="notifyList" style="display:none;position:absolute;right:0;top:52px;width:330px;max-width:92vw;max-height:min(70vh,480px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#fff;border:2px solid var(--orange-100);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:.6rem;font-size:.85rem;"></div>';
+            '<div id="notifyList" style="display:none;position:absolute;right:0;top:52px;width:330px;max-width:92vw;max-height:min(70vh,480px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#fff;border:2px solid var(--orange-100);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:0 .6rem .6rem;font-size:.85rem;"></div>';
         badge = bell.querySelector('#notifyBadge');
         list = bell.querySelector('#notifyList');
         placeBell();
@@ -109,7 +109,7 @@
             list.innerHTML = '<p style="margin:.4rem;color:#777;">No notifications yet.</p>';
             return;
         }
-        var html = '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2;border-bottom:1px solid var(--orange-100);padding-bottom:.4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--orange-100);padding:.35rem 0 .4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
         lastItems.forEach(function (it) {
             var link = it.link || 'orders';
             html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (it.is_read ? '' : 'background:var(--orange-50);font-weight:700;') + '">' + it.message +
