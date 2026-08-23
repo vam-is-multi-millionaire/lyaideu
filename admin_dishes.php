@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
+admin_require_page('dishes');
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 

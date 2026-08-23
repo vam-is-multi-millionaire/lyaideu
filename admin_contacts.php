@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
+admin_require_page('contacts');
 require_once __DIR__ . '/db.php';
 
 try {

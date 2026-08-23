@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
+admin_require_page('kyc');
 require_once __DIR__ . '/db.php';
 
 lyaideu_ensure_kyc_tables();
@@ -31,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $st->execute([
                 ':now' => date('Y-m-d H:i:s'),
-                ':who' => admin_username(),
+                ':who' => admin_display_name(),
                 ':id' => $userId,
             ]);
             header('Location: admin_kyc?tab=' . $tab . '&saved=1');
@@ -55,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $st->execute([
                 ':reason' => mb_substr($reason, 0, 500),
                 ':now' => date('Y-m-d H:i:s'),
-                ':who' => admin_username(),
+                ':who' => admin_display_name(),
                 ':id' => $userId,
             ]);
             header('Location: admin_kyc?tab=' . $tab . '&saved=1');

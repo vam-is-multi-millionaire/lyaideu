@@ -176,6 +176,24 @@ if (!in_array($section, $allowedSections, true)) {
     exit;
 }
 
+/* Permission check: the POSTed section must map to a page the current
+   staff member may open (superadmins pass automatically). */
+$sectionPageMap = [
+    'categories' => 'categories', 'category_reorder' => 'categories',
+    'sections' => 'sections', 'section_reorder' => 'sections', 'section_links' => 'sections',
+    'promos' => 'promos',
+    'dishes' => 'dishes',
+    'mart' => 'mart',
+    'others' => 'others',
+    'beverages' => 'beverages',
+    'hotels' => 'hotels',
+    'contacts' => 'contacts',
+];
+if (!admin_can($sectionPageMap[$section] ?? '')) {
+    http_response_code(403);
+    exit('You do not have permission to make changes in this section.');
+}
+
 require_once __DIR__ . '/site_config.php';
 
 /* Ensure tables/columns BEFORE opening the transaction: MySQL DDL (CREATE

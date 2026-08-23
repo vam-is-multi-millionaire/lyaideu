@@ -193,6 +193,28 @@ CREATE TABLE IF NOT EXISTS messages (
   CONSTRAINT fk_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS admin_users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  username VARCHAR(100) NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  email VARCHAR(190) DEFAULT NULL,
+  pass_hash VARCHAR(255) NOT NULL,
+  role ENUM('superadmin','admin','manager') NOT NULL DEFAULT 'manager',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  last_login DATETIME DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_admin_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_user_pages (
+  admin_id INT UNSIGNED NOT NULL,
+  page_key VARCHAR(40) NOT NULL,
+  PRIMARY KEY (admin_id, page_key),
+  CONSTRAINT fk_admin_pages_user FOREIGN KEY (admin_id)
+    REFERENCES admin_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO settings (skey, sval) VALUES
   ('site_logo', 'logo.png'),
   ('site_favicon', 'favicon.ico'),

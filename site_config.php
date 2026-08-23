@@ -3347,3 +3347,84 @@ function lyaideu_delete_upload(string $path): void {
         @unlink(__DIR__ . '/' . $path);
     }
 }
+
+/**
+ * Admin staff accounts (superadmin / admin / manager) with per-page access.
+ * Creates the tables and seeds the first superadmin from the legacy single
+ * admin credentials stored in `settings` (username + bcrypt hash), so the
+ * existing login keeps working. Runs once per request.
+ */
+function lyaideu_ensure_admin_users_tables(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS admin_users (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                username VARCHAR(100) NOT NULL,
+                name VARCHAR(150) NOT NULL,
+                email VARCHAR(190) DEFAULT NULL,
+                pass_hash VARCHAR(255) NOT NULL,
+                role ENUM(\'superadmin\',\'admin\',\'manager\') NOT NULL DEFAULT \'manager\',
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                last_login DATETIME DEFAULT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_admin_users_username (username)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS admin_user_pages (
+                admin_id INT UNSIGNED NOT NULL,
+                page_key VARCHAR(40) NOT NULL,
+                PRIMARY KEY (admin_id, page_key),
+                CONSTRAINT fk_admin_pages_user FOREIGN KEY (admin_id)
+                    REFERENCES admin_users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        $count = (int)$pdo->query('SELECT COUNT(*) FROM admin_users')->fetchColumn();
+        if ($count === 0) {
+            lyaideu_ensure_settings_table();
+            /* Migrate the legacy credentials (settings table) into the first
+               superadmin account. Falls back to admin/admin123 if nothing
+               usable is stored yet. */
+            $username = trim(site_setting('admin_username', ''));
+            $hash = trim(site_setting('admin_pass_hash', ''));
+            if ($username === '') {
+                $username = 'admin';
+            }
+            if (!preg_match('/^\$2[aby]\$/', $hash)) {
+                $hash = password_hash('admin123', PASSWORD_DEFAULT);
+            }
+            $ins = $pdo->prepare(
+                'INSERT INTO admin_users (username, name, email, pass_hash, role, is_active, created_at)
+                 VALUES (:u, :n, NULL, :p, \'superadmin\', 1, :c)'
+            );
+            $ins->execute([
+                ':u' => $username,
+                ':n' => 'Super Admin',
+                ':p' => $hash,
+                ':c' => date('Y-m-d H:i:s'),
+            ]);
+            /* Remove the now-superseded legacy credential keys so passwords
+               live only in admin_users from here on. */
+            try {
+                $pdo->exec("DELETE FROM settings WHERE skey IN ('admin_username', 'admin_pass_hash')");
+            } catch (Throwable $e2) {
+                /* non-fatal */
+            }
+            lyaideu_settings_clear();
+        }
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}

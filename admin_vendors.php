@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
+admin_require_page('hotels');
 require_once __DIR__ . '/db.php';
 
 lyaideu_ensure_delivery_tables();

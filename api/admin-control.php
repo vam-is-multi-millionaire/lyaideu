@@ -28,7 +28,8 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-if (!admin_is_logged_in()) {
+lyaideu_ensure_admin_users_tables();
+if (!admin_can('control')) {
     ctrl_res(['ok' => false, 'error' => 'Admin login required.'], 401);
 }
 

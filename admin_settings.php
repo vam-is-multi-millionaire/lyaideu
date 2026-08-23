@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/admin_inc.php';
 admin_require_login();
+admin_require_page('settings');
 require_once __DIR__ . '/site_config.php';
 
 $pdo = lyaideu_load_pdo();
@@ -127,43 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (isset($_POST['save_creds'])) {
-        $username = trim((string)($_POST['admin_username'] ?? ''));
-        $current = (string)($_POST['current_password'] ?? '');
-        $newPass = (string)($_POST['new_password'] ?? '');
-        $confirm = (string)($_POST['new_password_confirm'] ?? '');
-
-        if ($username === '') {
-            settings_redirect(false, 'Admin username cannot be empty.');
-        }
-        if (!preg_match('/^[a-zA-Z0-9_.-]{3,40}$/', $username)) {
-            settings_redirect(false, 'Username must be 3–40 characters (letters, numbers, _ . -).');
-        }
-        if (!password_verify($current, site_setting('admin_pass_hash', ADMIN_PASS_HASH))) {
-            settings_redirect(false, 'Current password is incorrect.');
-        }
-        if ($newPass !== $confirm) {
-            settings_redirect(false, 'New passwords do not match.');
-        }
-        if (strlen($newPass) < 8) {
-            settings_redirect(false, 'New password must be at least 8 characters long.');
-        }
-
-        try {
-            $update = $pdo->prepare(
-                'INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
-                 ON DUPLICATE KEY UPDATE sval = VALUES(sval)'
-            );
-            $update->execute([':skey' => 'admin_username', ':sval' => $username]);
-            $update->execute([':skey' => 'admin_pass_hash', ':sval' => password_hash($newPass, PASSWORD_DEFAULT)]);
-        } catch (Throwable $e) {
-            settings_redirect(false, 'Could not save the admin credentials.');
-        }
-
-        lyaideu_settings_clear();
-        settings_redirect(true);
-    }
-
     if (isset($_POST['save_delivery'])) {
         $feeArr = array_values(array_filter(array_map('intval', preg_split('/[,\s]+/', (string)($_POST['delivery_fee_schedule'] ?? ''))), function ($v) {
             return $v >= 0;
@@ -234,7 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $logoUrl = site_logo_url();
 $faviconUrl = site_favicon_url();
 $appleUrl = site_apple_icon_url();
-$currentUser = site_setting('admin_username', 'admin');
 $heroUrls = [];
 for ($i = 1; $i <= 4; $i++) {
     $heroUrls[$i] = site_setting('hero_slide_' . $i, '');
@@ -261,7 +224,6 @@ admin_page_start('Settings', 'settings', 'Settings');
     <nav class="admin-tabs settings-tabs" id="settingsTabs" aria-label="Settings sections">
         <button type="button" class="admin-tab active" data-settings-tab="branding" aria-selected="true"><i class="fa-solid fa-palette"></i> Branding</button>
         <button type="button" class="admin-tab" data-settings-tab="hero" aria-selected="false"><i class="fa-solid fa-images"></i> Hero Slider</button>
-        <button type="button" class="admin-tab" data-settings-tab="credentials" aria-selected="false"><i class="fa-solid fa-user-shield"></i> Login &amp; Security</button>
         <button type="button" class="admin-tab" data-settings-tab="delivery" aria-selected="false"><i class="fa-solid fa-motorcycle"></i> Delivery</button>
         <button type="button" class="admin-tab" data-settings-tab="footer" aria-selected="false"><i class="fa-solid fa-address-card"></i> Footer</button>
     </nav>
@@ -276,7 +238,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-palette"></i> Branding</h2>
                     <p class="section-sub">Upload a new logo or favicon — changes apply instantly across the whole website. Everything is optional; leave a field blank to keep the current image.</p>
                 </div>
-                <span class="admin-count-badge">1 of 5</span>
+                <span class="admin-count-badge">1 of 4</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -324,7 +286,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-images"></i> Hero Slider</h2>
                     <p class="section-sub">Change the images that slide on the homepage banner. Upload up to 4 images — leave a slot blank to keep the current slide. Recommended size: <strong>1200×900 px (4:3)</strong>.</p>
                 </div>
-                <span class="admin-count-badge">2 of 5</span>
+                <span class="admin-count-badge">2 of 4</span>
             </div>
             <div class="admin-grid">
                 <?php for ($i = 1; $i <= 4; $i++):
@@ -345,51 +307,6 @@ admin_page_start('Settings', 'settings', 'Settings');
             <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save Hero Slider</button>
         </section>
     </form>
-
-    <form action="admin_settings" method="POST">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
-        <input type="hidden" name="save_creds" value="1">
-
-        <section class="admin-section settings-pane" data-settings-pane="credentials">
-            <div class="admin-section-top">
-                <div>
-                    <h2 class="settings-section-title"><i class="fa-solid fa-user-shield"></i> Login &amp; Security</h2>
-                    <p class="section-sub">Change the username and password used to sign in to this admin panel. Default: <strong>admin</strong> / <strong>admin123</strong>.</p>
-                </div>
-                <span class="admin-count-badge">3 of 5</span>
-            </div>
-            <div class="admin-grid">
-                <div class="admin-card settings-card">
-                    <h3><i class="fa-solid fa-user-pen"></i> Update Credentials</h3>
-                    <label for="admin_username">Admin username</label>
-                    <input type="text" name="admin_username" id="admin_username" value="<?= htmlspecialchars($currentUser, ENT_QUOTES, 'UTF-8') ?>" required autocomplete="username" placeholder="admin">
-
-                    <label for="current_password">Current password</label>
-                    <div class="password-wrap">
-                        <input type="password" name="current_password" id="current_password" required autocomplete="current-password" placeholder="Your current password">
-                        <button type="button" class="password-toggle" data-target="current_password" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
-                    </div>
-
-                    <label for="new_password">New password</label>
-                    <div class="password-wrap">
-                        <input type="password" name="new_password" id="new_password" required minlength="8" autocomplete="new-password" placeholder="Min 8 characters">
-                        <button type="button" class="password-toggle" data-target="new_password" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
-                    </div>
-                    <span class="password-strength" id="passwordStrength" role="status">Min 8 characters</span>
-
-                    <label for="new_password_confirm">Confirm new password</label>
-                    <div class="password-wrap">
-                        <input type="password" name="new_password_confirm" id="new_password_confirm" required autocomplete="new-password" placeholder="Repeat the new password">
-                        <button type="button" class="password-toggle" data-target="new_password_confirm" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
-                    </div>
-                    <p class="small-note password-match-note" id="passwordMatchNote"></p>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block admin-save-btn"><i class="fa-solid fa-key"></i> Save Credentials</button>
-        </section>
-    </form>
-
     <form action="admin_settings" method="POST">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="save_delivery" value="1">
@@ -400,7 +317,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-motorcycle"></i> Delivery &amp; Fees</h2>
                     <p class="section-sub">Delivery fee and estimated delivery time by vendor count. Entry #1 = 1 vendor, #2 = 2 vendors, and so on. When customers mix items from several hotels / the Mart, the fee and time scale up automatically and they are shown a notice before checkout.</p>
                 </div>
-                <span class="admin-count-badge">4 of 5</span>
+                <span class="admin-count-badge">3 of 4</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -446,7 +363,7 @@ admin_page_start('Settings', 'settings', 'Settings');
                     <h2 class="settings-section-title"><i class="fa-solid fa-address-card"></i> Footer</h2>
                     <p class="section-sub">Edit the information shown in the website footer — the about text, contact details, opening hours and the copyright line. Changes apply instantly across every page.</p>
                 </div>
-                <span class="admin-count-badge">5 of 5</span>
+                <span class="admin-count-badge">4 of 4</span>
             </div>
             <div class="admin-grid">
                 <div class="admin-card settings-card">
@@ -553,49 +470,6 @@ admin_page_start('Settings', 'settings', 'Settings');
                 btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
             });
         });
-
-        var np = document.getElementById('new_password');
-        var cp = document.getElementById('new_password_confirm');
-        var meter = document.getElementById('passwordStrength');
-        var note = document.getElementById('passwordMatchNote');
-        if (np && meter) {
-            np.addEventListener('input', function () {
-                var v = np.value;
-                var s = 0;
-                if (v.length >= 8) s++;
-                if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
-                if (/\d/.test(v)) s++;
-                if (/[^A-Za-z0-9]/.test(v)) s++;
-                if (v === '') {
-                    meter.textContent = 'Min 8 characters';
-                    meter.className = 'password-strength';
-                } else {
-                    var labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
-                    meter.textContent = labels[s] + (s >= 2 && v.length < 8 ? ' — needs 8 characters' : '');
-                    meter.className = 'password-strength s' + s;
-                }
-            });
-        }
-        if (np && cp && note) {
-            function checkMatch() {
-                if (cp.value === '') {
-                    note.textContent = '';
-                    cp.classList.remove('password-mismatch');
-                    return;
-                }
-                if (np.value !== cp.value) {
-                    note.textContent = 'Passwords do not match';
-                    note.style.color = '#c93a3a';
-                    cp.classList.add('password-mismatch');
-                } else {
-                    note.textContent = 'Passwords match';
-                    note.style.color = '#166534';
-                    cp.classList.remove('password-mismatch');
-                }
-            }
-            np.addEventListener('input', checkMatch);
-            cp.addEventListener('input', checkMatch);
-        }
     })();
     </script>
 <?php
