@@ -708,10 +708,11 @@ section{scroll-margin-top:96px;}
   .checkout-body .map-actions .btn{width:100%;}
 }
 
-/* Orders: hide the live-update indicator + kicker pill on phones only */
+/* Orders: hide the live-update indicator + kicker pill + zero top padding on phones only */
 @media (max-width:960px){
   .orders-page .live-indicator,
   .orders-page .kicker{display:none;}
+  .orders-page{padding-top:0;}
 }
 .promo-box{display:flex;gap:.5rem;margin:1rem 0}.promo-box input{flex:1;border:2px solid var(--orange-200);border-radius:10px;padding:.7rem;font:inherit}
 .checkout-item{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px dashed var(--orange-200)}
