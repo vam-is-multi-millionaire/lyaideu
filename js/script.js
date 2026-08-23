@@ -495,7 +495,7 @@ function initCheckout(){
     $('#coSubtotal').textContent='Rs. '+sub;
     if($('#coDelivery'))$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);
     if($('#coTotal'))$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);
-    if($('#coEta'))$('#coEta').innerHTML=shops.length>1?'<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length,hasHotel)+' minutes</b> — '+shops.length+' vendors': '<i class="fa-solid fa-clock"></i> Estimated delivery: <b>about '+deliveryEtaFor(shops.length,hasHotel)+' minutes</b>';
+    if($('#coEta'))$('#coEta').innerHTML='<i class="fa-solid fa-clock"></i> about '+deliveryEtaFor(shops.length,hasHotel)+' minutes';
     const note=$('#coVendorNote');
     if(note){if(shops.length>1){note.style.display='';note.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> <b>Ordering from '+shops.length+' vendors.</b> Delivery takes about '+deliveryEtaFor(shops.length,hasHotel)+' minutes and the delivery fee is Rs. '+delivery+'. Each vendor prepares your items separately.'}else{note.style.display='none'}}
     $('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
