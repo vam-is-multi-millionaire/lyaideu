@@ -301,7 +301,6 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
                     <span class="product-price"><small>Rs.</small> <span id="productPrice"><?= $dealPrice ?></span><?= $unitHtml ?></span>
                     <?php if ($dealPct > 0): ?>
                     <s class="product-price-was" id="priceWas"><small>Rs.</small> <span id="priceWasAmount"><?= $basePrice ?></span></s>
-                    <span class="deal-badge deal-badge-inline">-<?= $dealPct ?>%</span>
                     <span class="product-deal-save" id="dealSave"><i class="fa-solid fa-piggy-bank"></i> You save Rs. <b id="dealSaveAmount"><?= $basePrice - $dealPrice ?></b></span>
                     <?php endif; ?>
                 </div>
@@ -372,7 +371,7 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
                                 <h4><?= e($rItem['name']) ?></h4>
                                 <?= ($rItem['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . e($rItem['hotel']) . '</p>' : '' ?>
                                 <div class="related-foot">
-                                    <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span><?= $rDealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $rDealPct . '%</span>' : '' ?>
+                                    <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span>
                                     <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                                 </div>
                             </div>
