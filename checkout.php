@@ -35,6 +35,26 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 .promo-savings span i{color:var(--orange-600)}
 #promoInput:disabled{background:#fffaf2;border-color:#cfe8d4;cursor:default}
 #promoBtn{min-width:86px}
+/* 5-second order safety countdown */
+.co-oc-overlay{z-index:2000}
+.co-oc-box{width:min(400px,100%);text-align:center;padding:2rem 1.5rem 1.4rem;border-radius:24px}
+.co-oc-ringwrap{position:relative;width:128px;height:128px;margin:0 auto .9rem}
+.co-oc-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.co-oc-track,.co-oc-ring{fill:none;stroke-width:9;stroke-linecap:round}
+.co-oc-track{stroke:var(--orange-100)}
+.co-oc-ring{stroke:var(--orange-600);stroke-dasharray:339.3;animation:coOcRing 5s linear forwards}
+@keyframes coOcRing{from{stroke-dashoffset:0}to{stroke-dashoffset:339.3}}
+.co-oc-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display)}
+.co-oc-num span{font-size:2.7rem;line-height:1;color:var(--orange-600)}
+.co-oc-num span.pop{animation:coOcPop .45s ease}
+@keyframes coOcPop{from{transform:scale(1.3);opacity:.55}to{transform:scale(1);opacity:1}}
+.co-oc-num small{font-size:.68rem;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:.15rem}
+.co-oc-title{font-family:var(--font-display);font-size:1.3rem;color:var(--ink);margin:0 0 .35rem}
+.co-oc-sub{color:var(--muted);font-size:.92rem;line-height:1.45;margin:0 0 1.2rem}
+.co-oc-actions{display:flex;gap:.6rem}
+.co-oc-actions .btn{flex:1;margin:0}
+#ocCancelBtn{border-color:#eec4bd;background:#fff7f5;color:#c0392b}
+#ocCancelBtn:hover{background:#fdeae6;border-color:#e39a8d;color:#a93226}
 </style>
 </head><body class="checkout-body">
 <header class="topbar">
@@ -124,6 +144,23 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
       <?php endif; ?>
     </section>
   </form>
+  <div class="modal-overlay co-oc-overlay" id="orderCountdownOverlay" role="dialog" aria-modal="true" aria-labelledby="ocTitle">
+    <div class="modal-box co-oc-box">
+      <div class="co-oc-ringwrap">
+        <svg class="co-oc-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="co-oc-track" cx="60" cy="60" r="54"></circle>
+          <circle class="co-oc-ring" id="ocRing" cx="60" cy="60" r="54"></circle>
+        </svg>
+        <div class="co-oc-num"><span id="ocNum">5</span><small>seconds</small></div>
+      </div>
+      <h3 class="co-oc-title" id="ocTitle"><i class="fa-solid fa-paper-plane"></i> Sending your order...</h3>
+      <p class="co-oc-sub">Placed by accident? You have <b>5 seconds</b> to cancel before we send it to the kitchen.</p>
+      <div class="co-oc-actions">
+        <button type="button" class="btn btn-outline" id="ocCancelBtn"><i class="fa-solid fa-ban"></i> Cancel Order</button>
+        <button type="button" class="btn btn-primary" id="ocNowBtn"><i class="fa-solid fa-check"></i> Place Now</button>
+      </div>
+    </div>
+  </div>
 </main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function () {
@@ -186,6 +223,6 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     });
 })();
 </script>
-<script src="js/script.js?v=40"></script>
+<script src="js/script.js?v=41"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script></body></html>
