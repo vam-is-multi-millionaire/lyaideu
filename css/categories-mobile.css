@@ -223,7 +223,7 @@
   }
   .mc-products .dish-art{border-radius:0;}
   .mc-products .dish-art::after{display:none;}
-  .mc-products .dish-body{padding:.55rem .6rem .65rem;}
+  .mc-products .dish-body{padding:.2rem .6rem .24rem;}
   .mc-products .dish-top h3{font-size:.82rem;}
   .mc-products .price{font-size:.95rem;}
   .mc-products .btn-order{font-size:.68rem;padding:.38rem .5rem;}
@@ -286,7 +286,7 @@
   @media (max-width:360px){
     .mc-main{padding:.85rem .55rem calc(env(safe-area-inset-bottom,0px) + 118px);}
     .mc-products{gap:.5rem;}
-    .mc-products .dish-body{padding:.45rem .4rem .5rem;}
+    .mc-products .dish-body{padding:.16rem .4rem .2rem;}
     .mc-products .dish-top h3{font-size:.72rem;}
     .mc-products .price{font-size:.8rem;}
     .mc-products .dish-hotel{font-size:.58rem;}

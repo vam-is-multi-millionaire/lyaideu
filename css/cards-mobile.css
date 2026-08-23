@@ -63,6 +63,12 @@
   #menu .menu-toolbar,#mart .menu-toolbar,#beverages .menu-toolbar,
   #others .menu-toolbar,#hotels .menu-toolbar{margin-bottom:1rem;}
 
+  /* All product cards: slimmer body padding on phones (top/bottom only;
+     side padding keeps coming from style.css breakpoints) */
+  .dish-body{padding-top:.2rem;padding-bottom:.24rem;}
+  /* Keep the dashed divider flush with the content above on phones only */
+  .dish-foot{padding-top:0;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
@@ -189,7 +195,7 @@
   #menu-grid,#mart-grid,#others-grid,#beverages-grid,
   .store-grid,.related-grid{gap:.45rem;}
   #menu-grid .dish-body,#mart-grid .dish-body,#others-grid .dish-body,
-  #beverages-grid .dish-body,.store-grid .dish-body{padding:.45rem .4rem .5rem;}
+  #beverages-grid .dish-body,.store-grid .dish-body{padding:.16rem .4rem .2rem;}
   #menu-grid .dish-top h3,#mart-grid .dish-top h3,#others-grid .dish-top h3,
   #beverages-grid .dish-top h3,.store-grid .dish-top h3{font-size:.72rem;}
   #menu-grid .price,#mart-grid .price,#others-grid .price,

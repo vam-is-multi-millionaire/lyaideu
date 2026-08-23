@@ -210,7 +210,7 @@ $FEATURED_BEVERAGE_ICONS = [
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=47">
+<link rel="stylesheet" href="css/style.css?v=50">
 <style>
 /* Vendor/store line on product cards — rendered for phones only */
 .dish-grid.home-grid .dish-hotel{display:none;}
@@ -240,6 +240,10 @@ $FEATURED_BEVERAGE_ICONS = [
   #featured{padding-top:0;}
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
+  /* All product cards: slimmer body padding on phones (top/bottom only) */
+  .dish-grid.home-grid .dish-body{padding-top:.2rem;padding-bottom:.24rem;}
+  /* Keep the dashed divider flush with the content above on phones only */
+  .dish-foot{padding-top:0;}
   /* Add button shows only the cart icon on phones */
   .dish-card .btn-order.add-cart .add-label{display:none;}
   /* Bare cart icon only — no pill, no fill, no border */
@@ -288,7 +292,7 @@ $FEATURED_BEVERAGE_ICONS = [
   #featured .dish-grid.home-grid,
   #search .dish-grid.home-grid{gap:.45rem;}
   #featured .dish-grid.home-grid .dish-body,
-  #search .dish-grid.home-grid .dish-body{padding:.45rem .4rem .5rem;}
+  #search .dish-grid.home-grid .dish-body{padding:.16rem .4rem .2rem;}
   #featured .dish-grid.home-grid .dish-top h3,
   #search .dish-grid.home-grid .dish-top h3{font-size:.72rem;}
   #featured .dish-grid.home-grid .price,

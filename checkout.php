@@ -1,4 +1,4 @@
-ï»¿<?php
+<?php
 session_start();
 if (!isset($_SESSION['user'])) { header('Location: login?next=' . urlencode('checkout')); exit; }
 if (!isset($_SESSION['csrf_order'])) $_SESSION['csrf_order'] = bin2hex(random_bytes(32));
@@ -25,7 +25,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 <?= lyaideu_base_tag() ?>
 <title>Checkout | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=47">
+<link rel="stylesheet" href="css/style.css?v=50">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head><body class="checkout-body">
 <header class="topbar">
@@ -74,7 +74,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
   <?php if (!$kycVerified): ?>
   <div class="kyc-gate-banner <?= $kycStatus === 'rejected' ? 'is-rejected' : '' ?>">
     <i class="fa-solid fa-shield-halved"></i> <b>Identity verification required.</b>
-    <?php if ($kycStatus === 'pending'): ?>Your KYC documents are under review â€” you'll be able to order once an admin verifies you.<?php elseif ($kycStatus === 'rejected'): ?>Your KYC was rejected. <?= htmlspecialchars((string)($profile['kyc_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Please fix the documents' ?> â€” update and resubmit from your profile.<?php else: ?>Complete your profile and upload your KYC documents before placing an order.<?php endif; ?>
+    <?php if ($kycStatus === 'pending'): ?>Your KYC documents are under review — you'll be able to order once an admin verifies you.<?php elseif ($kycStatus === 'rejected'): ?>Your KYC was rejected. <?= htmlspecialchars((string)($profile['kyc_reason'] ?? ''), ENT_QUOTES, 'UTF-8') ?: 'Please fix the documents' ?> — update and resubmit from your profile.<?php else: ?>Complete your profile and upload your KYC documents before placing an order.<?php endif; ?>
     <a class="btn btn-primary btn-sm" href="profile"><i class="fa-solid fa-id-card"></i> Go to Profile</a>
   </div>
   <?php endif; ?>
@@ -86,7 +86,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
       <label>Full Name<input name="customer_name" required value="<?= htmlspecialchars($user['name']) ?>"></label>
       <label>Phone<input name="phone" required value="<?= htmlspecialchars($user['phone']) ?>" inputmode="numeric"></label>
       <div class="co-location">
-        <p class="co-location-title"><i class="fa-solid fa-map-pin"></i> Delivery spot <span class="muted">â€” drag the pin or use your current location</span></p>
+        <p class="co-location-title"><i class="fa-solid fa-map-pin"></i> Delivery spot <span class="muted">— drag the pin or use your current location</span></p>
         <input type="hidden" name="delivery_lat" id="deliveryLat" value="<?= htmlspecialchars($homeLat, ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="delivery_lng" id="deliveryLng" value="<?= htmlspecialchars($homeLng, ENT_QUOTES, 'UTF-8') ?>">
         <div id="deliveryMap" class="loc-map" data-home-lat="<?= htmlspecialchars($homeLat, ENT_QUOTES, 'UTF-8') ?>" data-home-lng="<?= htmlspecialchars($homeLng, ENT_QUOTES, 'UTF-8') ?>"></div>
@@ -142,7 +142,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
         map.panTo([lat, lng]);
         latIn.value = lat.toFixed(7);
         lngIn.value = lng.toFixed(7);
-        if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Delivery spot set â€” you can adjust it anytime.';
+        if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Delivery spot set — you can adjust it anytime.';
         if (reverse && window.fetch && addrIn) {
             fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng, { headers: { 'Accept-Language': 'en' } })
                 .then(function (r) { return r.json(); })
@@ -157,7 +157,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     if (locBtn) locBtn.addEventListener('click', function () {
         var b = this;
         b.disabled = true;
-        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locatingâ€¦';
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locating…';
         window.LYAIDEU_LOC.request(function (err, pos) {
             b.disabled = false;
             b.innerHTML = '<i class="fa-solid fa-crosshairs"></i> Use my current location';
@@ -174,7 +174,7 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
             return;
         }
         if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Delivery spot confirmed. You can now place your order.';
-        okBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Location confirmed âœ“';
+        okBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Location confirmed ?';
     });
 })();
 </script>
