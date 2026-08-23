@@ -329,7 +329,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=52">
+<link rel="stylesheet" href="css/style.css?v=55">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="profile-body">
@@ -412,10 +412,28 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     </div>
     <?php endif; ?>
 
+    <!-- Mobile-only read-only summaries. Phones show the saved details and a
+         preview of the home map here; every edit option lives in the
+         full-screen editor opened by the header gear button. -->
+    <section class="pm-info" aria-label="Personal information summary">
+        <div class="pmi-row"><span class="pmi-k"><i class="fa-solid fa-user"></i> Full name</span><span class="pmi-v"><?= htmlspecialchars((string)$profile['name'], ENT_QUOTES, 'UTF-8') ?></span></div>
+        <div class="pmi-row"><span class="pmi-k"><i class="fa-solid fa-envelope"></i> Gmail</span><span class="pmi-v"><?= htmlspecialchars((string)$profile['email'], ENT_QUOTES, 'UTF-8') ?></span></div>
+        <div class="pmi-row"><span class="pmi-k"><i class="fa-solid fa-mobile-screen"></i> Phone</span><span class="pmi-v">+977 <?= htmlspecialchars((string)$profile['phone'], ENT_QUOTES, 'UTF-8') ?></span></div>
+        <?php $dobRaw = trim((string)$profile['dob']); $dobNice = $dobRaw !== '' ? date('d M Y', strtotime($dobRaw)) : ''; ?>
+        <div class="pmi-row"><span class="pmi-k"><i class="fa-solid fa-cake-candles"></i> Date of birth</span><span class="pmi-v"><?= $dobNice !== '' ? htmlspecialchars($dobNice, ENT_QUOTES, 'UTF-8') : '<em>Not set</em>' ?></span></div>
+        <div class="pmi-row"><span class="pmi-k"><i class="fa-solid fa-location-dot"></i> Address</span><span class="pmi-v"><?= htmlspecialchars((string)$profile['address'], ENT_QUOTES, 'UTF-8') ?: '<em>Not set</em>' ?></span></div>
+    </section>
+
+    <section class="pm-loc" aria-label="Home location summary">
+        <div class="pml-head"><span class="pml-ico"><i class="fa-solid fa-house-chimney"></i></span><strong>Home location</strong></div>
+        <div id="homeMapPreview" class="pml-map"></div>
+        <p class="pml-addr"><?= htmlspecialchars((string)$profile['home_address'], ENT_QUOTES, 'UTF-8') ?: 'No home location saved yet.' ?></p>
+    </section>
+
     <div class="profile-grid">
-        <!-- Photo + personal info live inside this group. Desktop renders it in
-             the grid as usual; on phones it becomes a bottom-sheet overlay
-             opened by the gear button in the header. -->
+        <!-- Photo, personal info and home location live inside this group.
+             Desktop renders it in the grid as usual; on phones it becomes a
+             full-screen editor opened by the gear button in the header. -->
         <div class="profile-edit-group" id="profileEditGroup">
             <div class="peg-chrome">
                 <strong class="peg-title"><i class="fa-solid fa-user-pen"></i> Edit your details</strong>
@@ -446,22 +464,22 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 <label>Location / Address<input name="address" value="<?= htmlspecialchars($profile['address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="Area / street / tole"></label>
                 <button type="submit" name="save_profile" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
             </form>
-        </div>
 
-        <form class="profile-card" method="POST" action="profile">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-            <h2><i class="fa-solid fa-house-chimney"></i> Home location</h2>
-            <p class="small-note">Drop a pin on the map for your home — or tap <b>Use my current location</b>. We'll pre-fill it at checkout and your rider will see it.</p>
-            <div id="homeMap" class="loc-map"></div>
-            <input type="hidden" name="home_lat" id="homeLat" value="<?= htmlspecialchars((string)($profile['home_lat'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="home_lng" id="homeLng" value="<?= htmlspecialchars((string)($profile['home_lng'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-            <label>Home address<input name="home_address" id="homeAddr" value="<?= htmlspecialchars((string)$profile['home_address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="House / street / area / landmark"></label>
-            <div class="map-actions">
-                <button type="button" class="btn btn-outline" id="homeLocBtn"><i class="fa-solid fa-crosshairs"></i> Use my current location</button>
-            </div>
-            <p class="small-note" id="homeLocMsg"></p>
-            <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
-        </form>
+            <form class="profile-card" method="POST" action="profile">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                <h2><i class="fa-solid fa-house-chimney"></i> Home location</h2>
+                <p class="small-note">Drop a pin on the map for your home — or tap <b>Use my current location</b>. We'll pre-fill it at checkout and your rider will see it.</p>
+                <div id="homeMap" class="loc-map"></div>
+                <input type="hidden" name="home_lat" id="homeLat" value="<?= htmlspecialchars((string)($profile['home_lat'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="home_lng" id="homeLng" value="<?= htmlspecialchars((string)($profile['home_lng'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                <label>Home address<input name="home_address" id="homeAddr" value="<?= htmlspecialchars((string)$profile['home_address'], ENT_QUOTES, 'UTF-8') ?>" placeholder="House / street / area / landmark"></label>
+                <div class="map-actions">
+                    <button type="button" class="btn btn-outline" id="homeLocBtn"><i class="fa-solid fa-crosshairs"></i> Use my current location</button>
+                </div>
+                <p class="small-note" id="homeLocMsg"></p>
+                <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
+            </form>
+        </div>
 
         <?php if ($kycOn): ?>
         <form class="profile-card profile-card-wide" method="POST" enctype="multipart/form-data" action="profile">
@@ -656,6 +674,42 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             setPos(pos.lat, pos.lng, true);
         });
     });
+    /* On phones this form lives inside the hidden editor sheet, so Leaflet
+       measures a 0x0 box at load. Re-measure once the sheet is open. */
+    try {
+        var sheetEl = document.getElementById('profileEditGroup');
+        if (sheetEl && 'MutationObserver' in window) {
+            var mo = new MutationObserver(function () {
+                if (sheetEl.classList.contains('open')) {
+                    setTimeout(function () { map.invalidateSize(); }, 180);
+                    setTimeout(function () { map.invalidateSize(); }, 420);
+                }
+            });
+            mo.observe(sheetEl, { attributes: true, attributeFilter: ['class'] });
+        }
+    } catch (e) {}
+})();
+</script>
+<script>
+/* Mobile-only read-only preview of the saved home location. */
+(function () {
+    var el = document.getElementById('homeMapPreview');
+    if (!el || typeof L === 'undefined') return;
+    if (!window.matchMedia('(max-width:960px)').matches) return;
+    var latIn = document.getElementById('homeLat'),
+        lngIn = document.getElementById('homeLng');
+    var lat = parseFloat(latIn ? latIn.value : ''),
+        lng = parseFloat(lngIn ? lngIn.value : '');
+    var has = isFinite(lat) && isFinite(lng);
+    var center = has ? [lat, lng] : [28.5967, 81.6166];
+    var pmap = L.map(el, {
+        scrollWheelZoom: false,
+        zoomControl: false,
+        attributionControl: false,
+        keyboard: false
+    }).setView(center, has ? 15 : 13);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pmap);
+    L.marker(center, { draggable: false, interactive: false, keyboard: false }).addTo(pmap);
 })();
 </script>
 <script src="js/lightbox.js?v=2"></script>

@@ -1629,7 +1629,7 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
      is handled by the compact .profile-mheader + bottom tab bar.
    - Desktop (>=961px) is completely untouched.
    ========================================================== */
-.profile-mheader,.profile-idcard,.orders-row{display:none;}
+.profile-mheader,.profile-idcard,.orders-row,.pm-info,.pm-loc{display:none;}
 /* Photo + personal info wrapper: transparent on desktop so its two forms
    behave exactly like direct grid children; becomes a bottom sheet on phones. */
 .profile-edit-group{display:contents;}
@@ -1747,7 +1747,9 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
     visibility:hidden;
     transition:transform .32s cubic-bezier(.32,.72,.33,1),visibility .32s;
   }
-  .profile-body .profile-edit-group.open{transform:none;visibility:visible;}
+  /* Editor opens ONLY in the locked state: body.profile-body.pe-lock.
+     Viewing happens on the plain page, editing happens here. */
+  .profile-body.pe-lock .profile-edit-group.open{transform:none;visibility:visible;}
   .peg-chrome{
     position:sticky;top:0;z-index:2;
     flex:0 0 auto;
@@ -1804,6 +1806,54 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .or-txt strong{font-size:.95rem;font-weight:900;color:var(--ink);line-height:1.25;}
   .or-txt small{font-size:.74rem;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .or-chev{flex:0 0 auto;color:var(--orange-300);font-size:.8rem;}
+
+  /* ---- Read-only summaries (photo/info/home editing happens in the editor sheet) ---- */
+  .pm-info{
+    display:block;
+    background:#fff;
+    border:1.5px solid var(--orange-100);
+    border-radius:18px;
+    padding:.15rem .95rem;
+    margin-bottom:1rem;
+    box-shadow:0 6px 18px rgba(150,75,10,.07);
+  }
+  .pmi-row{display:flex;align-items:center;justify-content:space-between;gap:.9rem;padding:.72rem 0;}
+  .pmi-row+.pmi-row{border-top:1px dashed var(--orange-100);}
+  .pmi-k{
+    flex:0 0 auto;
+    display:flex;align-items:center;gap:.45rem;
+    color:var(--muted);font-size:.7rem;font-weight:800;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .pmi-k i{width:16px;text-align:center;color:var(--orange-500);font-size:.82rem;}
+  .pmi-v{text-align:right;font-weight:800;font-size:.88rem;color:var(--ink);overflow-wrap:anywhere;min-width:0;}
+  .pmi-v em{color:var(--muted);font-weight:700;}
+  .pm-loc{
+    display:block;
+    background:#fff;
+    border:1.5px solid var(--orange-100);
+    border-radius:18px;
+    padding:.9rem;
+    margin-bottom:1rem;
+    box-shadow:0 6px 18px rgba(150,75,10,.07);
+  }
+  .pml-head{display:flex;align-items:center;gap:.55rem;margin-bottom:.65rem;}
+  .pml-ico{
+    flex:0 0 auto;
+    width:38px;height:38px;border-radius:12px;
+    display:grid;place-items:center;
+    background:var(--orange-100);color:var(--orange-600);
+    font-size:1rem;
+  }
+  .pml-head strong{font-family:var(--font-display);font-weight:400;font-size:1.02rem;color:var(--orange-950);}
+  .pml-map{height:200px;border-radius:14px;border:2px solid var(--orange-200);overflow:hidden;z-index:0;}
+  .pml-addr{margin:.65rem 0 0;font-size:.8rem;font-weight:700;color:var(--muted);line-height:1.5;overflow-wrap:anywhere;}
+
+  /* ---- State rule: the read-only summaries live in the browsing view only.
+     While the full-screen editor is open (body.pe-lock) they disappear —
+     viewing happens here, editing happens inside the editor sheet. ---- */
+  body.pe-lock .pm-info,
+  body.pe-lock .pm-loc{display:none;}
 
   /* ---- Cards ---- */
   .profile-body .profile-grid{gap:.9rem;}
