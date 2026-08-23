@@ -125,11 +125,11 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
     $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
-        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
         $searchResults['dishes'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM mart_items m
              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -140,7 +140,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM other_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -151,7 +151,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['others'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
                     COALESCE(h.name, \'\') AS hotel
              FROM beverage_items bi
              LEFT JOIN vendors v ON v.id = bi.vendor_id
