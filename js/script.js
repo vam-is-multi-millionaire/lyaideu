@@ -141,7 +141,8 @@ function initBottomNavAutoHide(){
 }
 
 /* Animated search placeholder: pages opt in with data-ph-rotate="a, b, c".
-   The word inside "Search (...)" types itself, pauses, deletes, then cycles.
+   The word after "Search" types itself, then three trailing dots pulse in,
+   then it deletes and cycles to the next word.
    Pages without the attribute keep their static per-page placeholder. */
 function initSearchTyping(){
   const inp=document.querySelector('.nav-search input[name=q]');
@@ -150,8 +151,8 @@ function initSearchTyping(){
   const rot=(inp.getAttribute('data-ph-rotate')||'').split(',').map(s=>s.trim()).filter(Boolean);
   if(!rot.length)return;
   let reduced=false;try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
-  if(reduced){inp.placeholder='Search ('+rot[0]+')';return}
-  let wi=0,ci=0,del=false,timer=null,idle=false;
+  if(reduced){inp.placeholder='Search '+rot[0];return}
+  let wi=0,ci=0,del=false,dots=0,timer=null,idle=false;
   const stop=()=>{if(timer){clearTimeout(timer);timer=null}};
   const tick=()=>{
     timer=null;
@@ -159,14 +160,23 @@ function initSearchTyping(){
     const w=rot[wi];
     if(!del){
       ci++;
-      inp.placeholder='Search ('+w.slice(0,ci)+')';
-      if(ci>=w.length){del=true;timer=setTimeout(tick,1500)}
+      inp.placeholder='Search '+w.slice(0,ci);
+      if(ci>=w.length){del=true;dots=0;timer=setTimeout(dotTick,400)}
       else timer=setTimeout(tick,80+Math.random()*70);
     }else{
       ci--;
       if(ci<=0){del=false;wi=(wi+1)%rot.length;inp.placeholder='Search';timer=setTimeout(tick,420)}
-      else{inp.placeholder='Search ('+w.slice(0,ci)+')';timer=setTimeout(tick,40)}
+      else{inp.placeholder='Search '+w.slice(0,ci);timer=setTimeout(tick,40)}
     }
+  };
+  /* Hold phase: the finished word gets ". .. ..." pulsing behind it,
+     then deletion starts. */
+  const dotTick=()=>{
+    timer=null;
+    if(idle||document.activeElement===inp)return;
+    dots=(dots%3)+1;
+    inp.placeholder='Search '+rot[wi]+'.'.repeat(dots);
+    timer=setTimeout(dots>=3?tick:dotTick,dots>=3?300:380);
   };
   inp.addEventListener('focus',()=>{idle=true;stop();if(!inp.value)inp.placeholder='Search'});
   inp.addEventListener('blur',()=>{idle=false;if(inp.value)return;ci=0;del=false;stop();timer=setTimeout(tick,500)});
