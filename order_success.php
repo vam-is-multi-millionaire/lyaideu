@@ -87,7 +87,7 @@ $orderId = (int)$order['id'];
     <?= lyaideu_order_delivery_html($order) ?>
     <div class="summary-row"><span>Subtotal</span><strong>Rs. <?= (int)$order['subtotal'] ?></strong></div>
     <div class="summary-row"><span>Delivery</span><strong>Rs. <?= max(0, (int)$order['delivery_fee'] - (int)$order['discount']) ?></strong></div>
-    <div class="summary-row"><span>Estimated delivery</span><strong>about <?= (int)$order['eta_minutes'] ?> min</strong></div>
+    <div class="summary-row"><span>Estimated delivery</span><strong><i class="fa-solid fa-clock"></i> about <?= (int)$order['eta_minutes'] ?> min</strong></div>
     <div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$order['total'] ?></strong></div>
     <p class="small-note"><i class="fa-solid fa-location-dot"></i> Delivering to: <?= htmlspecialchars($order['address']) ?><?php if (!empty($order['delivery_lat']) && !empty($order['delivery_lng'])): ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars((string)$order['delivery_lat']) ?>,<?= htmlspecialchars((string)$order['delivery_lng']) ?>">Open in Maps</a><?php endif; ?></p>
     <div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>
