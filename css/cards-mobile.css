@@ -67,7 +67,7 @@
      side padding keeps coming from style.css breakpoints) */
   .dish-body{padding-top:.2rem;padding-bottom:.24rem;}
   /* Keep the dashed divider flush with the content above on phones only */
-  .dish-foot{padding-top:0;}
+  .dish-foot,.related-foot{padding-top:0;}
 
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
