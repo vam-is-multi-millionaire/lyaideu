@@ -140,8 +140,42 @@ function initBottomNavAutoHide(){
   window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
 }
 
+/* Animated search placeholder: pages opt in with data-ph-rotate="a, b, c".
+   The word inside "Search (...)" types itself, pauses, deletes, then cycles.
+   Pages without the attribute keep their static per-page placeholder. */
+function initSearchTyping(){
+  const inp=document.querySelector('.nav-search input[name=q]');
+  if(!inp||inp.dataset.phReady)return;
+  inp.dataset.phReady='1';
+  const rot=(inp.getAttribute('data-ph-rotate')||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(!rot.length)return;
+  let reduced=false;try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
+  if(reduced){inp.placeholder='Search ('+rot[0]+')';return}
+  let wi=0,ci=0,del=false,timer=null,idle=false;
+  const stop=()=>{if(timer){clearTimeout(timer);timer=null}};
+  const tick=()=>{
+    timer=null;
+    if(idle||document.activeElement===inp)return;
+    const w=rot[wi];
+    if(!del){
+      ci++;
+      inp.placeholder='Search ('+w.slice(0,ci)+')';
+      if(ci>=w.length){del=true;timer=setTimeout(tick,1500)}
+      else timer=setTimeout(tick,80+Math.random()*70);
+    }else{
+      ci--;
+      if(ci<=0){del=false;wi=(wi+1)%rot.length;inp.placeholder='Search';timer=setTimeout(tick,420)}
+      else{inp.placeholder='Search ('+w.slice(0,ci)+')';timer=setTimeout(tick,40)}
+    }
+  };
+  inp.addEventListener('focus',()=>{idle=true;stop();if(!inp.value)inp.placeholder='Search'});
+  inp.addEventListener('blur',()=>{idle=false;if(inp.value)return;ci=0;del=false;stop();timer=setTimeout(tick,500)});
+  if(inp.value)return;
+  timer=setTimeout(tick,700);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
-  initMobileNav();initBottomNavAutoHide();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();
+  initMobileNav();initBottomNavAutoHide();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();initSearchTyping();
   if($('#menu-grid')||$('#mart-grid')||$('#others-grid')||$('#beverages-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||$('#featuredBeverages')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
     allDishes=d.dishes||[];
     allMart=d.mart||[];

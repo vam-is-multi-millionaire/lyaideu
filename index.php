@@ -329,7 +329,7 @@ $FEATURED_BEVERAGE_ICONS = [
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="#home"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search dishes, mart &amp; hotels" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search LyaiDeu"></form>
+        <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search dishes, mart &amp; hotels" data-ph-rotate="anything, foods, drinks, products, momo, store, apple" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search LyaiDeu"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="#home" class="nav-a active">Home</a></li>
@@ -854,7 +854,7 @@ $FEATURED_BEVERAGE_ICONS = [
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=33"></script>
+<script src="js/script.js?v=34"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=6"></script>
 </body>

@@ -44,7 +44,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
-        <form class="nav-search" action="mart" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search the mart"></form>
+        <form class="nav-search" action="mart" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in Mart" value="<?= htmlspecialchars($q, ENT_QUOTES, 'UTF-8') ?>" aria-label="Search the mart"></form>
         <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
         <ul class="nav-links" id="navLinks">
             <li><a href="index" class="nav-a">Home</a></li>
@@ -122,7 +122,7 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=33"></script>
+<script src="js/script.js?v=34"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 </body>
