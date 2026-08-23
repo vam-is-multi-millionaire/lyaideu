@@ -207,3 +207,68 @@
     restore();
   }, 150);
 })();
+
+/* ==========================================================
+   LyaiDeu floating flash banners — whole-site enhancement.
+   Moves server-rendered .flash-banner messages into one fixed
+   top-center stack, adds a close button and click-to-dismiss,
+   then removes them after a short delay (success ~4s, errors
+   ~8s). Pure CSS already floats + auto-hides them; this just
+   stacks multiples cleanly, cleans the DOM and adds the ✕.
+   Rider/vendor .delivery-toast, the Control Panel's own
+   .ctrl-flash and notify.js toasts are left untouched.
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var SELECTOR = '.flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast)';
+  var LIFE = { 'flash-success': 4200, 'flash-error': 8500 };
+
+  function dismiss(el, stack) {
+    if (!el || el.dataset.flashGone) return;
+    el.dataset.flashGone = '1';
+    el.classList.add('flash-out');
+    setTimeout(function () {
+      el.remove();
+      if (stack && !stack.children.length) stack.remove();
+    }, 380);
+  }
+
+  function enhance(el, stack) {
+    if (el.dataset.flashBound) return;
+    el.dataset.flashBound = '1';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'flash-close';
+    btn.setAttribute('aria-label', 'Dismiss message');
+    btn.innerHTML = '&times;';
+    el.appendChild(btn);
+    var timer = setTimeout(function () { dismiss(el, stack); }, LIFE[el.classList.contains('flash-error') ? 'flash-error' : 'flash-success'] || 4200);
+    el.addEventListener('click', function (e) {
+      var t = e.target;
+      var onClose = t && t.closest ? (t.closest('.flash-close') || t === el) : t === el;
+      if (onClose) {
+        clearTimeout(timer);
+        dismiss(el, stack);
+      }
+    });
+  }
+
+  function init() {
+    var nodes = Array.prototype.slice.call(document.querySelectorAll(SELECTOR));
+    if (!nodes.length) return;
+    var stack = document.getElementById('flashStack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'flashStack';
+      document.body.appendChild(stack);
+    }
+    nodes.forEach(function (el) {
+      stack.appendChild(el);
+      enhance(el, stack);
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

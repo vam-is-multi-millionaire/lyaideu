@@ -521,6 +521,43 @@ section{scroll-margin-top:96px;}
 .flash-success { background: var(--orange-100); color: var(--orange-900); border: 1px solid var(--orange-200); }
 .flash-banner { max-width: 1200px; margin: 1rem auto 0; border-radius: 14px; box-shadow: var(--shadow-sm); padding: .8rem 1.1rem; font-weight: 800; font-size: .9rem; }
 
+/* ---- Floating flash toasts (save/update/error feedback, whole site) ----
+   Server-rendered banners float top-center under the header instead of
+   pushing content down. Rider/vendor .delivery-toast keeps its own bottom
+   system, Control Panel's self-managed .ctrl-flash stays inline, and
+   notify.js toasts carry inline styles — all three are excluded below. */
+#flashStack { position: fixed; top: calc(70px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 99997; display: flex; flex-direction: column; gap: .55rem; align-items: stretch; width: min(92vw, 560px); pointer-events: none; }
+.flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast) {
+  position: fixed; top: calc(70px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  width: min(92vw, 560px); max-width: min(92vw, 560px); margin: 0; z-index: 99997;
+  display: flex; align-items: flex-start; gap: .55rem;
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(45, 20, 5, .18);
+  padding: .8rem 2.8rem .8rem 1.1rem;
+  animation: flashFloatIn .32s cubic-bezier(.21, 1.02, .73, 1) both;
+}
+.flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast).flash-success { animation: flashFloatIn .32s cubic-bezier(.21, 1.02, .73, 1) both, flashFloatOut .45s ease 4s forwards; }
+.flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast).flash-error { animation: flashFloatIn .32s cubic-bezier(.21, 1.02, .73, 1) both, flashFloatOut .45s ease 9s forwards; }
+#flashStack .flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast) {
+  position: relative; top: auto; left: auto; transform: none;
+  width: 100%; max-width: none; pointer-events: auto;
+  animation: flashDropIn .3s cubic-bezier(.21, 1.02, .73, 1) both;
+}
+#flashStack .flash-banner.flash-out { animation: flashDropOut .38s ease forwards; }
+.flash-close { position: absolute; top: 50%; right: .55rem; transform: translateY(-50%); width: 26px; height: 26px; flex: 0 0 auto; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .08); color: inherit; font-size: .95rem; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: background .15s; }
+.flash-close:hover { background: rgba(0, 0, 0, .16); }
+@keyframes flashFloatIn { from { opacity: 0; transform: translate(-50%, -16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes flashDropIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+@keyframes flashFloatOut { to { opacity: 0; visibility: hidden; } }
+@keyframes flashDropOut { to { opacity: 0; transform: translateY(-10px); visibility: hidden; } }
+@media (max-width: 640px) {
+  #flashStack { gap: .45rem; }
+  .flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast) { font-size: .84rem; padding: .7rem 2.6rem .7rem .9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash-banner:not(.delivery-toast):not(.ctrl-flash):not(.notify-toast),
+  #flashStack .flash-banner { animation-duration: .01ms !important; animation-delay: 0s !important; }
+}
+
 .profile-wrap { position: relative; margin-left: .4rem; }
 .profile-chip { display: flex; align-items: center; gap: .55rem; border: 2px solid var(--orange-200); background: #fff; border-radius: 999px; padding: .32rem .85rem .32rem .38rem; cursor: pointer; font: inherit; font-weight: 800; color: var(--orange-900); transition: .2s; }
 .profile-chip:hover { border-color: var(--orange-400); box-shadow: var(--shadow-sm); }

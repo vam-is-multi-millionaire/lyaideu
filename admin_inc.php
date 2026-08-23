@@ -99,7 +99,7 @@ function admin_show_login(?string $error = null): void {
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=61"></head>
+<link rel="stylesheet" href="css/style.css?v=62"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div><h2 class="display"><i class="fa-solid fa-lock"></i> Admin Login</h2>';
     if ($safeError !== '') {
@@ -148,7 +148,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=61"></head><body class="admin-body">';
+<link rel="stylesheet" href="css/style.css?v=62"></head><body class="admin-body">';
     echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     echo '<div class="admin-actions"><a href="index" target="_blank" class="btn btn-outline">View Website</a>';
     echo admin_logout_button();
@@ -169,7 +169,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 function admin_page_end(): void {
     echo '</div></main></div>';
     echo '<script>(function(){var t=document.getElementById("adminNavToggle"),s=document.getElementById("adminSidebar"),b=document.getElementById("adminNavBackdrop");if(!t||!s)return;var h=document.querySelector(".admin-header"),SKEY="lyaideu_admin_sidebar_scroll:1";function isMobile(){return window.innerWidth<=900}function pos(){var ht=h?h.offsetHeight:64;s.style.top=ht+"px";if(b)b.style.top=ht+"px"}function setOpen(o){s.classList.toggle("open",o);t.classList.toggle("open",o);t.setAttribute("aria-expanded",o?"true":"false");if(b)b.classList.toggle("show",o)}function saveScroll(){try{sessionStorage.setItem(SKEY,String(s.scrollTop))}catch(e){}}function restoreScroll(){try{var n=parseInt(sessionStorage.getItem(SKEY),10);if(isFinite(n)&&n>0)s.scrollTop=n}catch(e){}}pos();restoreScroll();window.addEventListener("resize",function(){pos();if(!isMobile()&&s.classList.contains("open"))setOpen(false)});window.addEventListener("beforeunload",saveScroll);t.addEventListener("click",function(){if(isMobile())setOpen(!s.classList.contains("open"))});if(b)b.addEventListener("click",function(){setOpen(false)});s.addEventListener("click",function(e){if(e.target.closest("a")){saveScroll();setOpen(false)}})})();</script>';
-    echo '<script src="js/scroll-memory.js?v=5"></script>';
+    echo '<script src="js/scroll-memory.js?v=6"></script>';
     echo '</body></html>';
 }
 

@@ -29,7 +29,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=61">
+<link rel="stylesheet" href="css/style.css?v=62">
 </head>
 <body class="auth-body">
 
@@ -186,7 +186,7 @@ require_once __DIR__ . '/site_config.php';
 </nav>
 
 <script src="js/script.js?v=37"></script>
-<script src="js/scroll-memory.js?v=5"></script>
+<script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)
