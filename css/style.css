@@ -1899,8 +1899,10 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 .dish-foot .deal-badge-inline,.related-foot .deal-badge-inline{margin-left:-.18rem;margin-right:auto;background:none;box-shadow:none;color:#d92027;font-weight:900;padding:0;}
 
 /* Card currency label: phones swap "Rs." for the compact "रु" symbol
-   (see cards-mobile.css media queries). */
-.price .rs-s{display:none;}
+   (see cards-mobile.css media queries). Extra-bold so the Devanagari
+   glyph matches the heavy display price next to it even though it
+   renders through the system fallback font. */
+.price .rs-s{display:none;font-weight:900;}
 
 /* Admin & vendor product-manager rows */
 .pm-was,.vp-was{margin-left:.35rem;color:var(--muted);font-weight:700;font-size:.82em;}
