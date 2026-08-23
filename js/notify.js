@@ -6,6 +6,7 @@
     var seen = {};
     var first = true;
     var bell = null, badge = null, list = null, open = false;
+    var lastItems = [], lastSig = '';
 
     function beep() {
         try {
@@ -102,19 +103,21 @@
     function hideList() { open = false; list.style.display = 'none'; }
 
     function renderItems(items) {
-        if (!items.length) {
+        lastItems = items || [];
+        lastSig = lastItems.map(function (x) { return x.id + ':' + (x.is_read ? 1 : 0); }).join(',');
+        if (!lastItems.length) {
             list.innerHTML = '<p style="margin:.4rem;color:#777;">No notifications yet.</p>';
             return;
         }
         var html = '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2;border-bottom:1px solid var(--orange-100);padding-bottom:.4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
-        items.forEach(function (it) {
+        lastItems.forEach(function (it) {
             var link = it.link || 'orders';
             html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (it.is_read ? '' : 'background:var(--orange-50);font-weight:700;') + '">' + it.message +
                 '<small style="display:block;color:#888;font-weight:400;">' + (it.created_at || '') + '</small></a>';
         });
         list.innerHTML = html;
         var ma = list.querySelector('#notifyMarkAll');
-        if (ma) ma.addEventListener('click', function () { markAllRead(items); });
+        if (ma) ma.addEventListener('click', markAllRead);
     }
 
     function showList() {
@@ -126,19 +129,26 @@
             .catch(function () {});
     }
 
-    function markAllRead(items) {
-        var ids = items.map(function (x) { return x.id; });
-        if (!ids.length) return;
-        fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) })
+    function markAllRead() {
+        if (!list) return;
+        var ma = list.querySelector('#notifyMarkAll');
+        if (ma) { ma.disabled = true; ma.style.opacity = '.5'; }
+        /* Optimistic: flip every rendered item to read right away so the
+           click always gives instant feedback, then sync with the server. */
+        lastItems.forEach(function (x) { x.is_read = 1; });
+        renderItems(lastItems);
+        updateBadge(0);
+        fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
             .then(function (r) { return r.json(); })
             .then(function (d) {
-                if (!d || !d.ok) return;
-                return fetch(endpoint, { cache: 'no-store' }).then(function (r) { return r.json(); });
+                return (d && d.ok)
+                    ? fetch(endpoint, { cache: 'no-store' }).then(function (r) { return r.json(); })
+                    : null;
             })
             .then(function (d) {
-                if (!d) return;
+                if (!d) return; /* server failed: badge/list resync on next poll */
                 updateBadge(d.unread || 0);
-                renderItems((d && d.items) || []);
+                renderItems(d.items || []);
             })
             .catch(function () {});
     }
@@ -161,6 +171,12 @@
             .then(function (d) {
                 if (!d || !d.items) return;
                 updateBadge(d.unread || 0);
+                /* Keep an OPEN dropdown live — but only repaint when something
+                   actually changed, so the list never jumps while scrolling. */
+                if (open) {
+                    var sig = d.items.map(function (x) { return x.id + ':' + (x.is_read ? 1 : 0); }).join(',');
+                    if (sig !== lastSig) renderItems(d.items);
+                }
                 // First poll of this page load only seeds the "seen" list so we
                 // never blast the whole feed as new (prevents notification spam).
                 if (first) {

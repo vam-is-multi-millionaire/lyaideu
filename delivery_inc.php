@@ -266,7 +266,7 @@ function delivery_footer(): void {
 })();
 </script>
 <script>window.LYAIDEU_NOTIFY_ROLE = ' . json_encode(delivery_role()) . ';</script>
-<script src="js/notify.js?v=6"></script>
+<script src="js/notify.js?v=7"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* Delivery-spot maps: initialised lazily so freshly refreshed order cards get a map too. */
