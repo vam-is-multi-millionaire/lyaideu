@@ -19,6 +19,8 @@
   #menu .section-head .kicker{display:none;}
   /* Menu page: remove the sub-heading text on mobile */
   #menu .section-head .section-sub{display:none;}
+  /* Menu page: no top padding on the section on mobile */
+  #menu.section{padding-top:0;}
 
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
