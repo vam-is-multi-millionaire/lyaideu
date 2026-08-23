@@ -22,6 +22,15 @@
   /* Menu page: no top padding on the section on mobile */
   #menu.section{padding-top:0;}
 
+  /* Mart page: remove the kicker badge above the heading on mobile */
+  #mart .section-head .kicker{display:none;}
+  /* Mart page: remove the sub-heading text on mobile */
+  #mart .section-head .section-sub{display:none;}
+  /* Mart page: no top padding on the section on mobile */
+  #mart.section{padding-top:0;}
+  /* Mart page: hide the "View Cart" button — the cart FAB covers phones */
+  #mart .section-head .hero-actions{display:none;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
