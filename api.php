@@ -14,9 +14,10 @@ ob_start();
 try {
     lyaideu_ensure_categories_table();
     lyaideu_ensure_variant_tables();
+    lyaideu_ensure_discount_columns();
 
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants
+        'SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants
          FROM dishes
          ORDER BY id'
     )->fetchAll();
@@ -38,7 +39,7 @@ try {
     )->fetchAll();
 
     $mart = $pdo->query(
-        'SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+        'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
                 COALESCE(h.name, \'\') AS hotel
          FROM mart_items m
          LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -49,7 +50,7 @@ try {
     lyaideu_ensure_other_table();
 
     $others = $pdo->query(
-        'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+        'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
                 COALESCE(h.name, \'\') AS hotel
          FROM other_items oi
          LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -60,7 +61,7 @@ try {
     lyaideu_ensure_beverage_table();
 
     $beverages = $pdo->query(
-        'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+        'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
                 COALESCE(h.name, \'\') AS hotel
          FROM beverage_items bi
          LEFT JOIN vendors v ON v.id = bi.vendor_id

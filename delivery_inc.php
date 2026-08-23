@@ -204,7 +204,7 @@ function delivery_show_login(string $role): void {
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=35"></head>
+<link rel="stylesheet" href="css/style.css?v=43"></head>
     <body style="display:flex; justify-content:center; align-items:center; min-height:100vh; background:var(--orange-50); padding:1rem;">
         <div class="admin-login-box"><div class="brand-mark" style="margin:0 auto 1.2rem"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></div>
         <p class="kicker" style="text-align:center"><i class="fa-solid ' . $icon . '"></i> ' . $label . '</p>
@@ -239,7 +239,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
     echo site_head_icons();
     echo '
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=35">
+<link rel="stylesheet" href="css/style.css?v=43">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
 <header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><a class="delivery-role-badge" href="' . ($role === 'vendor' ? 'vendor' : 'rider') . '" title="' . ($role === 'vendor' ? 'Go to Your Kitchen Queue' : 'Go to Delivery Queue') . '"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</a>
 <div class="delivery-user">

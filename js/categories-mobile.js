@@ -184,6 +184,16 @@
   /* ---- Right product grid ---- */
   function defVar(p){var vs=(p&&p.variants)||[];if(!vs.length)return null;for(var i=0;i<vs.length;i++){if(vs[i]&&vs[i].is_default)return vs[i]}return vs[0]}
 
+  /* Discount deal helpers (same math as script.js). */
+  function dealOf(it,base){
+    if(base==null)base=(it&&Number(it.price))||0;
+    base=Number(base)||0;
+    var pct=Math.min(95,Math.max(0,(it&&Number(it.discount))||0));
+    return pct>0&&base>0?{pct:pct,now:Math.round(base*(100-pct)/100),was:base}:{pct:0,now:base,was:base};
+  }
+  function dealBadge(deal){return deal&&deal.pct>0?'<span class="deal-badge">-'+deal.pct+'%</span>':''}
+  function dealWas(deal){return deal&&deal.pct>0?' <s class="price-was">Rs. '+deal.was+'</s>':''}
+
   /* Skeleton placeholders that mirror the real .dish-card layout (square
      art, title lines, price + button row) so the grid keeps its exact size
      while the catalog is still loading — no spinner, no layout jump. */
@@ -208,7 +218,8 @@
     var id = Number(p.id), name = esc(p.name), tag = esc(p.tag);
     var img = esc(p.img || '');
     var dv = defVar(p);
-    var price = dv ? (Number(dv.price) || 0) : (Number(p.price) || 0);
+    var base = dv ? (Number(dv.price) || 0) : (Number(p.price) || 0);
+    var deal = dealOf(p, base);
     var unit = esc(dv && dv.label ? dv.label : (p.unit || ''));
     var hotel = esc(p.hotel || '');
     var cats = (p.cats && p.cats.length) ? p.cats.map(esc) : [esc(p.cat || '')];
@@ -221,15 +232,15 @@
       : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>';
     var dataType = type === 'menu' ? 'dish' : type;
     var addBtn = '<button class="btn-order add-cart" data-id="' + id + '" data-type="' + dataType +
-      '" data-name="' + name + '" data-price="' + price + '" data-unit="' + unit +
+      '" data-name="' + name + '" data-price="' + deal.now + '" data-unit="' + unit +
       '" data-hotel="' + hotel + '"' + (p.has_variants ? ' data-has-variants="1"' : '') +
       ' type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>';
     return '<article class="dish-card reveal visible" data-id="' + id + '" data-slug="' + esc(slug) +
       '" data-cats="' + cats.join(',') + '" data-url="' + esc(url) + '">' +
-      '<div class="dish-art mart-art">' + art + (tag ? '<span class="dish-tag">' + tag + '</span>' : '') + '</div>' +
+      '<div class="dish-art mart-art">' + art + (tag ? '<span class="dish-tag">' + tag + '</span>' : '') + dealBadge(deal) + '</div>' +
       '<div class="dish-body"><div class="dish-top"><h3>' + name + '</h3></div>' +
       (hotel ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' + hotel + '</p>' : '') +
-      '<div class="dish-foot"><span class="price"><small>Rs.</small> ' + price +
+      '<div class="dish-foot"><span class="price"><small>Rs.</small> ' + deal.now + dealWas(deal) +
       (unit ? ' <span class="unit">/ ' + unit + '</span>' : '') + '</span>' + addBtn + '</div></div>' +
     '</article>';
   }

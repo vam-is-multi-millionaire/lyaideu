@@ -191,6 +191,7 @@ if ($section === 'categories' || $section === 'category_reorder') {
     lyaideu_ensure_beverage_table();
 }
 lyaideu_ensure_variant_tables();
+lyaideu_ensure_discount_columns();
 
 try {
     $pdo->beginTransaction();
@@ -200,12 +201,12 @@ try {
         $updateDish = $pdo->prepare(
             'UPDATE dishes
              SET name = :name, hotel = :hotel, cat = :cat, category_id = :category_id,
-                 price = :price, phone = :phone, tag = :tag, `desc` = :descr, img = :img
+                 price = :price, discount_percent = :discount, phone = :phone, tag = :tag, `desc` = :descr, img = :img
              WHERE id = :id'
         );
         $insertDish = $pdo->prepare(
-            'INSERT INTO dishes (name, hotel, cat, category_id, price, phone, tag, `desc`, img)
-             VALUES (:name, :hotel, :cat, :category_id, :price, :phone, :tag, :descr, :img)'
+            'INSERT INTO dishes (name, hotel, cat, category_id, price, discount_percent, phone, tag, `desc`, img)
+             VALUES (:name, :hotel, :cat, :category_id, :price, :discount, :phone, :tag, :descr, :img)'
         );
 
         foreach (($_POST['dishes'] ?? []) as $i => $d) {
@@ -236,6 +237,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($d['cat'] ?? 'snacks'),
                 ':category_id' => $catRes[0] ?: null,
                 ':price' => variant_base_price(max(0, (int)($d['price'] ?? 0)), $d),
+                ':discount' => lyaideu_deal_percent($d['discount'] ?? 0),
                 ':phone' => clean_phone($d['phone'] ?? ''),
                 ':tag' => clean_text($d['tag'] ?? ''),
                 ':descr' => clean_text($d['desc'] ?? ''),
@@ -267,6 +269,7 @@ try {
                 ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($newDish['cat'] ?? 'snacks'),
                 ':category_id' => $catRes[0] ?: null,
                 ':price' => variant_base_price(max(0, (int)($newDish['price'] ?? 0)), $newDish),
+                ':discount' => lyaideu_deal_percent($newDish['discount'] ?? 0),
                 ':phone' => clean_phone($newDish['phone'] ?? ''),
                 ':tag' => clean_text($newDish['tag'] ?? ''),
                 ':descr' => clean_text($newDish['desc'] ?? ''),
@@ -299,13 +302,13 @@ try {
         $deleteItem = $pdo->prepare('DELETE FROM mart_items WHERE id = ?');
         $updateItem = $pdo->prepare(
             'UPDATE mart_items
-             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, discount_percent = :discount, tag = :tag,
                  `desc` = :descr, img = :img, vendor_id = :vendor_id
              WHERE id = :id'
         );
         $insertItem = $pdo->prepare(
-            'INSERT INTO mart_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
-             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
+            'INSERT INTO mart_items (name, cat, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :discount, :tag, :descr, :img, :vendor_id)'
         );
 
         foreach (($_POST['mart'] ?? []) as $i => $m) {
@@ -340,6 +343,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
+                ':discount' => lyaideu_deal_percent($m['discount'] ?? 0),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -371,6 +375,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
+                ':discount' => lyaideu_deal_percent($newItem['discount'] ?? 0),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
@@ -406,13 +411,13 @@ try {
         $deleteItem = $pdo->prepare('DELETE FROM other_items WHERE id = ?');
         $updateItem = $pdo->prepare(
             'UPDATE other_items
-             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, discount_percent = :discount, tag = :tag,
                  `desc` = :descr, img = :img, vendor_id = :vendor_id
              WHERE id = :id'
         );
         $insertItem = $pdo->prepare(
-            'INSERT INTO other_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
-             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
+            'INSERT INTO other_items (name, cat, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :discount, :tag, :descr, :img, :vendor_id)'
         );
 
         foreach (($_POST['others'] ?? []) as $i => $m) {
@@ -447,6 +452,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
+                ':discount' => lyaideu_deal_percent($m['discount'] ?? 0),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -478,6 +484,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
+                ':discount' => lyaideu_deal_percent($newItem['discount'] ?? 0),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,
@@ -513,13 +520,13 @@ try {
         $deleteItem = $pdo->prepare('DELETE FROM beverage_items WHERE id = ?');
         $updateItem = $pdo->prepare(
             'UPDATE beverage_items
-             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, tag = :tag,
+             SET name = :name, cat = :cat, category_id = :category_id, unit = :unit, price = :price, discount_percent = :discount, tag = :tag,
                  `desc` = :descr, img = :img, vendor_id = :vendor_id
              WHERE id = :id'
         );
         $insertItem = $pdo->prepare(
-            'INSERT INTO beverage_items (name, cat, category_id, unit, price, tag, `desc`, img, vendor_id)
-             VALUES (:name, :cat, :category_id, :unit, :price, :tag, :descr, :img, :vendor_id)'
+            'INSERT INTO beverage_items (name, cat, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id)
+             VALUES (:name, :cat, :category_id, :unit, :price, :discount, :tag, :descr, :img, :vendor_id)'
         );
 
         foreach (($_POST['beverages'] ?? []) as $i => $m) {
@@ -554,6 +561,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
+                ':discount' => lyaideu_deal_percent($m['discount'] ?? 0),
                 ':tag' => clean_text($m['tag'] ?? ''),
                 ':descr' => clean_text($m['desc'] ?? ''),
                 ':img' => $img,
@@ -585,6 +593,7 @@ try {
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
+                ':discount' => lyaideu_deal_percent($newItem['discount'] ?? 0),
                 ':tag' => clean_text($newItem['tag'] ?? ''),
                 ':descr' => clean_text($newItem['desc'] ?? ''),
                 ':img' => $img,

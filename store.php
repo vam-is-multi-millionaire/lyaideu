@@ -14,6 +14,7 @@ $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? sub
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_stores();
+lyaideu_ensure_discount_columns();
 
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -78,7 +79,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -93,7 +94,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -108,7 +109,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -116,7 +117,7 @@ if ($isDetail) {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
             $vendorId = (int)$st->fetchColumn();
-            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
+            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
             $st->execute([$vendorId > 0 ? $vendorId : 0, $storeName]);
             $products = $st->fetchAll();
         }
@@ -147,7 +148,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=39">
+<link rel="stylesheet" href="css/style.css?v=43">
 <link rel="stylesheet" href="css/cards-mobile.css?v=1">
 <style>
 /* Hide the per-store "Call" button on the stores listing (all viewports);
@@ -268,6 +269,8 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                                 if ($defVar === null) { $defVar = $p['variants'][0]; }
                             }
                             $price = $defVar ? (int)$defVar['price'] : (int)$p['price'];
+                            $dealPct = lyaideu_deal_percent($p['discount_percent'] ?? 0);
+                            $dealNow = lyaideu_deal_price($price, $dealPct);
                             $unitLabel = $defVar && (string)$defVar['label'] !== '' ? (string)$defVar['label'] : (string)($p['unit'] ?? '');
                             $unitHtml = $hasUnit && $unitLabel !== '' ? ' <span class="unit">/ ' . e($unitLabel) . '</span>' : '';
                             $img = (string)$p['img'];
@@ -277,11 +280,11 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
                             $cardType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'dish'));
                         ?>
                         <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $cardType ?>">
-                            <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
+                            <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?><?= $dealPct > 0 ? '<span class="deal-badge">-' . $dealPct . '%</span>' : '' ?></div>
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
-                                <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $price ?><?= $unitHtml ?></span>
-                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $price ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
+                                <div class="dish-foot"><span class="price"><small>Rs.</small> <?= $dealNow ?><?= $dealPct > 0 ? ' <s class="price-was">Rs. ' . $price . '</s>' : '' ?><?= $unitHtml ?></span>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $dealNow ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
                             </div>
                         </article>
                         <?php endforeach; ?>
@@ -333,7 +336,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=28"></script>
+<script src="js/script.js?v=29"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>

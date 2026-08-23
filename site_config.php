@@ -102,6 +102,7 @@ function lyaideu_ensure_mart_table(): bool {
                     cat VARCHAR(50) NOT NULL,
                     unit VARCHAR(50) NOT NULL DEFAULT \'\',
                     price INT UNSIGNED NOT NULL DEFAULT 0,
+                    discount_percent SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                     tag VARCHAR(100) NOT NULL DEFAULT \'\',
                     `desc` TEXT NOT NULL,
                     img VARCHAR(500) NOT NULL DEFAULT \'\',
@@ -169,6 +170,7 @@ function lyaideu_ensure_other_table(): bool {
                     name_slug VARCHAR(120) NOT NULL DEFAULT \'\',
                     unit VARCHAR(50) NOT NULL DEFAULT \'\',
                     price INT UNSIGNED NOT NULL DEFAULT 0,
+                    discount_percent SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                     tag VARCHAR(100) NOT NULL DEFAULT \'\',
                     `desc` TEXT NOT NULL,
                     img VARCHAR(500) NOT NULL DEFAULT \'\',
@@ -239,6 +241,7 @@ function lyaideu_ensure_beverage_table(): bool {
                     name_slug VARCHAR(120) NOT NULL DEFAULT \'\',
                     unit VARCHAR(50) NOT NULL DEFAULT \'\',
                     price INT UNSIGNED NOT NULL DEFAULT 0,
+                    discount_percent SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                     tag VARCHAR(100) NOT NULL DEFAULT \'\',
                     `desc` TEXT NOT NULL,
                     img VARCHAR(500) NOT NULL DEFAULT \'\',
@@ -1792,6 +1795,49 @@ function lyaideu_ensure_variant_tables(): bool {
     } catch (Throwable $e) {
         return false;
     }
+}
+
+/**
+ * Ensures every product table carries a `discount_percent` column so items can
+ * be shown with a "-X%" badge and a struck-through original price.
+ * Idempotent — safe to call on every request.
+ */
+function lyaideu_ensure_discount_columns(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        lyaideu_ensure_column($pdo, 'dishes', 'discount_percent', 'SMALLINT UNSIGNED NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'mart_items', 'discount_percent', 'SMALLINT UNSIGNED NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'other_items', 'discount_percent', 'SMALLINT UNSIGNED NOT NULL DEFAULT 0');
+        lyaideu_ensure_column($pdo, 'beverage_items', 'discount_percent', 'SMALLINT UNSIGNED NOT NULL DEFAULT 0');
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/** Normalized discount percent (0–95) for a product row; 0 when none. */
+function lyaideu_deal_percent($value): int {
+    return max(0, min(95, (int)$value));
+}
+
+/**
+ * Price after the discount percent is applied. Uses plain rounding that matches
+ * JavaScript's Math.round so client cart totals always equal server-side math.
+ */
+function lyaideu_deal_price(int $price, int $pct): int {
+    $pct = lyaideu_deal_percent($pct);
+    if ($pct <= 0 || $price <= 0) {
+        return max(0, $price);
+    }
+    return (int)round($price * (100 - $pct) / 100);
 }
 
 /**

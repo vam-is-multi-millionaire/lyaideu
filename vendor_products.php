@@ -39,6 +39,7 @@ if (!$isMart && !$isOther && !$isBeverage) {
 
 lyaideu_ensure_categories_table();
 lyaideu_ensure_variant_tables();
+lyaideu_ensure_discount_columns();
 $catType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'menu'));
 $catsFlat = lyaideu_categories_flat($catType);
 $allowedCats = [];
@@ -133,34 +134,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $img = lyaideu_handle_item_image($existing, $_POST, $file, $isMart ? 'mart_img' : ($isOther ? 'other_img' : ($isBeverage ? 'beverage_img' : 'dish_img')));
 
                 if ($id > 0) {
+                    $discountPct = lyaideu_deal_percent($_POST['discount'] ?? 0);
                     if ($isMart) {
-                        $upd = $pdo->prepare('UPDATE mart_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
-                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
+                        $upd = $pdo->prepare('UPDATE mart_items SET name = ?, category_id = ?, unit = ?, price = ?, discount_percent = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $id, $vendorId]);
                     } elseif ($isOther) {
-                        $upd = $pdo->prepare('UPDATE other_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
-                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
+                        $upd = $pdo->prepare('UPDATE other_items SET name = ?, category_id = ?, unit = ?, price = ?, discount_percent = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $id, $vendorId]);
                     } elseif ($isBeverage) {
-                        $upd = $pdo->prepare('UPDATE beverage_items SET name = ?, category_id = ?, unit = ?, price = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
-                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $id, $vendorId]);
+                        $upd = $pdo->prepare('UPDATE beverage_items SET name = ?, category_id = ?, unit = ?, price = ?, discount_percent = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $id, $vendorId]);
                     } else {
-                        $upd = $pdo->prepare('UPDATE dishes SET name = ?, hotel = ?, category_id = ?, price = ?, phone = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
-                        $upd->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $id, $vendorId]);
+                        $upd = $pdo->prepare('UPDATE dishes SET name = ?, hotel = ?, category_id = ?, price = ?, discount_percent = ?, phone = ?, tag = ?, `desc` = ?, img = ? WHERE id = ? AND vendor_id = ?');
+                        $upd->execute([$name, $hotelName, $categoryId ?: null, $price, $discountPct, $phone, $tag, $desc, $img, $id, $vendorId]);
                     }
                     lyaideu_sync_item_slug($table, $id, $name);
                     lyaideu_save_item_variants($pdo, $itemType, $id, $hasVariants, $_POST['product'][$id]['variants'] ?? []);
                 } else {
+                    $discountPct = lyaideu_deal_percent($_POST['discount'] ?? 0);
                     if ($isMart) {
-                        $ins = $pdo->prepare('INSERT INTO mart_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
+                        $ins = $pdo->prepare('INSERT INTO mart_items (name, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $vendorId]);
                     } elseif ($isOther) {
-                        $ins = $pdo->prepare('INSERT INTO other_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
+                        $ins = $pdo->prepare('INSERT INTO other_items (name, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $vendorId]);
                     } elseif ($isBeverage) {
-                        $ins = $pdo->prepare('INSERT INTO beverage_items (name, category_id, unit, price, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $tag, $desc, $img, $vendorId]);
+                        $ins = $pdo->prepare('INSERT INTO beverage_items (name, category_id, unit, price, discount_percent, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $categoryId ?: null, $unit, $price, $discountPct, $tag, $desc, $img, $vendorId]);
                     } else {
-                        $ins = $pdo->prepare('INSERT INTO dishes (name, hotel, category_id, price, phone, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                        $ins->execute([$name, $hotelName, $categoryId ?: null, $price, $phone, $tag, $desc, $img, $vendorId]);
+                        $ins = $pdo->prepare('INSERT INTO dishes (name, hotel, category_id, price, discount_percent, phone, tag, `desc`, img, vendor_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                        $ins->execute([$name, $hotelName, $categoryId ?: null, $price, $discountPct, $phone, $tag, $desc, $img, $vendorId]);
                     }
                     $newItemId = (int)$pdo->lastInsertId();
                     lyaideu_sync_item_slug($table, $newItemId, $name);
@@ -194,12 +197,12 @@ $products = [];
 try {
     $st = $pdo->prepare(
 $isMart
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id DESC'
+? 'SELECT id, name, category_id, unit, price, discount_percent, tag, `desc`, img, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id DESC'
 : ($isOther
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id DESC'
+? 'SELECT id, name, category_id, unit, price, discount_percent, tag, `desc`, img, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id DESC'
 : ($isBeverage
-? 'SELECT id, name, category_id, unit, price, tag, `desc`, img, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id DESC'
-: 'SELECT id, name, hotel, category_id, price, phone, tag, `desc`, img, has_variants FROM dishes WHERE vendor_id = ? ORDER BY id DESC'))
+? 'SELECT id, name, category_id, unit, price, discount_percent, tag, `desc`, img, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id DESC'
+: 'SELECT id, name, hotel, category_id, price, discount_percent, phone, tag, `desc`, img, has_variants FROM dishes WHERE vendor_id = ? ORDER BY id DESC'))
     );
     $st->execute([$vendorId]);
     $products = $st->fetchAll();
@@ -267,6 +270,13 @@ delivery_header(
                         <div class="store-input">
                             <i class="fa-solid fa-money-bill-wave"></i>
                             <input type="number" min="1" step="1" id="a-price" name="price" placeholder="250" required>
+                        </div>
+                    </div>
+                    <div class="store-field">
+                        <label for="a-discount">Discount % <span class="muted">(0 = none)</span></label>
+                        <div class="store-input">
+                            <i class="fa-solid fa-percent"></i>
+                            <input type="number" min="0" max="90" step="1" id="a-discount" name="discount" placeholder="e.g. 10">
                         </div>
                     </div>
                     <div class="store-field">
@@ -362,7 +372,9 @@ delivery_header(
                 <div class="product-card-info">
                     <h3><?= vp_esc($p['name']) ?></h3>
                     <div class="product-meta">
-                        <span class="product-price">Rs. <?= (int)$p['price'] ?></span>
+                        <?php $pDealPct = lyaideu_deal_percent($p['discount_percent'] ?? 0); ?>
+                        <span class="product-price">Rs. <?= $pDealPct > 0 ? lyaideu_deal_price((int)$p['price'], $pDealPct) : (int)$p['price'] ?></span>
+                        <?php if ($pDealPct > 0): ?><s class="vp-was">Rs. <?= (int)$p['price'] ?></s><span class="vp-deal-tag">-<?= $pDealPct ?>%</span><?php endif; ?>
                         <?php if (!empty($p['unit'])): ?><span><?= vp_esc($p['unit']) ?></span><?php endif; ?>
                         <?php if ($catName !== ''): ?><span class="product-cat"><i class="fa-solid fa-layer-group"></i> <?= vp_esc($catName) ?></span><?php endif; ?>
                         <?php if (!empty($p['tag'])): ?><span class="product-tag"><?= vp_esc($p['tag']) ?></span><?php endif; ?>
@@ -401,6 +413,13 @@ delivery_header(
                                 <div class="store-input">
                                     <i class="fa-solid fa-money-bill-wave"></i>
                                     <input type="number" min="1" step="1" id="p-price-<?= $pid ?>" name="price" value="<?= (int)$p['price'] ?>" required>
+                                </div>
+                            </div>
+                            <div class="store-field">
+                                <label for="p-discount-<?= $pid ?>">Discount % <span class="muted">(0 = none)</span></label>
+                                <div class="store-input">
+                                    <i class="fa-solid fa-percent"></i>
+                                    <input type="number" min="0" max="90" step="1" id="p-discount-<?= $pid ?>" name="discount" value="<?= (int)($p['discount_percent'] ?? 0) ?>">
                                 </div>
                             </div>
                             <div class="store-field">

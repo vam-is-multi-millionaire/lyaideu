@@ -38,10 +38,10 @@ if (!is_array($cart) || empty($cart)) {
 
 $items = [];
 $subtotal = 0;
-$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, vendor_id, has_variants FROM dishes WHERE id = ? LIMIT 1');
-$martStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM mart_items WHERE id = ? LIMIT 1');
-$otherStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM other_items WHERE id = ? LIMIT 1');
-$beverageStmt = $pdo->prepare('SELECT id, name, price, has_variants FROM beverage_items WHERE id = ? LIMIT 1');
+$dishStmt = $pdo->prepare('SELECT id, name, hotel, price, discount_percent, vendor_id, has_variants FROM dishes WHERE id = ? LIMIT 1');
+$martStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM mart_items WHERE id = ? LIMIT 1');
+$otherStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM other_items WHERE id = ? LIMIT 1');
+$beverageStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants FROM beverage_items WHERE id = ? LIMIT 1');
 
 function resolve_variant_price(PDO $pdo, string $type, int $id, string $variant): ?int {
     $st = $pdo->prepare('SELECT price FROM product_variants WHERE item_type = ? AND item_id = ? AND label = ? LIMIT 1');
@@ -136,6 +136,10 @@ foreach ($cart as $row) {
         }
         $price = $variantPrice;
     }
+
+    /* Apply the product's discount percent server-side so stored order prices
+       always match the discounted price shown in the storefront. */
+    $price = lyaideu_deal_price($price, (int)($d['discount_percent'] ?? 0));
 
     $line = $price * $qty;
     $subtotal += $line;

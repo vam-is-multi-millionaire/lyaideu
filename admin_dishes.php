@@ -11,7 +11,7 @@ $dishCatsFlat = lyaideu_categories_flat('menu');
 
 try {
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, has_variants FROM dishes ORDER BY id'
+        'SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, has_variants FROM dishes ORDER BY id'
     )->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
@@ -68,6 +68,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
         <div class="admin-field-row">
             <div><label>Category</label><select name="new_dish[category_id]"><?= dish_category_options($dishCatsFlat) ?></select></div>
             <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="new_dish[price]" placeholder="250"></div>
+            <div><label>Discount % <span style="text-transform:none;font-weight:700;">(0 = none)</span></label><input type="number" min="0" max="90" step="1" name="new_dish[discount]" placeholder="e.g. 10"></div>
         </div>
         <div class="admin-field-row">
             <div><label>Phone</label><input type="text" name="new_dish[phone]" placeholder="98XXXXXXXX"></div>
@@ -99,7 +100,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                     <span class="pm-name"><?= $ce($d['name']) ?></span>
                     <span class="pm-meta"><?= $ce($d['hotel']) ?><?= $catName !== '' ? ' · ' . $ce($catName) : '' ?></span>
                 </span>
-                <span class="pm-price">Rs. <?= (int)$d['price'] ?><?php if ($d['tag'] !== ''): ?><span class="pm-tag"><?= $ce($d['tag']) ?></span><?php endif; ?></span>
+                <span class="pm-price">Rs. <?= (int)$d['discount_percent'] > 0 ? lyaideu_deal_price((int)$d['price'], (int)$d['discount_percent']) : (int)$d['price'] ?><?php if ((int)$d['discount_percent'] > 0): ?> <s class="pm-was">Rs. <?= (int)$d['price'] ?></s><span class="pm-deal-tag">-<?= (int)$d['discount_percent'] ?>%</span><?php endif; ?><?php if ($d['tag'] !== ''): ?><span class="pm-tag"><?= $ce($d['tag']) ?></span><?php endif; ?></span>
                 <span class="pm-actions">
                     <button type="button" class="pm-act pm-edit" data-target="pm-edit-<?= $id ?>"><i class="fa-solid fa-pen"></i> Edit</button>
                     <form class="pm-del-inline" action="admin_save" method="POST">
@@ -124,6 +125,7 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
                 <div class="admin-field-row">
                     <div><label>Category</label><select name="dishes[<?= $i ?>][category_id]"><?= dish_category_options($dishCatsFlat, (int)$d['category_id']) ?></select></div>
                     <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="dishes[<?= $i ?>][price]" value="<?= (int)$d['price'] ?>" required></div>
+                    <div><label>Discount % <span style="text-transform:none;font-weight:700;">(0 = none)</span></label><input type="number" min="0" max="90" step="1" name="dishes[<?= $i ?>][discount]" value="<?= (int)$d['discount_percent'] ?>"></div>
                 </div>
                 <div class="admin-field-row">
                     <div><label>Phone</label><input type="text" name="dishes[<?= $i ?>][phone]" value="<?= $ce($d['phone']) ?>"></div>

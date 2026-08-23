@@ -8,6 +8,7 @@ $user = $_SESSION['user'] ?? null;
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_categories_table();
+lyaideu_ensure_discount_columns();
 
 $rawType = (string)($_GET['type'] ?? 'dish');
 if ($rawType === 'others') {
@@ -41,7 +42,7 @@ $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM mart_items m
                              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -50,7 +51,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM mart_items m
                                LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -61,7 +62,7 @@ try {
         }
     } elseif ($type === 'other') {
         lyaideu_ensure_other_table();
-        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM other_items oi
                              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -70,7 +71,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM other_items oi
                                LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -81,7 +82,7 @@ try {
         }
     } elseif ($type === 'beverage') {
         lyaideu_ensure_beverage_table();
-        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM beverage_items bi
                              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -90,7 +91,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM beverage_items bi
                                LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -100,11 +101,11 @@ try {
             $related = $r->fetchAll();
         }
     } else {
-        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -180,6 +181,11 @@ if ($hasVariants) {
         $hasVariants = false;
     }
 }
+
+/* Discount deal math for the detail view (percent clamped 0–95). */
+$dealPct = lyaideu_deal_percent($item['discount_percent'] ?? 0);
+$basePrice = ($hasVariants && $defaultVariant) ? (int)$defaultVariant['price'] : (int)$item['price'];
+$dealPrice = lyaideu_deal_price($basePrice, $dealPct);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -193,7 +199,7 @@ if ($hasVariants) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=39">
+<link rel="stylesheet" href="css/style.css?v=43">
 <link rel="stylesheet" href="css/cards-mobile.css?v=4">
 </head>
 <body class="product-pg" data-needs-catalog>
@@ -266,6 +272,7 @@ if ($hasVariants) {
                     <div class="product-media-noimg"><i class="fa-solid <?= $ICON ?>"></i></div>
                 <?php endif; ?>
                 <?= $tagHtml ?>
+                <?php if ($dealPct > 0): ?><span class="deal-flag"><b>-<?= $dealPct ?>%</b><small>OFF</small></span><?php endif; ?>
             </div>
 
             <div class="product-details">
@@ -281,19 +288,24 @@ if ($hasVariants) {
                 <?php endif; ?>
 
                 <div class="product-price-row">
-                    <span class="product-price"><small>Rs.</small> <span id="productPrice"><?= $hasVariants && $defaultVariant ? (int)$defaultVariant['price'] : (int)$item['price'] ?></span><?= $unitHtml ?></span>
+                    <span class="product-price"><small>Rs.</small> <span id="productPrice"><?= $dealPrice ?></span><?= $unitHtml ?></span>
+                    <?php if ($dealPct > 0): ?>
+                    <s class="product-price-was" id="priceWas"><small>Rs.</small> <span id="priceWasAmount"><?= $basePrice ?></span></s>
+                    <span class="deal-badge deal-badge-inline">-<?= $dealPct ?>%</span>
+                    <span class="product-deal-save" id="dealSave"><i class="fa-solid fa-piggy-bank"></i> You save Rs. <b id="dealSaveAmount"><?= $basePrice - $dealPrice ?></b></span>
+                    <?php endif; ?>
                 </div>
 
                 <?php if ($hasVariants && $variants): ?>
                 <div class="variant-picker">
                     <label class="variant-label"><i class="fa-solid fa-layer-group"></i> Select option</label>
                     <div class="variant-options" id="variantOptions">
-                        <?php foreach ($variants as $vi => $v): $selected = $defaultVariant && $v['id'] == $defaultVariant['id']; ?>
+                        <?php foreach ($variants as $vi => $v): $selected = $defaultVariant && $v['id'] == $defaultVariant['id']; $vDeal = lyaideu_deal_price((int)$v['price'], $dealPct); ?>
                         <label class="variant-option<?= $selected ? ' selected' : '' ?><?= $selected ? '' : '' ?>">
-                            <input type="radio" name="product_variant" value="<?= (int)$v['id'] ?>" data-label="<?= e($v['label']) ?>" data-price="<?= (int)$v['price'] ?>"<?= $selected ? ' checked' : '' ?>>
+                            <input type="radio" name="product_variant" value="<?= (int)$v['id'] ?>" data-label="<?= e($v['label']) ?>" data-price="<?= $vDeal ?>" data-base="<?= (int)$v['price'] ?>"<?= $selected ? ' checked' : '' ?>>
                             <span class="variant-option-body">
                                 <span class="variant-option-label"><?= e($v['label']) ?></span>
-                                <span class="variant-option-price"><small>Rs.</small> <?= (int)$v['price'] ?></span>
+                                <span class="variant-option-price"><small>Rs.</small> <?= $vDeal ?><?= $dealPct > 0 && (int)$v['price'] !== $vDeal ? ' <s class="variant-price-was">' . (int)$v['price'] . '</s>' : '' ?></span>
                                 <?php if ($v['info'] !== ''): ?><span class="variant-option-info"><?= e($v['info']) ?></span><?php endif; ?>
                             </span>
                         </label>
@@ -303,7 +315,7 @@ if ($hasVariants) {
                 <?php endif; ?>
 
                 <div class="product-actions">
-                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-price="' . (int)$defaultVariant['price'] . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
+                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>" data-price="<?= $dealPrice ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 
@@ -331,7 +343,9 @@ if ($hasVariants) {
                                 }
                                 if ($rDef === null) { $rDef = $rItem['variants'][0]; }
                             }
-                            $rPrice = $rDef ? (int)$rDef['price'] : (int)$rItem['price'];
+                            $rDealPct = lyaideu_deal_percent($rItem['discount_percent'] ?? 0);
+                            $rBasePrice = $rDef ? (int)$rDef['price'] : (int)$rItem['price'];
+                            $rPrice = lyaideu_deal_price($rBasePrice, $rDealPct);
                             $rUnit = $rDef && (string)$rDef['label'] !== '' ? (string)$rDef['label'] : (string)($rItem['unit'] ?? '');
                         ?>
                         <div class="related-card">
@@ -342,13 +356,14 @@ if ($hasVariants) {
                                     <?php else: ?>
                                         <?= $relIcon($rItem['cat']) ?>
                                     <?php endif; ?>
+                                    <?php if ($rDealPct > 0): ?><span class="deal-badge">-<?= $rDealPct ?>%</span><?php endif; ?>
                                 </div>
                             </a>
                             <div class="related-info">
                                 <h4><?= e($rItem['name']) ?></h4>
                                 <?= ($rItem['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . e($rItem['hotel']) . '</p>' : '' ?>
                                 <div class="related-foot">
-                                    <span class="price"><small>Rs.</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span>
+                                    <span class="price"><small>Rs.</small> <?= $rPrice ?><?= $rDealPct > 0 ? ' <s class="price-was">Rs. ' . $rBasePrice . '</s>' : '' ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span>
                                     <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                                 </div>
                             </div>
@@ -373,7 +388,7 @@ if ($hasVariants) {
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=28"></script>
+<script src="js/script.js?v=29"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>
@@ -416,6 +431,13 @@ if ($hasVariants) {
     if (priceEl) priceEl.textContent = price;
     addBtn.setAttribute('data-variant', label);
     addBtn.setAttribute('data-price', price);
+    var wasEl = document.getElementById('priceWasAmount');
+    if (wasEl) {
+      var base = Number(sel.getAttribute('data-base')) || price;
+      wasEl.textContent = base;
+      var saveEl = document.getElementById('dealSaveAmount');
+      if (saveEl) saveEl.textContent = Math.max(0, base - price);
+    }
   }
   opts.forEach(function(r){ r.addEventListener('change', apply); });
   apply();

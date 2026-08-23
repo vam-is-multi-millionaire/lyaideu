@@ -137,20 +137,36 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 function defVar(it){const vs=(it&&it.variants)||[];if(!vs.length)return null;for(let i=0;i<vs.length;i++){if(vs[i]&&vs[i].is_default)return vs[i]}return vs[0]}
+/* Discount deal helpers: pct clamped 0-95, "now" uses Math.round like PHP round(). */
+function dealOf(it,base){
+  if(base==null)base=(it&&Number(it.price))||0;
+  base=Number(base)||0;
+  const pct=Math.min(95,Math.max(0,(it&&Number(it.discount))||0));
+  return pct>0&&base>0?{pct:pct,now:Math.round(base*(100-pct)/100),was:base}:{pct:0,now:base,was:base};
+}
+function dealBadge(deal){return deal&&deal.pct>0?`<span class="deal-badge">-${deal.pct}%</span>`:''}
+function dealWas(deal){return deal&&deal.pct>0?` <s class="price-was">Rs. ${deal.was}</s>`:''}
+function effPriceOf(pool,id){
+  const it=(pool||[]).find(d=>String(d.id)===String(id));
+  if(!it)return 0;
+  const dv=defVar(it),base=dv?(Number(dv.price)||0):(Number(it.price)||0);
+  return dealOf(it,base).now;
+}
 function renderDishes(dishes){
   const grid=$('#menu-grid');if(!grid)return;const fav=getFav();
   grid.innerHTML=dishes.map(d=>{
     const id=Number(d.id),name=esc(d.name),hotel=esc(d.hotel),desc=esc(d.desc),tag=esc(d.tag),img=esc(d.img),cat=esc(d.cat),phone=esc(d.phone);
     const dv=defVar(d),price=dv?(Number(dv.price)||0):(Number(d.price)||0);
+    const deal=dealOf(d,price);
     const cats=(d.cats&&d.cats.length)?d.cats.map(esc):[cat];
     const slug=d.slug||slugify(d.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:`<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>`;
     return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((d.name+' '+d.hotel+' '+d.cat+' '+d.desc).toLowerCase())}">
-      <div class="dish-art">${art}
+      <div class="dish-art">${art}${dealBadge(deal)}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
+      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${dealWas(deal)}</span>
+      <button class="btn-order add-cart" data-id="${id}" data-type="dish" data-price="${deal.now}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
@@ -176,17 +192,17 @@ function renderMart(items){
   const grid=$('#mart-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
     const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
-    const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
+    const dv=defVar(m),base=dv?(Number(dv.price)||0):(Number(m.price)||0),deal=dealOf(m,base),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:martCatIcon(cat);
     return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
       <div class="dish-art mart-art">${art}
-      ${tag?`<span class="dish-tag">${tag}</span>`:''}
+      ${tag?`<span class="dish-tag">${tag}</span>`:''}${dealBadge(deal)}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
+      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${dealWas(deal)}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
+      <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
@@ -195,17 +211,17 @@ function renderOthers(items){
   const grid=$('#others-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
     const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
-    const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
+    const dv=defVar(m),base=dv?(Number(dv.price)||0):(Number(m.price)||0),deal=dealOf(m,base),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:otherCatIcon(cat);
     return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
       <div class="dish-art mart-art">${art}
-      ${tag?`<span class="dish-tag">${tag}</span>`:''}
+      ${tag?`<span class="dish-tag">${tag}</span>`:''}${dealBadge(deal)}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
+      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${dealWas(deal)}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
+      <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#others-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('other',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyOthersFilters();
@@ -215,8 +231,8 @@ function applyOthersFilters(){
   let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
   if(sort==='price-low'||sort==='price-high'){
     filtered.sort((a,b)=>{
-      const pa=Number(allOthers.find(d=>String(d.id)===a.dataset.id)?.price)||0;
-      const pb=Number(allOthers.find(d=>String(d.id)===b.dataset.id)?.price)||0;
+      const pa=effPriceOf(allOthers,a.dataset.id);
+      const pb=effPriceOf(allOthers,b.dataset.id);
       return sort==='price-low' ? pa-pb : pb-pa;
     });
   }
@@ -233,17 +249,17 @@ function renderBeverages(items){
   const grid=$('#beverages-grid');if(!grid)return;
   grid.innerHTML=items.map(m=>{
     const id=Number(m.id),name=esc(m.name),desc=esc(m.desc),tag=esc(m.tag),img=esc(m.img),cat=esc(m.cat),hotel=esc(m.hotel||'');
-    const dv=defVar(m),price=dv?(Number(dv.price)||0):(Number(m.price)||0),unit=esc(dv&&dv.label?dv.label:m.unit);
+    const dv=defVar(m),base=dv?(Number(dv.price)||0):(Number(m.price)||0),deal=dealOf(m,base),unit=esc(dv&&dv.label?dv.label:m.unit);
     const cats=(m.cats&&m.cats.length)?m.cats.map(esc):[cat];
     const slug=m.slug||slugify(m.name);
     const art=img?`<img src="${img}" alt="${name}" loading="lazy">`:beverageCatIcon(cat);
     return `<article class="dish-card reveal visible" data-id="${id}" data-slug="${slug}" data-cat="${cat}" data-cats="${cats.join(',')}" data-search="${esc((m.name+' '+m.cat+' '+m.desc+' '+m.unit).toLowerCase())}">
       <div class="dish-art mart-art">${art}
-      ${tag?`<span class="dish-tag">${tag}</span>`:''}
+      ${tag?`<span class="dish-tag">${tag}</span>`:''}${dealBadge(deal)}
       </div>
       <div class="dish-body"><div class="dish-top"><h3>${name}</h3></div>${hotel?`<p class="dish-hotel"><i class="fa-solid fa-store"></i> ${hotel}</p>`:''}
-      <div class="dish-foot"><span class="price"><small>Rs.</small> ${price}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
-      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${price}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
+      <div class="dish-foot"><span class="price"><small>Rs.</small> ${deal.now}${dealWas(deal)}${unit?` <span class="unit">/ ${unit}</span>`:''}</span>
+      <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
   $$('#beverages-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('beverage',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyBeveragesFilters();
@@ -253,8 +269,8 @@ function applyBeveragesFilters(){
   let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
   if(sort==='price-low'||sort==='price-high'){
     filtered.sort((a,b)=>{
-      const pa=Number(allBeverages.find(d=>String(d.id)===a.dataset.id)?.price)||0;
-      const pb=Number(allBeverages.find(d=>String(d.id)===b.dataset.id)?.price)||0;
+      const pa=effPriceOf(allBeverages,a.dataset.id);
+      const pb=effPriceOf(allBeverages,b.dataset.id);
       return sort==='price-low' ? pa-pb : pb-pa;
     });
   }
@@ -275,8 +291,8 @@ function applyMartFilters(){
   let filtered=cards.filter(c=>(currentCat==='all'||catMatch(c))&&(!searchQuery||c.dataset.search.includes(searchQuery)));
   if(sort==='price-low'||sort==='price-high'){
     filtered.sort((a,b)=>{
-      const pa=Number(allMart.find(d=>String(d.id)===a.dataset.id)?.price)||0;
-      const pb=Number(allMart.find(d=>String(d.id)===b.dataset.id)?.price)||0;
+      const pa=effPriceOf(allMart,a.dataset.id);
+      const pb=effPriceOf(allMart,b.dataset.id);
       return sort==='price-low' ? pa-pb : pb-pa;
     });
   }
@@ -401,8 +417,8 @@ function applyFilters(){
 
   if(sort==='price-low' || sort==='price-high'){
     filtered.sort((a,b)=>{
-      const pa=Number(allDishes.find(d=>String(d.id)===a.dataset.id)?.price)||0;
-      const pb=Number(allDishes.find(d=>String(d.id)===b.dataset.id)?.price)||0;
+      const pa=effPriceOf(allDishes,a.dataset.id);
+      const pb=effPriceOf(allDishes,b.dataset.id);
       return sort==='price-low' ? pa-pb : pb-pa;
     });
   }

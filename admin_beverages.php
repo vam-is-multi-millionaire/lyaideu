@@ -13,7 +13,7 @@ $beverageCatsFlat = lyaideu_categories_flat('beverage');
 
 try {
     $items = $pdo->query(
-        'SELECT id, name, cat, unit, price, tag, `desc`, img, category_id, vendor_id, has_variants FROM beverage_items ORDER BY id'
+        'SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, vendor_id, has_variants FROM beverage_items ORDER BY id'
     )->fetchAll();
     $beverageVendors = $pdo->query("SELECT id, name FROM vendors WHERE scope = 'beverage' AND is_active = 1 ORDER BY id")->fetchAll();
 } catch (Throwable $e) {
@@ -88,6 +88,7 @@ admin_page_start('Beverages', 'beverages', 'Beverages');
         </div>
         <div class="admin-field-row">
             <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="new_beverages[price]" placeholder="80"></div>
+            <div><label>Discount % <span style="text-transform:none;font-weight:700;">(0 = none)</span></label><input type="number" min="0" max="90" step="1" name="new_beverages[discount]" placeholder="e.g. 10"></div>
             <div><label>Tag</label><input type="text" name="new_beverages[tag]" placeholder="e.g. Chilled!"></div>
         </div>
         <label>Image <span style="text-transform:none;font-weight:700;">(optional — a category icon is shown if empty)</span></label>
@@ -116,7 +117,7 @@ admin_page_start('Beverages', 'beverages', 'Beverages');
                     <span class="pm-name"><?= $ce($m['name']) ?></span>
                     <span class="pm-meta"><?= $vendorName !== '' ? $ce($vendorName) : '' ?><?= $vendorName !== '' && $catName !== '' ? ' · ' : '' ?><?= $ce($catName) ?></span>
                 </span>
-                <span class="pm-price">Rs. <?= (int)$m['price'] ?><?php if ($m['unit'] !== ''): ?><span class="pm-unit"> / <?= $ce($m['unit']) ?></span><?php endif; ?><?php if ($m['tag'] !== ''): ?><span class="pm-tag"><?= $ce($m['tag']) ?></span><?php endif; ?></span>
+                <span class="pm-price">Rs. <?= (int)$m['discount_percent'] > 0 ? lyaideu_deal_price((int)$m['price'], (int)$m['discount_percent']) : (int)$m['price'] ?><?php if ((int)$m['discount_percent'] > 0): ?> <s class="pm-was">Rs. <?= (int)$m['price'] ?></s><span class="pm-deal-tag">-<?= (int)$m['discount_percent'] ?>%</span><?php endif; ?><?php if ($m['unit'] !== ''): ?><span class="pm-unit"> / <?= $ce($m['unit']) ?></span><?php endif; ?><?php if ($m['tag'] !== ''): ?><span class="pm-tag"><?= $ce($m['tag']) ?></span><?php endif; ?></span>
                 <span class="pm-actions">
                     <button type="button" class="pm-act pm-edit" data-target="pm-edit-<?= $id ?>"><i class="fa-solid fa-pen"></i> Edit</button>
                     <form class="pm-del-inline" action="admin_save" method="POST">
@@ -144,6 +145,7 @@ admin_page_start('Beverages', 'beverages', 'Beverages');
                 </div>
                 <div class="admin-field-row">
                     <div><label>Price (Rs.)</label><input type="number" min="0" step="1" name="beverages[<?= $i ?>][price]" value="<?= (int)$m['price'] ?>" required></div>
+                    <div><label>Discount % <span style="text-transform:none;font-weight:700;">(0 = none)</span></label><input type="number" min="0" max="90" step="1" name="beverages[<?= $i ?>][discount]" value="<?= (int)$m['discount_percent'] ?>"></div>
                     <div><label>Tag</label><input type="text" name="beverages[<?= $i ?>][tag]" value="<?= $ce($m['tag']) ?>"></div>
                 </div>
                 <label>Image <span style="text-transform:none;font-weight:700;">(upload — optional)</span></label>
