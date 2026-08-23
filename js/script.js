@@ -107,6 +107,20 @@ function initMobileNav(){
       nav.classList.remove('bn-hidden');
     });
   }
+  /* Profile tab: same "back to top" on the profile page — no reload, just
+     a smooth scroll up. Scoped by URL leaf because orders.php shares this
+     tab, and there a tap should still navigate to the profile. */
+  if(leaf==='profile'){
+    const profItem=nav.querySelector('[data-nav="profile"]');
+    if(profItem)profItem.addEventListener('click',e=>{
+      if((window.pageYOffset||0)<=10)return;
+      e.preventDefault();
+      let smooth=true;
+      try{smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(err){}
+      try{window.scrollTo({top:0,behavior:smooth?'smooth':'auto'});}catch(err){window.scrollTo(0,0);}
+      nav.classList.remove('bn-hidden');
+    });
+  }
 }
 /* Hide the bottom nav while scrolling down, reveal it on the first upward
    scroll. Works for the injected nav AND static copies (login page). */
