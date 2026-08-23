@@ -18,6 +18,10 @@ require_once __DIR__ . '/site_config.php';
 lyaideu_ensure_kyc_tables();
 lyaideu_ensure_location_columns();
 
+/* Control Panel toggle: when KYC is switched OFF, all KYC-related content is
+   hidden from the profile page (banner, verification card, status pill). */
+$kycOn = lyaideu_kyc_required();
+
 $uid = (int)$user['id'];
 $profile = lyaideu_user_profile($uid);
 if ($profile === null) {
@@ -379,7 +383,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <span class="pidc-line"><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($profile['email']) ?></span>
             <span class="pidc-line"><i class="fa-solid fa-mobile-screen"></i> +977 <?= htmlspecialchars($profile['phone']) ?></span>
         </div>
-        <span class="order-status-pill <?= $kycPillClass ?>"><?= htmlspecialchars($kycStatusLabels[$kycStatus] ?? $kycStatus, ENT_QUOTES, 'UTF-8') ?></span>
+        <?php if ($kycOn): ?><span class="order-status-pill <?= $kycPillClass ?>"><?= htmlspecialchars($kycStatusLabels[$kycStatus] ?? $kycStatus, ENT_QUOTES, 'UTF-8') ?></span><?php endif; ?>
     </section>
 
     <!-- Mobile-only quick link: My Orders lives here instead of the header -->
@@ -391,12 +395,12 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 
     <div class="section-head">
         <h1 class="display">My Profile</h1>
-        <p class="section-sub">Keep your details up to date and complete the KYC verification so you can order.</p>
+        <p class="section-sub">Keep your details up to date<?= $kycOn ? ' and complete the KYC verification so you can order' : '' ?>.</p>
     </div>
 
     <?php if ($flash): ?><div class="flash-banner flash-<?= htmlspecialchars($flash['type'], ENT_QUOTES, 'UTF-8') ?>"><?= $flash['msg'] ?></div><?php endif; ?>
 
-    <?php if ($kycStatus !== 'approved'): ?>
+    <?php if ($kycOn && $kycStatus !== 'approved'): ?>
     <div class="kyc-gate-banner <?= $kycStatus === 'rejected' ? 'is-rejected' : '' ?>">
         <?php if ($kycStatus === 'none'): ?>
             <i class="fa-solid fa-shield-halved"></i> <b>Identity verification required.</b> Complete your KYC below to start ordering.
@@ -459,6 +463,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
         </form>
 
+        <?php if ($kycOn): ?>
         <form class="profile-card profile-card-wide" method="POST" enctype="multipart/form-data" action="profile">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <h2><i class="fa-solid fa-shield-halved"></i> KYC verification</h2>
@@ -523,6 +528,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 <p class="small-note"><i class="fa-solid fa-lock"></i> Documents are locked while your KYC is under review.</p>
             <?php endif; ?>
         </form>
+        <?php endif; ?>
     </div>
 
     <a class="btn btn-primary btn-block profile-mobile-logout" href="logout" style="background:#c93a3a;border-color:#c93a3a;box-shadow:0 5px 0 #a02a2a;margin-top:1.4rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
