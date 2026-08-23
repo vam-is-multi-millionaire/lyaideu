@@ -1687,6 +1687,11 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .profile-body .profile-page{padding:.95rem .9rem 2rem;}
   .profile-body .section-head{display:none;} /* title now lives in the mobile header */
 
+  /* This page ends with the Log Out button (no footer), so keep a body
+     clearance here — otherwise the floating bottom-nav covers it.
+     Scoped to .profile-body only; other pages keep no extra space. */
+  .profile-body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px);}
+
   /* ---- Identity card ---- */
   .profile-idcard{
     display:flex;
