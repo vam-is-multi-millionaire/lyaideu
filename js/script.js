@@ -92,6 +92,21 @@ function initMobileNav(){
       nav.classList.remove('bn-hidden');
     });
   }
+  /* Categories tab: same "back to top" on the categories page — no reload,
+     just a smooth scroll up. (With the mobile browse overlay open,
+     categories-mobile.js closes it instead, so stay out of the way.) */
+  if(key==='categories'){
+    const catItem=nav.querySelector('[data-nav="categories"]');
+    if(catItem)catItem.addEventListener('click',e=>{
+      if(document.body.classList.contains('mc-open'))return;
+      if((window.pageYOffset||0)<=10)return;
+      e.preventDefault();
+      let smooth=true;
+      try{smooth=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(err){}
+      try{window.scrollTo({top:0,behavior:smooth?'smooth':'auto'});}catch(err){window.scrollTo(0,0);}
+      nav.classList.remove('bn-hidden');
+    });
+  }
 }
 /* Hide the bottom nav while scrolling down, reveal it on the first upward
    scroll. Works for the injected nav AND static copies (login page). */

@@ -340,7 +340,7 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=30"></script>
+<script src="js/script.js?v=31"></script>
 <script src="js/scroll-memory.js?v=5"></script>
 <script src="js/notify.js?v=6"></script>
 <script>
