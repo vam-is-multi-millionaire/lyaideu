@@ -2155,6 +2155,170 @@ function lyaideu_deal_price(int $price, int $pct): int {
     return (int)round($price * (100 - $pct) / 100);
 }
 
+/* ============================================================
+   Promo codes: admin-created discount codes validated at
+   checkout. Types: percent off, fixed Rs. off, free delivery.
+   Rules: optional minimum order, optional max-discount cap for
+   percent promos, "first N customers" global usage limit and a
+   hard once-per-customer rule enforced via order history.
+   ============================================================ */
+function lyaideu_ensure_promo_table(): bool {
+    static $done = false;
+    if ($done) {
+        return true;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return false;
+    }
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS promo_codes (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                code VARCHAR(40) NOT NULL,
+                type VARCHAR(12) NOT NULL DEFAULT \'percent\',
+                value SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+                min_order INT UNSIGNED NOT NULL DEFAULT 0,
+                max_discount INT UNSIGNED NOT NULL DEFAULT 0,
+                usage_limit INT UNSIGNED NOT NULL DEFAULT 0,
+                used_count INT UNSIGNED NOT NULL DEFAULT 0,
+                expires_at DATETIME NULL,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_promo_code (code)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $done = true;
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/** All promo codes, newest first (admin listing). */
+function lyaideu_promo_codes(): array {
+    lyaideu_ensure_promo_table();
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return [];
+    }
+    try {
+        $rows = $pdo->query(
+            'SELECT id, code, type, value, min_order, max_discount, usage_limit, used_count, expires_at, is_active, created_at
+             FROM promo_codes ORDER BY id DESC'
+        )->fetchAll();
+        foreach ($rows as &$r) {
+            $r['id'] = (int)$r['id'];
+            $r['value'] = (int)$r['value'];
+            $r['min_order'] = (int)$r['min_order'];
+            $r['max_discount'] = (int)$r['max_discount'];
+            $r['usage_limit'] = (int)$r['usage_limit'];
+            $r['used_count'] = (int)$r['used_count'];
+            $r['is_active'] = (int)$r['is_active'];
+        }
+        unset($r);
+        return $rows;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function lyaideu_promo_types(): array {
+    return ['percent', 'fixed', 'freedelivery'];
+}
+
+/**
+ * Single source of truth for promo validation — used by api/promo.php for the
+ * live checkout check and re-run authoritatively by order_save.php before an
+ * order is stored. Returns:
+ *   ['ok'=>bool, 'msg'=>string, 'promo'=>['code','type','value','discount','free_delivery']]
+ */
+function lyaideu_promo_evaluate(string $code, int $subtotal, int $userId): array {
+    lyaideu_ensure_promo_table();
+    $fail = static function (string $msg): array {
+        return ['ok' => false, 'msg' => $msg, 'promo' => null];
+    };
+    $code = strtoupper(trim($code));
+    if ($code === '') {
+        return $fail('Enter a promo code.');
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return $fail('Could not check this code right now. Please try again.');
+    }
+    try {
+        $st = $pdo->prepare('SELECT code, type, value, min_order, max_discount, usage_limit, used_count, expires_at, is_active FROM promo_codes WHERE code = :c LIMIT 1');
+        $st->execute([':c' => $code]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        return $fail('Could not check this code right now. Please try again.');
+    }
+    if (!$row) {
+        return $fail('This code doesn\'t exist.');
+    }
+    if (!(int)$row['is_active']) {
+        return $fail('This code is no longer active.');
+    }
+    if (!empty($row['expires_at'])) {
+        $ts = strtotime((string)$row['expires_at']);
+        if ($ts && $ts < time()) {
+            return $fail('This code expired on ' . date('M j, Y', $ts) . '.');
+        }
+    }
+    if ((int)$row['usage_limit'] > 0 && (int)$row['used_count'] >= (int)$row['usage_limit']) {
+        return $fail('This code has been fully redeemed.');
+    }
+    if ($userId > 0) {
+        try {
+            $used = $pdo->prepare('SELECT COUNT(*) FROM orders WHERE user_id = :u AND promo = :c');
+            $used->execute([':u' => $userId, ':c' => $code]);
+            if ((int)$used->fetchColumn() > 0) {
+                return $fail('You have already used this code.');
+            }
+        } catch (Throwable $e) {
+            // Order lookup failure should never block checkout; skip per-user rule.
+        }
+    }
+    if ((int)$row['min_order'] > 0 && $subtotal < (int)$row['min_order']) {
+        return $fail('Add Rs. ' . number_format((int)$row['min_order'] - $subtotal) . ' more to use this code.');
+    }
+
+    $type = in_array((string)$row['type'], lyaideu_promo_types(), true) ? (string)$row['type'] : 'percent';
+    $value = max(0, (int)$row['value']);
+    $discount = 0;
+    $freeDelivery = false;
+    if ($type === 'freedelivery') {
+        $freeDelivery = true;
+    } elseif ($type === 'fixed') {
+        $discount = $value;
+    } else {
+        $discount = $subtotal > 0 ? (int)round($subtotal * $value / 100) : 0;
+        if ((int)$row['max_discount'] > 0) {
+            $discount = min($discount, (int)$row['max_discount']);
+        }
+    }
+    $discount = min($discount, max(0, $subtotal));
+
+    $label = $type === 'freedelivery'
+        ? 'Free delivery applied!'
+        : ($type === 'fixed'
+            ? 'Rs. ' . number_format($discount) . ' off applied!'
+            : $value . '% off applied!' . ((int)$row['max_discount'] > 0 ? ' (up to Rs. ' . number_format((int)$row['max_discount']) . ')' : ''));
+    return [
+        'ok' => true,
+        'msg' => $label,
+        'promo' => [
+            'code' => $code,
+            'type' => $type,
+            'value' => $value,
+            'min_order' => (int)$row['min_order'],
+            'discount' => $discount,
+            'free_delivery' => $freeDelivery,
+        ],
+    ];
+}
+
 /**
  * Ordered variant options for a single product. Empty when the product has none.
  */

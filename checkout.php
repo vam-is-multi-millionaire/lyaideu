@@ -28,6 +28,14 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=62">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.co-was{opacity:.55;margin-right:.25rem}
+.co-free{color:#1e7a3c}
+.promo-savings strong{color:#1e7a3c}
+.promo-savings span i{color:var(--orange-600)}
+#promoInput:disabled{background:#fffaf2;border-color:#cfe8d4;cursor:default}
+#promoBtn{min-width:86px}
+</style>
 </head><body class="checkout-body">
 <header class="topbar">
     <nav class="nav">
@@ -178,6 +186,6 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
     });
 })();
 </script>
-<script src="js/script.js?v=37"></script>
+<script src="js/script.js?v=38"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script></body></html>

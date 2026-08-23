@@ -169,7 +169,7 @@ function variant_base_price(int $price, array $row): int {
 }
 
 $section = trim($_POST['section'] ?? '');
-$allowedSections = ['categories', 'category_reorder', 'sections', 'section_reorder', 'section_links', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
+$allowedSections = ['categories', 'category_reorder', 'sections', 'section_reorder', 'section_links', 'promos', 'dishes', 'mart', 'others', 'beverages', 'hotels', 'contacts'];
 
 if (!in_array($section, $allowedSections, true)) {
     header('Location: admin?error=' . urlencode('Unknown section.'));
@@ -188,6 +188,8 @@ if ($section === 'categories' || $section === 'category_reorder') {
 } elseif ($section === 'sections' || $section === 'section_reorder' || $section === 'section_links') {
     lyaideu_ensure_sections_tables();
     lyaideu_ensure_categories_table();
+} elseif ($section === 'promos') {
+    lyaideu_ensure_promo_table();
 } elseif ($section === 'others') {
     lyaideu_ensure_other_table();
 } elseif ($section === 'beverages') {
@@ -1203,6 +1205,109 @@ try {
                 continue;
             }
             $insLink->execute([':t' => $t, ':iid' => $iid, ':cid' => $cid]);
+        }
+    }
+
+    if ($section === 'promos') {
+        lyaideu_ensure_promo_table();
+
+        $cleanCode = static function (string $raw): string {
+            return strtoupper(substr(preg_replace('/[^A-Z0-9]/i', '', trim($raw)), 0, 40));
+        };
+        $normalizeExpiry = static function (?string $raw): ?string {
+            $raw = trim((string)$raw);
+            if ($raw === '') {
+                return null;
+            }
+            $ts = strtotime(str_replace('T', ' ', $raw));
+            return $ts ? date('Y-m-d H:i:s', $ts) : null;
+        };
+        $sanitizeTypeValue = static function (string $type, int $value): array {
+            if (!in_array($type, lyaideu_promo_types(), true)) {
+                $type = 'percent';
+            }
+            if ($type === 'freedelivery') {
+                $value = 0;
+            } elseif ($type === 'percent') {
+                $value = min(90, max(1, $value));
+            } else {
+                $value = max(1, $value);
+            }
+            return [$type, $value];
+        };
+
+        $updPromo = $pdo->prepare(
+            'UPDATE promo_codes SET code = :code, type = :type, value = :value, min_order = :min_order,
+                    max_discount = :max_discount, usage_limit = :usage_limit, expires_at = :expires_at,
+                    is_active = :active WHERE id = :id'
+        );
+        $flipPromo = $pdo->prepare('UPDATE promo_codes SET is_active = 1 - is_active WHERE id = :id');
+        $delPromo = $pdo->prepare('DELETE FROM promo_codes WHERE id = :id');
+        $dupePromo = $pdo->prepare('SELECT id FROM promo_codes WHERE code = :code AND id <> :id');
+
+        foreach (($_POST['promos'] ?? []) as $p) {
+            $id = (int)($p['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            if (!empty($p['delete'])) {
+                $delPromo->execute([':id' => $id]);
+                continue;
+            }
+
+            if (!empty($p['toggle'])) {
+                $flipPromo->execute([':id' => $id]);
+                continue;
+            }
+
+            $code = $cleanCode((string)($p['code'] ?? ''));
+            if ($code === '') {
+                throw new RuntimeException('A promo code cannot be empty.');
+            }
+            $dupePromo->execute([':code' => $code, ':id' => $id]);
+            if ($dupePromo->fetchColumn()) {
+                throw new RuntimeException('The code "' . $code . '" already exists.');
+            }
+            [$type, $value] = $sanitizeTypeValue(clean_text($p['type'] ?? 'percent'), max(0, (int)($p['value'] ?? 0)));
+            $updPromo->execute([
+                ':code' => $code,
+                ':type' => $type,
+                ':value' => $value,
+                ':min_order' => max(0, (int)($p['min_order'] ?? 0)),
+                ':max_discount' => $type === 'percent' ? max(0, (int)($p['max_discount'] ?? 0)) : 0,
+                ':usage_limit' => max(0, (int)($p['usage_limit'] ?? 0)),
+                ':expires_at' => $normalizeExpiry(($p['expires_at'] ?? '') !== '' ? (string)$p['expires_at'] : null),
+                ':active' => !empty($p['is_active']) ? 1 : 0,
+                ':id' => $id,
+            ]);
+        }
+
+        $newPromo = $_POST['new_promo'] ?? [];
+        if (trim((string)($newPromo['code'] ?? '')) !== '') {
+            $code = $cleanCode((string)$newPromo['code']);
+            if ($code === '') {
+                throw new RuntimeException('A promo code cannot be empty.');
+            }
+            $dupeNew = $pdo->prepare('SELECT id FROM promo_codes WHERE code = :code');
+            $dupeNew->execute([':code' => $code]);
+            if ($dupeNew->fetchColumn()) {
+                throw new RuntimeException('The code "' . $code . '" already exists.');
+            }
+            [$type, $value] = $sanitizeTypeValue(clean_text($newPromo['type'] ?? 'percent'), max(0, (int)($newPromo['value'] ?? 0)));
+            $pdo->prepare(
+                'INSERT INTO promo_codes (code, type, value, min_order, max_discount, usage_limit, expires_at, is_active, created_at)
+                 VALUES (:code, :type, :value, :min_order, :max_discount, :usage_limit, :expires_at, 1, :created)'
+            )->execute([
+                ':code' => $code,
+                ':type' => $type,
+                ':value' => $value,
+                ':min_order' => max(0, (int)($newPromo['min_order'] ?? 0)),
+                ':max_discount' => $type === 'percent' ? max(0, (int)($newPromo['max_discount'] ?? 0)) : 0,
+                ':usage_limit' => max(0, (int)($newPromo['usage_limit'] ?? 0)),
+                ':expires_at' => $normalizeExpiry(($newPromo['expires_at'] ?? '') !== '' ? (string)$newPromo['expires_at'] : null),
+                ':created' => date('Y-m-d H:i:s'),
+            ]);
         }
     }
 

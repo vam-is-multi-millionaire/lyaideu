@@ -524,7 +524,8 @@ function startLiveCatalogSync(){
   function initMenuFilters(){const chips=$$('.chip[data-cat]');chips.forEach(ch=>ch.addEventListener('click',()=>{chips.forEach(x=>x.classList.remove('active'));ch.classList.add('active');currentCat=ch.dataset.cat;syncSubChips('menu');applyFilters()}));const s=$('#dishSearch')||$('.nav-search input[name=q]');if(s){searchQuery=(s.value||'').trim().toLowerCase();s.addEventListener('input',e=>{searchQuery=e.target.value.trim().toLowerCase();applyFilters()})}$('#sortMenu')?.addEventListener('change',applyFilters);const p=new URLSearchParams(location.search);const uq=(p.get('q')||'').trim().toLowerCase();if(uq)searchQuery=uq;const cat=p.get('cat');if(cat){const t=document.querySelector('.chip[data-cat="'+cat+'"]');if(t)t.click();else applyFilters()}else applyFilters()}
 function initCheckout(){
   const form=$('#checkoutForm');
-  let promo='';
+  let promo=null; /* {code,type,value,min_order,discount,free_delivery} */
+  function subtotalOf(){return getCart().reduce((s,r)=>{const d=findItem(r.id,r.type)||r;return s+Number(r.variant?r.price:d.price)*r.qty},0)}
   function update(){
     const c=getCart();let sub=0;const box=$('#checkoutItems');
     if(!c.length){$('#checkoutEmpty')?.classList.add('show');form.style.display='none';return}
@@ -535,17 +536,38 @@ function initCheckout(){
     Object.keys(groups).forEach(s=>{html+='<div class="checkout-shop"><i class="fa-solid fa-store"></i> '+esc(s)+'</div>'+groups[s].map(r=>{const d=findItem(r.id,r.type)||r;if(!d)return '';const line=Number(r.variant?r.price:d.price)*r.qty;sub+=line;return `<div class="checkout-item"><span>${esc(d.name)}${r.variant?` <em class="vp-variant">(${esc(r.variant)})</em>`:''} × ${r.qty}</span><strong>Rs. ${line}</strong></div>`}).join('')});
     box.innerHTML=html;
     const hasHotel=cartHasHotel(c);
-    const delivery=deliveryFeeFor(shops.length),discount=(promo==='LYAIDEU'||promo==='FOODXPRESS')?delivery:0;
+    const delivery=deliveryFeeFor(shops.length),freeDel=!!(promo&&promo.free_delivery),discount=promo?(Number(promo.discount)||0):0;
     $('#coSubtotal').textContent='Rs. '+sub;
-    if($('#coDelivery'))$('#coDelivery').textContent='Rs. '+Math.max(0,delivery-discount);
-    if($('#coTotal'))$('#coTotal').textContent='Rs. '+Math.max(0,sub+delivery-discount);
+    if($('#coDelivery'))$('#coDelivery').innerHTML=freeDel?'<s class="co-was">Rs. '+delivery+'</s> <b class="co-free">FREE</b>':'Rs. '+delivery;
+    let saveRow=$('#coPromoRow');
+    if(promo&&discount>0){if(!saveRow){saveRow=document.createElement('div');saveRow.id='coPromoRow';saveRow.className='summary-row promo-savings';const totalRow=document.querySelector('#checkoutForm .summary-row.total');totalRow&&totalRow.parentNode.insertBefore(saveRow,totalRow)}if(saveRow)saveRow.innerHTML='<span><i class="fa-solid fa-ticket"></i> Promo '+esc(promo.code)+'</span><strong>- Rs. '+discount+'</strong>'}
+    else if(saveRow)saveRow.remove();
+    let warn=$('#promoMsg');
+    if(warn&&promo&&promo.min_order>0&&sub<promo.min_order)warn.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Cart is below the minimum order for this code — add Rs. '+(promo.min_order-sub)+' more or it will be removed at checkout.';
+    if($('#coTotal'))$('#coTotal').textContent='Rs. '+Math.max(0,sub+(freeDel?0:delivery)-discount);
     if($('#coEta'))$('#coEta').innerHTML='<i class="fa-solid fa-clock"></i> about '+deliveryEtaFor(shops.length,hasHotel)+' minutes';
     const note=$('#coVendorNote');
     if(note){if(shops.length>1){note.style.display='';note.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> <b>Ordering from '+shops.length+' vendors.</b> Delivery takes about '+deliveryEtaFor(shops.length,hasHotel)+' minutes and the delivery fee is Rs. '+delivery+'. Each vendor prepares your items separately.'}else{note.style.display='none'}}
-    $('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo;
+    $('#cartJson').value=JSON.stringify(c);if($('#promoHidden'))$('#promoHidden').value=promo?promo.code:'';
   }
-  $('#promoBtn')?.addEventListener('click',()=>{promo=$('#promoInput').value.trim().toUpperCase();$('#promoMsg').innerHTML=(promo==='LYAIDEU'||promo==='FOODXPRESS')?'<i class="fa-solid fa-circle-check"></i> Free delivery applied!':'<i class="fa-solid fa-circle-xmark"></i> Invalid demo code. Try LYAIDEU.';update()});
-  form.addEventListener('submit',e=>{if(form.dataset.kycOk!=='1'){e.preventDefault();window.location.href='profile';return}if(!getCart().length){e.preventDefault();toast('Your cart is empty.')}$('#cartJson').value=JSON.stringify(getCart());if($('#promoHidden'))$('#promoHidden').value=promo});update();
+  async function applyPromo(){
+    const input=$('#promoInput'),btn=$('#promoBtn'),msg=$('#promoMsg');
+    if(!input||!btn)return;
+    if(promo){promo=null;if(msg)msg.innerHTML='';input.value='';input.disabled=false;btn.innerHTML='Apply';update();return}
+    const code=input.value.trim().toUpperCase();
+    if(!code){if(msg)msg.innerHTML='<i class="fa-solid fa-circle-exclamation"></i> Enter a promo code first.';return}
+    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';
+    try{
+      const res=await fetch('api/promo.php?code='+encodeURIComponent(code)+'&subtotal='+subtotalOf(),{cache:'no-store'});
+      const d=await res.json();
+      if(d&&d.ok&&d.promo){promo=d.promo;if(msg)msg.innerHTML='<i class="fa-solid fa-circle-check"></i> '+esc(d.msg||'Promo applied!');input.value=promo.code;input.disabled=true;btn.innerHTML='<i class="fa-solid fa-xmark"></i> Remove'}
+      else{promo=null;if(msg)msg.innerHTML='<i class="fa-solid fa-circle-xmark"></i> '+esc((d&&d.msg)||'This code cannot be used.')}
+    }catch(e){if(msg)msg.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Could not check this code right now. Please try again.'}
+    btn.disabled=false;update();
+  }
+  $('#promoBtn')?.addEventListener('click',applyPromo);
+  $('#promoInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPromo()}});
+  form.addEventListener('submit',e=>{if(form.dataset.kycOk!=='1'){e.preventDefault();window.location.href='profile';return}if(!getCart().length){e.preventDefault();toast('Your cart is empty.')}$('#cartJson').value=JSON.stringify(getCart());if($('#promoHidden'))$('#promoHidden').value=promo?promo.code:''});update();
 }
 function switchTab(w){$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.show===w));$$('.auth-form').forEach(f=>f.classList.toggle('active',f.id==='form-'+w))}
 function initAuthTabs(){if(window.FE_TABS_INLINE||!$('.tabs'))return;document.addEventListener('click',e=>{const t=e.target.closest('[data-show]');if(t){e.preventDefault();switchTab(t.dataset.show)}})}

@@ -399,3 +399,21 @@ CREATE TABLE IF NOT EXISTS section_item_links (
   KEY idx_sil_category (category_id),
   KEY idx_sil_item (item_type, item_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Admin-created promo codes validated at checkout (percent / fixed Rs. / free
+-- delivery). Managed via admin_promocodes.php; runtime helper lyaideu_ensure_promo_table().
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  code VARCHAR(40) NOT NULL,
+  type VARCHAR(12) NOT NULL DEFAULT 'percent',
+  value SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  min_order INT UNSIGNED NOT NULL DEFAULT 0,
+  max_discount INT UNSIGNED NOT NULL DEFAULT 0,
+  usage_limit INT UNSIGNED NOT NULL DEFAULT 0,
+  used_count INT UNSIGNED NOT NULL DEFAULT 0,
+  expires_at DATETIME NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_promo_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

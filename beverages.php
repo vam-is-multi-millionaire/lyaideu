@@ -122,7 +122,7 @@ $bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 </aside>
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=37"></script>
+<script src="js/script.js?v=38"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 </body>

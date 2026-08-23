@@ -179,8 +179,25 @@ $shopCount = count($shopNames);
 $delivery = lyaideu_delivery_fee($shopCount);
 $eta = lyaideu_delivery_eta($shopCount, $hasHotel);
 
+/* Promo codes are re-validated authoritatively here — the browser's copy is
+   never trusted. Runs BEFORE beginTransaction so its table-ensure can never
+   trigger DDL inside the transaction below. */
+lyaideu_ensure_promo_table();
 $promo = strtoupper(trim(clean_text($_POST['promo'] ?? '')));
-$discount = ($promo === 'LYAIDEU' || $promo === 'FOODXPRESS') ? $delivery : 0;
+$discount = 0;
+if ($promo !== '') {
+    $promoCheck = lyaideu_promo_evaluate($promo, $subtotal, (int)$_SESSION['user']['id']);
+    if (!empty($promoCheck['ok']) && !empty($promoCheck['promo'])) {
+        $discount = (int)$promoCheck['promo']['discount'];
+        if (!empty($promoCheck['promo']['free_delivery'])) {
+            $delivery = 0;
+        }
+    } else {
+        /* Invalid/expired/limit-reached codes are silently dropped from the
+           stored order — totals below always reflect what was actually paid. */
+        $promo = '';
+    }
+}
 $total = max(0, $subtotal + $delivery - $discount);
 
 $order = [
@@ -264,6 +281,12 @@ try {
             ':vendor_id' => $item['vendor_id'] > 0 ? $item['vendor_id'] : null,
             ':variant' => $item['variant'] ?? '',
         ]);
+    }
+
+    if ($promo !== '') {
+        $pdo->prepare(
+            'UPDATE promo_codes SET used_count = used_count + 1 WHERE code = :c AND (usage_limit = 0 OR used_count < usage_limit)'
+        )->execute([':c' => $promo]);
     }
 
     $pdo->commit();
