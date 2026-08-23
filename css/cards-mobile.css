@@ -15,6 +15,11 @@
 .dish-hotel{display:none;}
 
 @media (max-width:960px){
+  /* Menu page: remove the kicker badge above the heading on mobile */
+  #menu .section-head .kicker{display:none;}
+  /* Menu page: remove the sub-heading text on mobile */
+  #menu .section-head .section-sub{display:none;}
+
   /* Hide the "/ unit" text after prices on phones */
   .dish-card .price .unit{display:none;}
 
