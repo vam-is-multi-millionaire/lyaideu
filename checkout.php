@@ -114,7 +114,6 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
       <?php else: ?>
       <a class="btn btn-primary btn-block" href="profile"><i class="fa-solid fa-shield-halved"></i> Complete KYC to Order</a>
       <?php endif; ?>
-      <p class="small-note">Demo payment flow: no real payment is processed.</p>
     </section>
   </form>
 </main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
