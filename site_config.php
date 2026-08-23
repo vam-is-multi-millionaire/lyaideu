@@ -370,9 +370,15 @@ function lyaideu_ensure_categories_table(): bool {
 
         $GLOBALS['__lyaideu_categories_ready'] = true;
 
+        /* Product -> category backfill runs ONLY when seeding actually added
+           categories this request (first install, or a built-in type that was
+           missing until now). Running it on every request would silently
+           re-categorize items the admin deliberately saved as "No category". */
+        $seeded = false;
         $catCount = (int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn();
         if ($catCount === 0) {
             lyaideu_seed_categories();
+            $seeded = true;
         } else {
             // Seed any category types added after the first setup (e.g. 'beverage').
             $present = [];
@@ -382,10 +388,13 @@ function lyaideu_ensure_categories_table(): bool {
             foreach (['menu', 'mart', 'other', 'beverage'] as $t) {
                 if (!isset($present[$t])) {
                     lyaideu_seed_categories([$t]);
+                    $seeded = true;
                 }
             }
         }
-        lyaideu_assign_products_to_categories();
+        if ($seeded) {
+            lyaideu_assign_products_to_categories();
+        }
         return true;
     } catch (Throwable $e) {
         return false;

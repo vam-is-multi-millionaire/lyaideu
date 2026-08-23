@@ -240,7 +240,7 @@ try {
                 ':id' => $id,
                 ':name' => $name,
                 ':hotel' => $hotel,
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($d['cat'] ?? 'snacks'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':price' => variant_base_price(max(0, (int)($d['price'] ?? 0)), $d),
                 ':discount' => lyaideu_deal_percent($d['discount'] ?? 0),
@@ -272,7 +272,7 @@ try {
             $insertDish->execute([
                 ':name' => clean_text($newDish['name'] ?? ''),
                 ':hotel' => clean_text($newDish['hotel'] ?? ''),
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_category($newDish['cat'] ?? 'snacks'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':price' => variant_base_price(max(0, (int)($newDish['price'] ?? 0)), $newDish),
                 ':discount' => lyaideu_deal_percent($newDish['discount'] ?? 0),
@@ -346,7 +346,7 @@ try {
             $updateItem->execute([
                 ':id' => $id,
                 ':name' => $name,
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($m['cat'] ?? 'vegetables'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
@@ -378,7 +378,7 @@ try {
 
             $insertItem->execute([
                 ':name' => clean_text($newItem['name'] ?? ''),
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_mart_category($newItem['cat'] ?? 'vegetables'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
@@ -456,7 +456,7 @@ try {
             $updateItem->execute([
                 ':id' => $id,
                 ':name' => $name,
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($m['cat'] ?? 'gifts'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
@@ -488,7 +488,7 @@ try {
 
             $insertItem->execute([
                 ':name' => clean_text($newItem['name'] ?? ''),
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_other_category($newItem['cat'] ?? 'gifts'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
@@ -566,7 +566,7 @@ try {
             $updateItem->execute([
                 ':id' => $id,
                 ':name' => $name,
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($m['cat'] ?? 'cold-drinks'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($m['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($m['price'] ?? 0)), $m),
@@ -598,7 +598,7 @@ try {
 
             $insertItem->execute([
                 ':name' => clean_text($newItem['name'] ?? ''),
-                ':cat' => $catRes[1] !== '' ? $catRes[1] : valid_beverage_category($newItem['cat'] ?? 'cold-drinks'),
+                ':cat' => $catRes[1],
                 ':category_id' => $catRes[0] ?: null,
                 ':unit' => clean_text($newItem['unit'] ?? ''),
                 ':price' => variant_base_price(max(0, (int)($newItem['price'] ?? 0)), $newItem),
