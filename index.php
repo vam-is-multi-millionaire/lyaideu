@@ -44,7 +44,7 @@ function lyaideu_featured_unit(array $item): string {
     return $v && (string)$v['label'] !== '' ? (string)$v['label'] : (string)($item['unit'] ?? '');
 }
 
-$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => [], 'partners' => []];
 $fsSeed = 0;
 $featuredPdo = lyaideu_load_pdo();
 if ($featuredPdo instanceof PDO) {
@@ -79,7 +79,7 @@ if ($featuredPdo instanceof PDO) {
         )->fetchAll();
         $featured['stores'] = $featuredPdo->query('SELECT id, name, type, phone, emoji, logo, kind FROM hotels ORDER BY id')->fetchAll();
     } catch (Throwable $e) {
-$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => []];
+$featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => [], 'partners' => []];
     }
     $featured['hotels']      = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? 'hotel') === 'hotel'));
     $featured['mart_stores'] = array_values(array_filter($featured['stores'] ?? [], fn($s) => ($s['kind'] ?? '') === 'mart'));
@@ -99,6 +99,11 @@ $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'h
     $featured['hotels'] = array_slice($featured['hotels'], 0, 8);
     $featured['mart_stores'] = array_slice($featured['mart_stores'], 0, 4);
     $featured['other_stores'] = array_slice($featured['other_stores'], 0, 4);
+    /* Mobile-only merged block: hotels + mart partners + other stores in
+       one "Our Trusted Partners" rail, capped at 8 cards. */
+    $featured['partners'] = array_merge($featured['hotels'], $featured['mart_stores'], $featured['other_stores']);
+    shuffle($featured['partners']);
+    $featured['partners'] = array_slice($featured['partners'], 0, 8);
     lyaideu_attach_variants($featured['dishes'], 'dish');
     lyaideu_attach_variants($featured['mart'], 'mart');
     lyaideu_attach_variants($featured['others'], 'other');
@@ -247,9 +252,16 @@ $FEATURED_BEVERAGE_ICONS = [
     transform:none!important;box-shadow:none!important;background:transparent!important;
   }
   .dish-card .btn-order.add-cart:active{transform:scale(.88);color:var(--orange-800,#742a05)!important;}
+  /* Mobile: the three separate store ribbons collapse into one
+     "Our Trusted Partners" block (rendered further down) */
+  #featured .feat-block.partner-block{display:none;}
 }
 /* Mobile: product cards go 3-per-row (featured + search result grids) */
-@media (max-width:560px){
+/* Combined partners block is a phones-only section */
+@media (min-width:961px){
+  #featured .feat-block.partner-block-mobile{display:none;}
+}
+@media (max-width:960px){
   #featured .dish-grid.home-grid,
   #search .dish-grid.home-grid{grid-template-columns:repeat(3,1fr);gap:.55rem;}
 }
@@ -625,7 +637,7 @@ $FEATURED_BEVERAGE_ICONS = [
                 <?php endif; ?>
 
                 <?php if ($featured['hotels']): ?>
-                <div class="feat-block">
+                <div class="feat-block partner-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-hotel"></i> Partner Hotels</h3>
                         <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
@@ -651,7 +663,7 @@ $FEATURED_BEVERAGE_ICONS = [
                 <?php endif; ?>
 
                 <?php if ($featured['mart_stores']): ?>
-                <div class="feat-block">
+                <div class="feat-block partner-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-basket-shopping"></i> Mart Partner</h3>
                         <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
@@ -677,7 +689,7 @@ $FEATURED_BEVERAGE_ICONS = [
                 <?php endif; ?>
 
                 <?php if ($featured['other_stores']): ?>
-                <div class="feat-block">
+                <div class="feat-block partner-block">
                     <div class="feat-ribbon">
                         <h3><i class="fa-solid fa-gift"></i> Other Stores</h3>
                         <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
@@ -701,11 +713,40 @@ $FEATURED_BEVERAGE_ICONS = [
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <?php if ($featured['partners']): ?>
+                <!-- Mobile-only: the three store ribbons above merge into one
+                     "Our Trusted Partners" section (max 8 cards). Hidden on
+                     desktop, where the separate ribbons stay. -->
+                <div class="feat-block partner-block-mobile">
+                    <div class="feat-ribbon">
+                        <h3><i class="fa-solid fa-handshake"></i> Our Trusted Partners</h3>
+                        <a class="see-all" href="store">View all <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="grid hotels-grid home-grid" id="featuredPartners">
+                        <?php foreach ($featured['partners'] as $fPartner): ?>
+                        <div class="hotel-card reveal visible" data-store-url="store/<?= lyaideu_slugify((string)$fPartner['name']) ?>">
+                            <div class="hotel-avatar">
+                                <?php if ($fPartner['logo'] !== ''): ?>
+                                    <img class="hotel-logo" src="<?= lyaideu_featured_e($fPartner['logo']) ?>" alt="<?= lyaideu_featured_e($fPartner['name']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <i class="fa-solid <?= lyaideu_featured_e($fPartner['emoji'] !== '' ? $fPartner['emoji'] : (($fPartner['kind'] ?? '') === 'mart' ? 'fa-basket-shopping' : (($fPartner['kind'] ?? '') === 'other' ? 'fa-gift' : 'fa-hotel'))) ?>"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hotel-info"><h3><?= lyaideu_featured_e($fPartner['name']) ?></h3><p><?= lyaideu_featured_e($fPartner['type']) ?></p></div>
+                            <div class="hotel-call-row">
+                                <a class="hotel-call" href="store/<?= lyaideu_slugify((string)$fPartner['name']) ?>"><i class="fa-solid fa-store"></i> View Store</a>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
 
-    <script src="js/featured-order.js?v=5"></script>
+    <script src="js/featured-order.js?v=6"></script>
 
     <section id="faq" class="section section-white">
         <div class="container">

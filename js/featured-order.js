@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredBeverages', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores'];
+  var GRID_IDS = ['featuredDishes', 'featuredMart', 'featuredOthers', 'featuredBeverages', 'featuredHotels', 'featuredMartStores', 'featuredOtherStores', 'featuredPartners'];
   var STORE_KEY = 'lyaideu_featured_v4:' + location.pathname.replace(/\/+$/, '');
   var SNAP_TTL = 30 * 60 * 1000; /* half a browsing session */
 
