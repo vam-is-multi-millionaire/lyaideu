@@ -3100,12 +3100,24 @@ function lyaideu_footer_html(): string {
     $hoursSaturday = $esc(site_setting('footer_hours_saturday', 'Saturday: 8 AM – 10 PM'));
     $hoursNote = $esc(site_setting('footer_hours_note', 'Deliveries every day!'));
     $copyright = str_replace('{{year}}', date('Y'), site_setting('footer_copyright', '© {{year}} LyaiDeu · All rights reserved.'));
+    $socialFacebook = trim(site_setting('site_social_facebook', 'https://www.facebook.com/profile.php?id=61593068734255'));
+    $socialInstagram = trim(site_setting('site_social_instagram', 'https://www.instagram.com/lyaideu.np/'));
+    $socialLinks = '';
+    foreach ([['fa-facebook', $socialFacebook, 'Facebook'], ['fa-instagram', $socialInstagram, 'Instagram']] as [$icon, $href, $label]) {
+        if ($href === '') {
+            continue;
+        }
+        $socialLinks .= '<a href="' . $esc($href) . '" target="_blank" rel="noopener" aria-label="LyaiDeu on ' . $label . '" style="font-size:1.3rem;line-height:1;"><i class="fa-brands ' . $icon . '"></i></a>';
+    }
+    if ($socialLinks !== '') {
+        $socialLinks = '<li style="display:flex;gap:.7rem;align-items:center;margin-top:.5rem;">' . $socialLinks . '</li>';
+    }
 
     return '<footer class="footer">
     <div class="footer-grid">
         <div><p class="footer-brand"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"></p><p class="footer-blurb">' . $blurb . '</p></div>
         <div><h4>Quick Links</h4><ul><li><a href="index">Home</a></li><li><a href="menu">Menu</a></li><li><a href="categories">Categories</a></li><li><a href="store">Stores</a></li><li><a href="mart">Mart</a></li><li><a href="others">Others</a></li><li><a href="contact">Contact</a></li><li><a href="faq">FAQ &amp; Privacy</a></li><li><a href="terms">Terms of Service</a></li></ul></div>
-        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> ' . $address . '</li><li><i class="fa-solid fa-envelope"></i> ' . $email . '</li><li><i class="fa-solid fa-phone"></i> ' . $phone . '</li></ul></div>
+        <div><h4>Get In Touch</h4><ul><li><i class="fa-solid fa-location-dot"></i> ' . $address . '</li><li><i class="fa-solid fa-envelope"></i> ' . $email . '</li><li><i class="fa-solid fa-phone"></i> ' . $phone . '</li>' . $socialLinks . '</ul></div>
         <div><h4>Opening Hours</h4><ul><li>' . $hoursWeekday . '</li><li>' . $hoursSaturday . '</li><li><i class="fa-solid fa-motorcycle"></i> ' . $hoursNote . '</li></ul></div>
     </div>
     <div class="footer-bottom">' . $copyright . '</div>

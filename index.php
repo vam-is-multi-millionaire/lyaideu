@@ -13,6 +13,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 
 function lyaideu_featured_e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -204,7 +205,17 @@ $FEATURED_BEVERAGE_ICONS = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Food Delivery in Surkhet Valley' ?></title>
+<?php
+$seoHomeDesc = 'LyaiDeu (lyaideu.com) delivers anything you need in Birendranagar, Surkhet Valley — hot food from local hotels, fresh groceries, cold beverages, flowers & gifts at your door in 15–60 minutes. Pay with eSewa, Khalti or cash.';
+echo lyaideu_seo_page([
+    'title' => $user ? 'LyaiDeu · Namaste, ' . htmlspecialchars($firstName) . '!' : 'LyaiDeu · Anything Delivery in Birendranagar, Surkhet',
+    'desc' => $seoHomeDesc,
+    'path' => '',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['food delivery surkhet', 'grocery delivery birendranagar', 'surkhet online shopping'],
+    'jsonld' => [lyaideu_seo_jsonld_home($seoHomeDesc)],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -376,9 +387,9 @@ $FEATURED_BEVERAGE_ICONS = [
     <section id="home" class="hero hero-split">
         <div class="container hero-split-inner">
             <div class="hero-split-text">
-                <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Fast delivery across Surkhet Valley</p>
-                <h1 class="display">Delicious food, delivered fast &amp; <em>fresh</em></h1>
-                <p class="hero-tagline">Order from your favourite hotels, grab groceries from the mart, and get it all to your door — hot and on time.</p>
+                <p class="kicker"><i class="fa-solid fa-motorcycle"></i> Anything delivered across Birendranagar, Surkhet</p>
+                <h1 class="display">Everything you need, delivered fast &amp; <em>fresh</em></h1>
+                <p class="hero-tagline">Order food from your favourite hotels, grab groceries from the mart, and get it all to your door — hot and on time.</p>
                 <div class="hero-ctas">
                     <a class="btn btn-primary" href="menu">Order Now <i class="fa-solid fa-arrow-right"></i></a>
                     <a class="btn btn-outline" href="mart">Shop the Mart</a>

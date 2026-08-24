@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +20,12 @@ require_once __DIR__ . '/site_config.php';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Contact | LyaiDeu</title>
+<?php echo lyaideu_seo_page([
+    'title' => 'Contact LyaiDeu — Delivery Service in Birendranagar, Surkhet',
+    'desc' => 'Questions, feedback or partnership requests? Reach the LyaiDeu team — your anything-delivery service in Birendranagar, Surkhet. Call, email or send us a message.',
+    'path' => 'contact',
+    'keywords' => ['lyai deu contact', 'delivery service contact surkhet'],
+]); ?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

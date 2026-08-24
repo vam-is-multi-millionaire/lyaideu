@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_categories_table();
 $menuCats = lyaideu_visible_categories('menu');
 $menuParents = array_values(array_filter($menuCats, fn($c) => $c['parent_id'] === null));
@@ -29,7 +30,29 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Menu | LyaiDeu</title>
+<?php
+$seoCatSlug = trim((string)($_GET['cat'] ?? ''));
+$seoCat = null;
+if ($seoCatSlug !== '') {
+    foreach ($menuCats as $c) {
+        if ((string)$c['slug'] === $seoCatSlug) {
+            $seoCat = $c;
+            break;
+        }
+    }
+}
+echo lyaideu_seo_page([
+    'title' => $seoCat
+        ? $ce($seoCat['name']) . ' Delivery Online in Birendranagar, Surkhet | LyaiDeu'
+        : 'Food Delivery in Birendranagar, Surkhet — Full Menu | LyaiDeu',
+    'desc' => $seoCat
+        ? 'Order ' . strtolower($ce($seoCat['name'])) . ' online in Birendranagar, Surkhet on LyaiDeu — freshly cooked by trusted partner hotels and delivered to your door in 45–60 minutes.'
+        : 'Order momos, pizza, chowmein, thali & more from trusted Birendranagar hotels on LyaiDeu — food delivered hot anywhere in the Surkhet Valley.',
+    'path' => $seoCat ? 'menu?cat=' . rawurlencode($seoCatSlug) : 'menu',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['momo delivery birendranagar', 'pizza delivery surkhet', 'chowmein delivery', 'order food online surkhet'],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

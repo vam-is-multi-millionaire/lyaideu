@@ -323,6 +323,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
+<meta name="robots" content="noindex, follow">
 <title>My Profile | LyaiDeu</title>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">

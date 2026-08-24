@@ -11,6 +11,18 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
+
+$lyaideuFaqs = [
+    ['q' => 'How do I place an order?', 'a' => 'Head over to the Menu page, add your favourite dishes to the cart, and check out with your delivery details. Your order goes straight to the partner hotel — we confirm it by phone if needed.'],
+    ['q' => 'How long does delivery take?', 'a' => 'Mart items are ready-made, so a Mart-only order arrives in as little as 15 minutes. Food from hotels is freshly cooked, so hotel orders take 45–60 minutes depending on how many hotels your order mixes in. Exact time depends on distance, traffic and how busy the kitchen is.'],
+    ['q' => 'How much is delivery?', 'a' => 'Delivery starts at Rs. 50 to anywhere in the valley, and goes up a little when your order mixes items from more than one hotel or the Mart. Your first order is free with the code LYAIDEU — and promo codes like FOODXPRESS give you free delivery too.'],
+    ['q' => 'What payment methods do you accept?', 'a' => 'We accept Cash on Delivery and eSewa / Khalti on delivery. Please have the exact amount ready for a smooth handover.'],
+    ['q' => 'Can I track my order?', 'a' => 'Yes! Open the Orders page at any time to see your order status — from Pending and Preparing to Out for delivery and Delivered. The page refreshes live automatically.'],
+    ['q' => 'Can I cancel or change my order?', 'a' => "Before the hotel confirms your order you can cancel it in the Orders page. Once confirmed, please call the hotel or our order hotline directly to make changes."],
+    ['q' => 'What if my order is late or wrong?', 'a' => "Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best."],
+    ['q' => 'How do I keep my account secure?', 'a' => "Never share your password. Your phone number and email are used only for delivery and order updates."],
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,7 +30,12 @@ require_once __DIR__ . '/site_config.php';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Frequently Asked Questions | LyaiDeu</title>
+<?php echo lyaideu_seo_page([
+    'title' => 'FAQ — Ordering, Delivery & Payments | LyaiDeu Surkhet',
+    'desc' => 'How LyaiDeu works: ordering, delivery times & fees, payments (eSewa, Khalti, cash), tracking and support — everything about anything-delivery in Birendranagar, Surkhet.',
+    'path' => 'faq',
+    'jsonld' => [lyaideu_seo_jsonld_faq($lyaideuFaqs)],
+]); ?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

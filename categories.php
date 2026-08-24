@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_categories_table();
 lyaideu_ensure_sections_tables();
 
@@ -70,7 +71,13 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Categories | LyaiDeu</title>
+<?php echo lyaideu_seo_page([
+    'title' => 'All Categories — Food, Grocery & More Delivery in Surkhet | LyaiDeu',
+    'desc' => 'Browse every LyaiDeu category — food from Birendranagar hotels, fresh groceries, beverages, flowers, gifts & more. Anything delivered across the Surkhet Valley.',
+    'path' => 'categories',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['categories lyai deu', 'online shopping surkhet', 'birendranagar delivery categories'],
+]); ?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -7,6 +7,7 @@ session_start();
 $user = $_SESSION['user'] ?? null;
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_categories_table();
 lyaideu_ensure_discount_columns();
 
@@ -203,7 +204,23 @@ $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= e($item['name']) ?> | <?= $type === 'mart' ? 'LyaiDeu Mart' : ($type === 'other' ? 'LyaiDeu Others' : ($type === 'beverage' ? 'LyaiDeu Beverages' : 'Menu')) ?></title>
+<?php
+$seoSection = ['dish' => 'menu', 'mart' => 'mart', 'other' => 'others', 'beverage' => 'beverages'][$type] ?? 'menu';
+$seoSlug = trim((string)($item['slug'] ?? ''));
+$seoPath = $seoSection . '/' . ($seoSlug !== '' ? rawurlencode($seoSlug) : (string)$id);
+$seoItemName = e($item['name']);
+$seoUnit = trim((string)($item['unit'] ?? ''));
+echo lyaideu_seo_page([
+    'title' => $seoItemName . ' — Order Online in Birendranagar, Surkhet | LyaiDeu',
+    'desc' => mb_substr(trim(html_entity_decode(strip_tags((string)$item['desc']), ENT_QUOTES, 'UTF-8')), 0, 120, 'UTF-8')
+        . '… Order ' . strtolower($seoItemName) . ($seoUnit !== '' ? ' (per ' . strtolower($seoUnit) . ')' : '') . ' on LyaiDeu — Rs. ' . number_format($dealPrice) . ', delivered across Birendranagar, Surkhet.',
+    'path' => $seoPath,
+    'og_type' => 'product',
+    'image' => (string)($item['img'] ?? ''),
+    'keywords' => [strtolower($seoItemName) . ' surkhet', strtolower($seoItemName) . ' delivery birendranagar', 'order online birendranagar'],
+    'jsonld' => [lyaideu_seo_jsonld_product(is_array($item) ? $item : [], $type, $seoPath, (int)$dealPrice)],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

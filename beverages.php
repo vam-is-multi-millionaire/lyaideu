@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_beverage_table();
 lyaideu_ensure_categories_table();
 $beverageCats = lyaideu_visible_categories('beverage');
@@ -30,7 +31,30 @@ $bce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Beverages | LyaiDeu</title>
+<?php
+$seoCatSlug = trim((string)($_GET['bcat'] ?? ''));
+$seoCat = null;
+if ($seoCatSlug !== '') {
+    foreach ($beverageCats as $c) {
+        if ((string)$c['slug'] === $seoCatSlug) {
+            $seoCat = $c;
+            break;
+        }
+    }
+}
+$seoCatName = $seoCat ? htmlspecialchars((string)$seoCat['name'], ENT_QUOTES, 'UTF-8') : '';
+echo lyaideu_seo_page([
+    'title' => $seoCat
+        ? $seoCatName . ' Delivery in Birendranagar, Surkhet | LyaiDeu'
+        : 'Beverage Delivery in Birendranagar, Surkhet — Cold Drinks & More | LyaiDeu',
+    'desc' => $seoCat
+        ? 'Order ' . strtolower($seoCatName) . ' online on LyaiDeu — delivered chilled to your door anywhere in Birendranagar, Surkhet Valley.'
+        : 'Cold drinks, juices, shakes, beer & bottled water delivered ice-cold across Birendranagar, Surkhet on LyaiDeu.',
+    'path' => $seoCat ? 'beverages?bcat=' . rawurlencode($seoCatSlug) : 'beverages',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['cold drink delivery birendranagar', 'juice delivery surkhet', 'beer delivery surkhet', 'water delivery birendranagar'],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

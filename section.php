@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_categories_table();
 lyaideu_ensure_sections_tables();
 lyaideu_ensure_variant_tables();
@@ -145,7 +146,17 @@ $secDesc = (string)$sectionRow['desc'];
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $sce($secName) ?> | LyaiDeu</title>
+<?php
+$seoSecName = $sce($secName);
+$seoScope = $scopeCat ? $sce((string)$scopeCat['name']) : '';
+echo lyaideu_seo_page([
+    'title' => ($seoScope !== '' ? $seoScope . ' — ' : '') . $seoSecName . ' Delivery in Birendranagar, Surkhet | LyaiDeu',
+    'desc' => 'Shop ' . strtolower($seoSecName) . ($seoScope !== '' ? ' (' . strtolower($seoScope) . ')' : '') . ' online on LyaiDeu — delivered fast to your door anywhere in Birendranagar, Surkhet.',
+    'path' => 'section?s=' . rawurlencode($sectionSlug) . ($scopeCat ? '&cat=' . rawurlencode($catSlug) : ''),
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => [strtolower($secName) . ' delivery surkhet', strtolower($secName) . ' birendranagar'],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

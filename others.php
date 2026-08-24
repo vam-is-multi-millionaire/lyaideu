@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_other_table();
 lyaideu_ensure_categories_table();
 $otherCats = lyaideu_visible_categories('other');
@@ -30,7 +31,30 @@ $oce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Others | LyaiDeu</title>
+<?php
+$seoCatSlug = trim((string)($_GET['ocat'] ?? ''));
+$seoCat = null;
+if ($seoCatSlug !== '') {
+    foreach ($otherCats as $c) {
+        if ((string)$c['slug'] === $seoCatSlug) {
+            $seoCat = $c;
+            break;
+        }
+    }
+}
+$seoCatName = $seoCat ? htmlspecialchars((string)$seoCat['name'], ENT_QUOTES, 'UTF-8') : '';
+echo lyaideu_seo_page([
+    'title' => $seoCat
+        ? $seoCatName . ' Delivery in Birendranagar, Surkhet | LyaiDeu'
+        : 'Flowers, Gifts & More Delivery in Surkhet | LyaiDeu',
+    'desc' => $seoCat
+        ? 'Order ' . strtolower($seoCatName) . ' online on LyaiDeu — handpicked items delivered to your door anywhere in Birendranagar, Surkhet.'
+        : 'Flowers, candles, homemade achar & gifts delivered across Birendranagar, Surkhet with LyaiDeu — perfect surprises, right on time.',
+    'path' => $seoCat ? 'others?ocat=' . rawurlencode($seoCatSlug) : 'others',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['flower delivery birendranagar', 'gift delivery surkhet', 'bouquet delivery surkhet', 'achar online surkhet'],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

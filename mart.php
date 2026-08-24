@@ -12,6 +12,7 @@ $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_mart_table();
 lyaideu_ensure_categories_table();
 $martCats = lyaideu_visible_categories('mart');
@@ -30,7 +31,29 @@ $mce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title>Mart | LyaiDeu</title>
+<?php
+$seoCatSlug = trim((string)($_GET['mcat'] ?? ''));
+$seoCat = null;
+if ($seoCatSlug !== '') {
+    foreach ($martCats as $c) {
+        if ((string)$c['slug'] === $seoCatSlug) {
+            $seoCat = $c;
+            break;
+        }
+    }
+}
+echo lyaideu_seo_page([
+    'title' => $seoCat
+        ? $mce($seoCat['name']) . ' Delivery in Birendranagar, Surkhet | LyaiDeu Mart'
+        : 'Grocery Delivery in Surkhet — Fresh Vegetables & More | LyaiDeu',
+    'desc' => $seoCat
+        ? 'Order ' . strtolower($mce($seoCat['name'])) . ' online from LyaiDeu Mart — delivered fresh to your home anywhere in Birendranagar, Surkhet in as little as 15 minutes.'
+        : 'Fresh vegetables, fruits, dairy & daily essentials delivered from LyaiDeu Mart to your home in Birendranagar, Surkhet — in as little as 15 minutes.',
+    'path' => $seoCat ? 'mart?mcat=' . rawurlencode($seoCatSlug) : 'mart',
+    'robots' => $q !== '' ? 'noindex, follow' : 'index, follow',
+    'keywords' => ['grocery delivery birendranagar', 'online grocery surkhet', 'vegetable delivery surkhet', 'lyai deu mart'],
+]);
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

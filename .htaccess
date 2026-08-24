@@ -1,5 +1,18 @@
 RewriteEngine On
 
+# --- SEO: canonical host + dynamic sitemap -------------------------------
+# Send www.lyaideu.com to lyaideu.com (one canonical hostname for Google).
+RewriteCond %{HTTP_HOST} ^www\.lyaideu\.com [NC]
+RewriteRule ^(.*)$ https://lyaideu.com/$1 [R=301,L]
+
+# Serve the dynamic sitemap generator at /sitemap.xml
+RewriteRule ^sitemap\.xml$ sitemap.php [QSA,L]
+
+# Optional: force HTTPS once SSL is active in cPanel (AutoSSL). Uncomment both lines.
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://lyaideu.com/$1 [R=301,L]
+# --------------------------------------------------------------------------
+
 # /api must always hit api.php, even though a physical api/ dir exists
 # (holds api/notifications.php for the live notification feed).
 RewriteRule ^api/?$ api.php [QSA,L]

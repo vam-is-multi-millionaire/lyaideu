@@ -1,0 +1,20 @@
+# LyaiDeu — anything delivery in Birendranagar, Surkhet (lyaideu.com)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /auth
+Disallow: /login
+Disallow: /logout
+Disallow: /checkout
+Disallow: /orders
+Disallow: /order_save
+Disallow: /order_success
+Disallow: /profile
+Disallow: /rider
+Disallow: /vendor
+Disallow: /migrate.php
+Disallow: /*?q=
+Disallow: /*?next=
+
+Sitemap: https://lyaideu.com/sitemap.xml

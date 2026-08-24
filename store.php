@@ -13,6 +13,7 @@ $firstName = $parts[0] ?? '';
 $initials = $user ? strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : '')) : '';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
+require_once __DIR__ . '/seo.php';
 lyaideu_ensure_stores();
 lyaideu_ensure_discount_columns();
 
@@ -146,7 +147,24 @@ $BEVERAGE_CAT_ICONS = ['cold-drinks' => 'fa-glass-water', 'alcohol' => 'fa-champ
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?>
-<title><?= $isDetail ? e($store['name']) . ' | Stores · LyaiDeu' : 'Stores | LyaiDeu' ?></title>
+<?php
+if ($isDetail) {
+    $seoStoreSlug = lyaideu_slugify((string)$store['name']);
+    echo lyaideu_seo_page([
+        'title' => e($store['name']) . ' — ' . $kindLabel . ' Delivery in Birendranagar, Surkhet | LyaiDeu',
+        'desc' => 'Order from ' . e($store['name']) . ' on LyaiDeu — ' . strtolower($kindLabel) . ' items delivered to your door anywhere in Birendranagar, Surkhet Valley.',
+        'path' => 'store/' . rawurlencode($seoStoreSlug),
+        'image' => (string)($store['logo'] ?? ''),
+        'jsonld' => [lyaideu_seo_jsonld_store(is_array($store) ? $store : [], $kindLabel, 'store/' . rawurlencode($seoStoreSlug))],
+    ]);
+} else {
+    echo lyaideu_seo_page([
+        'title' => 'Stores & Partner Hotels in Birendranagar, Surkhet | LyaiDeu',
+        'desc' => 'Every LyaiDeu partner store in one place — hotels, marts & specialty shops delivering food, groceries and more across Birendranagar, Surkhet.',
+        'path' => 'store',
+    ]);
+}
+?>
 <?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
