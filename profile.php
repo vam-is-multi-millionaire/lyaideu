@@ -330,7 +330,7 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=62">
+<link rel="stylesheet" href="css/style.css?v=63">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="profile-body">
@@ -400,6 +400,14 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
     </div>
 
     <?php if ($flash): ?><div class="flash-banner flash-<?= htmlspecialchars($flash['type'], ENT_QUOTES, 'UTF-8') ?>"><?= $flash['msg'] ?></div><?php endif; ?>
+
+    <?php $needsCompletion = (isset($_GET['complete']) && $_GET['complete'] === '1') || trim((string)($profile['phone'] ?? '')) === '' || trim((string)($profile['dob'] ?? '')) === ''; ?>
+    <?php if ($needsCompletion): ?>
+    <div class="complete-banner">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span><b>Please complete your profile.</b> Add your contact number and date of birth below — Google doesn't share them, and they're needed to place orders.</span>
+    </div>
+    <?php endif; ?>
 
     <?php if ($kycOn && $kycStatus !== 'approved'): ?>
     <div class="kyc-gate-banner <?= $kycStatus === 'rejected' ? 'is-rejected' : '' ?>">

@@ -2038,3 +2038,17 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
   .dish-card .price .rs-l,.related-card .price .rs-l{display:none;}
   .dish-card .price .rs-s,.related-card .price .rs-s{display:inline;}
 }
+
+/* ---------- Google Sign-In (additive, matches .btn look) ---------- */
+.auth-divider{display:flex;align-items:center;gap:.7rem;margin:.85rem 0 .6rem;color:var(--muted,#8a7a6d);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:var(--orange-100,#f7e3cf);}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:.6rem;width:100%;min-height:44px;padding:.65rem 1rem;background:#fff;border:2px solid #dadce0;border-radius:var(--fe-radius-md,12px);color:#3c4043;font-family:inherit;font-weight:850;line-height:1;font-size:.95rem;text-decoration:none!important;cursor:pointer;box-shadow:0 2px 0 rgba(90,40,10,.06);transition:transform var(--fe-transition,.18s ease),box-shadow var(--fe-transition,.18s ease),background var(--fe-transition,.18s ease);}
+.btn-google:hover{background:#f8f9fa;transform:translateY(-2px);box-shadow:0 6px 14px rgba(60,64,67,.16);color:#202124;}
+.btn-google:active{transform:translateY(0) scale(.98);}
+.btn-google:focus-visible{outline:none;box-shadow:var(--fe-focus,0 0 0 3px rgba(231,102,8,.35));}
+.btn-google svg{width:18px;height:18px;flex:none;}
+@media(max-width:760px){.btn-google{min-height:46px;}}
+
+/* ---------- Complete-profile banner for Google signups ---------- */
+.complete-banner{max-width:1200px;margin:1rem auto 0;display:flex;align-items:flex-start;gap:.6rem;background:#fff7e6;border:1px solid #f5d9a8;border-left:5px solid #e7a100;color:#7a5200;border-radius:14px;box-shadow:var(--shadow-sm,0 2px 10px rgba(90,40,10,.06));padding:.85rem 1.1rem;font-weight:800;font-size:.9rem;}
+.complete-banner i{margin-top:.15rem;color:#e7a100;}

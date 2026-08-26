@@ -47,13 +47,15 @@ CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  dob DATE NOT NULL,
+  phone VARCHAR(20) NULL DEFAULT NULL,
+  dob DATE NULL DEFAULT NULL,
   pass VARCHAR(255) NOT NULL,
+  google_sub VARCHAR(255) NULL DEFAULT NULL,
   created_at DATETIME NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email),
-  UNIQUE KEY uq_users_phone (phone)
+  UNIQUE KEY uq_users_phone (phone),
+  UNIQUE KEY uq_users_google_sub (google_sub)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -439,3 +441,14 @@ CREATE TABLE IF NOT EXISTS promo_codes (
   PRIMARY KEY (id),
   UNIQUE KEY uq_promo_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- Google Login/Signup (run ONCE on an existing install — phpMyAdmin > SQL tab).
+-- Makes phone/DOB optional (Google never provides them) and links each account
+-- to its Google ID. Fresh installs already get this via CREATE TABLE above.
+-- ---------------------------------------------------------------------------
+ALTER TABLE users
+  MODIFY phone VARCHAR(20) NULL DEFAULT NULL,
+  MODIFY dob DATE NULL DEFAULT NULL,
+  ADD COLUMN google_sub VARCHAR(255) NULL DEFAULT NULL,
+  ADD UNIQUE KEY uq_users_google_sub (google_sub);
