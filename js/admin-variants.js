@@ -26,12 +26,27 @@
     row.querySelectorAll('input').forEach(function (input) {
       if (input.type === 'checkbox') {
         input.checked = false;
+      } else if (input.type === 'file') {
+        input.value = '';
       } else {
         input.value = '';
       }
       input.removeAttribute('checked');
       input.classList.remove('invalid');
     });
+    var preview = row.querySelector('.pv-img-preview');
+    if (preview) {
+      preview.classList.add('pv-img-empty');
+      preview.innerHTML = '<i class="fa-solid fa-image"></i>';
+    }
+    var existing = row.querySelector('.pv-existing-image');
+    if (existing) existing.value = '';
+    var remLabel = row.querySelector('.pv-remove-img');
+    if (remLabel) {
+      remLabel.style.display = 'none';
+      var remInput = remLabel.querySelector('input');
+      if (remInput) remInput.checked = false;
+    }
   }
 
   function addRow(block, templateRow) {
@@ -82,6 +97,28 @@
         list.querySelectorAll('.pv-default-input').forEach(function (other) {
           if (other !== e.target) other.checked = false;
         });
+      }
+      if (e.target && e.target.classList && e.target.classList.contains('pv-image-input') && e.target.files) {
+        var row = e.target.closest('.pv-row');
+        var preview = row ? row.querySelector('.pv-img-preview') : null;
+        var file = e.target.files[0];
+        if (file && preview) {
+          var url = URL.createObjectURL(file);
+          preview.classList.remove('pv-img-empty');
+          preview.innerHTML = '<img src="' + url + '" alt="">';
+          var rem = row ? row.querySelector('.pv-remove-img input') : null;
+          if (rem) rem.checked = false;
+        } else if (preview) {
+          var existing = row ? row.querySelector('.pv-existing-image') : null;
+          var existingVal = existing ? (existing.value || '').trim() : '';
+          if (existingVal) {
+            preview.classList.remove('pv-img-empty');
+            preview.innerHTML = '<img src="' + existingVal.replace(/"/g, '&quot;') + '" alt="">';
+          } else {
+            preview.classList.add('pv-img-empty');
+            preview.innerHTML = '<i class="fa-solid fa-image"></i>';
+          }
+        }
       }
     });
 

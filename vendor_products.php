@@ -40,6 +40,29 @@ if (!$isMart && !$isOther && !$isBeverage) {
 lyaideu_ensure_categories_table();
 lyaideu_ensure_variant_tables();
 lyaideu_ensure_discount_columns();
+
+function vendor_variant_file_product(int $pid, int $vi): ?array {
+    $f = $_FILES['product'] ?? null;
+    if (!is_array($f) || !isset($f['name'][$pid]['variants'][$vi]['img_file'])) return null;
+    return ['name'=>$f['name'][$pid]['variants'][$vi]['img_file'],'type'=>$f['type'][$pid]['variants'][$vi]['img_file']??'','tmp_name'=>$f['tmp_name'][$pid]['variants'][$vi]['img_file'],'error'=>$f['error'][$pid]['variants'][$vi]['img_file']??UPLOAD_ERR_NO_FILE,'size'=>$f['size'][$pid]['variants'][$vi]['img_file']??0];
+}
+function vendor_variant_file_new(int $vi): ?array {
+    $f = $_FILES['new_product'] ?? null;
+    if (!is_array($f) || !isset($f['name']['variants'][$vi]['img_file'])) return null;
+    return ['name'=>$f['name']['variants'][$vi]['img_file'],'type'=>$f['type']['variants'][$vi]['img_file']??'','tmp_name'=>$f['tmp_name']['variants'][$vi]['img_file'],'error'=>$f['error']['variants'][$vi]['img_file']??UPLOAD_ERR_NO_FILE,'size'=>$f['size']['variants'][$vi]['img_file']??0];
+}
+function vendor_process_variants(array $raw, ?int $pid): array {
+    $out = [];
+    foreach ($raw as $vi => $opt) {
+        if (!is_array($opt)) { $out[$vi]=$opt; continue; }
+        $file = $pid !== null ? vendor_variant_file_product($pid, (int)$vi) : vendor_variant_file_new((int)$vi);
+        $existing = trim((string)($opt['existing_image'] ?? $opt['image'] ?? ''));
+        $img = lyaideu_handle_variant_image($existing, $opt, $file);
+        $opt['image']=$img;
+        $out[$vi]=$opt;
+    }
+    return $out;
+}
 $catType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'menu'));
 $catsFlat = lyaideu_categories_flat($catType);
 $allowedCats = [];
@@ -149,7 +172,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $upd->execute([$name, $hotelName, $categoryId ?: null, $price, $discountPct, $phone, $tag, $desc, $img, $id, $vendorId]);
                     }
                     lyaideu_sync_item_slug($table, $id, $name);
-                    lyaideu_save_item_variants($pdo, $itemType, $id, $hasVariants, $_POST['product'][$id]['variants'] ?? []);
+                    $rawVp = $_POST['product'][$id]['variants'] ?? [];
+                    $rawVp = is_array($rawVp) ? vendor_process_variants($rawVp, $id) : [];
+                    lyaideu_save_item_variants($pdo, $itemType, $id, $hasVariants, $rawVp);
                 } else {
                     $discountPct = lyaideu_deal_percent($_POST['discount'] ?? 0);
                     if ($isMart) {
@@ -167,7 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $newItemId = (int)$pdo->lastInsertId();
                     lyaideu_sync_item_slug($table, $newItemId, $name);
-                    lyaideu_save_item_variants($pdo, $itemType, $newItemId, $hasVariants, $_POST['new_product']['variants'] ?? []);
+                    $rawNewVp = $_POST['new_product']['variants'] ?? [];
+                    $rawNewVp = is_array($rawNewVp) ? vendor_process_variants($rawNewVp, null) : [];
+                    lyaideu_save_item_variants($pdo, $itemType, $newItemId, $hasVariants, $rawNewVp);
                 }
                 header('Location: vendor_products?msg=' . urlencode('Product saved. It is now live on the website.'));
                 exit;
@@ -589,6 +616,6 @@ delivery_header(
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=5"></script>
+<script src="js/admin-variants.js?v=6"></script>
 <?php
 delivery_footer();

@@ -225,6 +225,6 @@ admin_page_start('Menu Items', 'dishes', 'Menu Items');
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=5"></script>
+<script src="js/admin-variants.js?v=6"></script>
 <?php
 admin_page_end();

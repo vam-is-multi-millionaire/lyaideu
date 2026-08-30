@@ -226,7 +226,7 @@ echo lyaideu_seo_page([
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=62">
+<link rel="stylesheet" href="css/style.css?v=63">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
 </head>
 <body class="product-pg" data-needs-catalog>
@@ -292,11 +292,12 @@ echo lyaideu_seo_page([
         </div>
 
         <div class="product-main">
-            <div class="product-media">
+            <div class="product-media" data-default-img="<?= e($item['img']) ?>">
                 <?php if ($item['img'] !== ''): ?>
-                    <img src="<?= e($item['img']) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
+                    <img id="productMainImg" src="<?= e($item['img']) ?>" alt="<?= e($item['name']) ?>" loading="lazy" data-default-src="<?= e($item['img']) ?>">
                 <?php else: ?>
-                    <div class="product-media-noimg"><i class="fa-solid <?= $ICON ?>"></i></div>
+                    <div id="productMainNoImg" class="product-media-noimg"><i class="fa-solid <?= $ICON ?>"></i></div>
+                    <img id="productMainImg" src="" alt="<?= e($item['name']) ?>" loading="lazy" data-default-src="" style="display:none">
                 <?php endif; ?>
                 <?= $tagHtml ?>
                 <?php if ($dealPct > 0): ?><span class="deal-flag"><b>-<?= $dealPct ?>%</b><small>OFF</small></span><?php endif; ?>
@@ -326,9 +327,9 @@ echo lyaideu_seo_page([
                 <div class="variant-picker">
                     <label class="variant-label"><i class="fa-solid fa-layer-group"></i> Select option</label>
                     <div class="variant-options" id="variantOptions">
-                        <?php foreach ($variants as $vi => $v): $selected = $defaultVariant && $v['id'] == $defaultVariant['id']; $vDeal = lyaideu_deal_price((int)$v['price'], $dealPct); ?>
-                        <label class="variant-option<?= $selected ? ' selected' : '' ?><?= $selected ? '' : '' ?>">
-                            <input type="radio" name="product_variant" value="<?= (int)$v['id'] ?>" data-label="<?= e($v['label']) ?>" data-price="<?= $vDeal ?>" data-base="<?= (int)$v['price'] ?>"<?= $selected ? ' checked' : '' ?>>
+                        <?php foreach ($variants as $vi => $v): $selected = $defaultVariant && $v['id'] == $defaultVariant['id']; $vDeal = lyaideu_deal_price((int)$v['price'], $dealPct); $vImg = trim((string)($v['image'] ?? '')); ?>
+                        <label class="variant-option<?= $selected ? ' selected' : '' ?>">
+                            <input type="radio" name="product_variant" value="<?= (int)$v['id'] ?>" data-label="<?= e($v['label']) ?>" data-price="<?= $vDeal ?>" data-base="<?= (int)$v['price'] ?>" data-img="<?= e($vImg) ?>"<?= $selected ? ' checked' : '' ?>>
                             <span class="variant-option-body">
                                 <span class="variant-option-label"><?= e($v['label']) ?></span>
                                 <span class="variant-option-price"><small>Rs.</small> <?= $vDeal ?><?= $dealPct > 0 && (int)$v['price'] !== $vDeal ? ' <s class="variant-price-was">' . (int)$v['price'] . '</s>' : '' ?></span>
@@ -444,6 +445,10 @@ echo lyaideu_seo_page([
   var priceEl = document.getElementById('productPrice');
   var addBtn = document.querySelector('.product-actions .add-cart');
   if (!opts.length || !addBtn) return;
+  var mainImg = document.getElementById('productMainImg');
+  var noImg = document.getElementById('productMainNoImg');
+  var media = document.querySelector('.product-media');
+  var defaultSrc = (mainImg && mainImg.getAttribute('data-default-src')) || (media && media.getAttribute('data-default-img')) || '';
   function apply(){
     var sel = document.querySelector('#variantOptions input[type="radio"]:checked');
     if (!sel) return;
@@ -462,6 +467,27 @@ echo lyaideu_seo_page([
       wasEl.textContent = base;
       var saveEl = document.getElementById('dealSaveAmount');
       if (saveEl) saveEl.textContent = Math.max(0, base - price);
+    }
+    if (mainImg) {
+      var imgSrc = (sel.getAttribute('data-img') || '').trim();
+      var target = imgSrc !== '' ? imgSrc : defaultSrc;
+      if (target) {
+        if (mainImg.getAttribute('src') !== target) {
+          mainImg.style.opacity = '0';
+          // small delay to allow fade, then swap
+          setTimeout(function(){ mainImg.src = target; mainImg.style.opacity = '1'; }, 80);
+          if (mainImg.style.display === 'none') mainImg.style.display = '';
+        } else {
+          mainImg.style.opacity = '1';
+          if (mainImg.style.display === 'none') mainImg.style.display = '';
+        }
+        if (noImg) noImg.style.display = 'none';
+        mainImg.style.display = '';
+      } else {
+        mainImg.style.display = 'none';
+        mainImg.removeAttribute('src');
+        if (noImg) noImg.style.display = '';
+      }
     }
   }
   opts.forEach(function(r){ r.addEventListener('change', apply); });

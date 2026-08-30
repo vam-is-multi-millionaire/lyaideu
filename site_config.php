@@ -2093,6 +2093,7 @@ function lyaideu_ensure_variant_tables(): bool {
                 label VARCHAR(150) NOT NULL,
                 price INT UNSIGNED NOT NULL DEFAULT 0,
                 info VARCHAR(255) NOT NULL DEFAULT \'\',
+                image VARCHAR(500) NOT NULL DEFAULT \'\',
                 is_default TINYINT(1) NOT NULL DEFAULT 0,
                 sort_order INT NOT NULL DEFAULT 0,
                 PRIMARY KEY (id),
@@ -2100,6 +2101,7 @@ function lyaideu_ensure_variant_tables(): bool {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
 
+        lyaideu_ensure_column($pdo, 'product_variants', 'image', "VARCHAR(500) NOT NULL DEFAULT ''");
         lyaideu_ensure_column($pdo, 'dishes', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
         lyaideu_ensure_column($pdo, 'mart_items', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
         lyaideu_ensure_column($pdo, 'other_items', 'has_variants', 'TINYINT(1) NOT NULL DEFAULT 0');
@@ -2329,7 +2331,7 @@ function lyaideu_item_variants(string $type, int $itemId): array {
     }
     try {
         $st = $pdo->prepare(
-            'SELECT id, label, price, info, is_default
+            'SELECT id, label, price, info, image, is_default
              FROM product_variants
              WHERE item_type = ? AND item_id = ?
              ORDER BY sort_order, id'
@@ -2338,6 +2340,7 @@ function lyaideu_item_variants(string $type, int $itemId): array {
         return array_map(static function (array $v): array {
             $v['price'] = (int)$v['price'];
             $v['is_default'] = (int)$v['is_default'];
+            $v['image'] = (string)($v['image'] ?? '');
             return $v;
         }, $st->fetchAll(PDO::FETCH_ASSOC));
     } catch (Throwable $e) {
@@ -2360,7 +2363,7 @@ function lyaideu_attach_variants(array &$rows, string $type): void {
     }
     try {
         $st = $pdo->prepare(
-            'SELECT item_id, label, price, info, is_default
+            'SELECT item_id, label, price, info, image, is_default
              FROM product_variants
              WHERE item_type = ?
              ORDER BY item_id, sort_order, id'
@@ -2372,6 +2375,7 @@ function lyaideu_attach_variants(array &$rows, string $type): void {
                 'label' => (string)$v['label'],
                 'price' => (int)$v['price'],
                 'info' => (string)$v['info'],
+                'image' => (string)($v['image'] ?? ''),
                 'is_default' => (int)$v['is_default'],
             ];
         }
@@ -2390,6 +2394,7 @@ function lyaideu_attach_variants(array &$rows, string $type): void {
  * Saves a product's variant configuration: sets its `has_variants` toggle and
  * replaces all option rows (delete + re-insert). Options without a label are
  * skipped. The first row marked `default` becomes the preselected option.
+ * Variant `image` is stored per option (one image per variant, empty = fallback to product image).
  */
 function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVariants, array $options): void {
     if ($itemId <= 0 || !in_array($type, ['dish', 'mart', 'other', 'beverage'], true)) {
@@ -2398,16 +2403,27 @@ function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVar
     $table = $type === 'mart' ? 'mart_items' : ($type === 'other' ? 'other_items' : ($type === 'beverage' ? 'beverage_items' : 'dishes'));
     try {
         $pdo->prepare("UPDATE `$table` SET has_variants = ? WHERE id = ?")->execute([$hasVariants ? 1 : 0, $itemId]);
+        // Capture old variant images so orphaned files can be removed after replacement.
+        $oldImages = [];
+        try {
+            $stOld = $pdo->prepare('SELECT image FROM product_variants WHERE item_type = ? AND item_id = ?');
+            $stOld->execute([$type, $itemId]);
+            foreach ($stOld->fetchAll(PDO::FETCH_COLUMN) as $oi) {
+                $oi = trim((string)$oi);
+                if ($oi !== '') $oldImages[] = $oi;
+            }
+        } catch (Throwable $e) { $oldImages = []; }
         $del = $pdo->prepare('DELETE FROM product_variants WHERE item_type = ? AND item_id = ?');
         $del->execute([$type, $itemId]);
 
         $ins = $pdo->prepare(
-            'INSERT INTO product_variants (item_type, item_id, label, price, info, is_default, sort_order)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO product_variants (item_type, item_id, label, price, info, image, is_default, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $sort = 0;
         $defaultSet = false;
         $firstRowId = 0;
+        $newImages = [];
         foreach ($options as $opt) {
             $label = trim(strip_tags((string)($opt['label'] ?? '')));
             if ($label === '') {
@@ -2415,11 +2431,17 @@ function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVar
             }
             $price = max(0, (int)($opt['price'] ?? 0));
             $info = trim(strip_tags((string)($opt['info'] ?? '')));
+            $img = trim((string)($opt['image'] ?? $opt['existing_image'] ?? ''));
+            // Keep only uploads/ paths or http(s) — strip anything else for safety.
+            if ($img !== '' && !str_starts_with($img, 'uploads/') && !preg_match('#^https?://#i', $img)) {
+                $img = '';
+            }
+            if ($img !== '' && str_starts_with($img, 'uploads/')) $newImages[] = $img;
             $isDefault = (!$defaultSet && !empty($opt['default'])) ? 1 : 0;
             if ($isDefault) {
                 $defaultSet = true;
             }
-            $ins->execute([$type, $itemId, $label, $price, $info, $isDefault, $sort]);
+            $ins->execute([$type, $itemId, $label, $price, $info, $img, $isDefault, $sort]);
             if ($firstRowId === 0) {
                 $firstRowId = (int)$pdo->lastInsertId();
             }
@@ -2429,6 +2451,15 @@ function lyaideu_save_item_variants(PDO $pdo, string $type, int $itemId, $hasVar
         // the customer side always shows one as chosen, so default to the first.
         if (!$defaultSet && $firstRowId > 0) {
             $pdo->prepare('UPDATE product_variants SET is_default = 1 WHERE id = ?')->execute([$firstRowId]);
+        }
+        // Remove orphaned variant image files that are no longer referenced.
+        if ($oldImages) {
+            $keep = array_flip($newImages);
+            foreach ($oldImages as $oi) {
+                if (!isset($keep[$oi]) && str_starts_with($oi, 'uploads/')) {
+                    @unlink(__DIR__ . '/' . $oi);
+                }
+            }
         }
     } catch (Throwable $e) {
         // ignore
@@ -2443,6 +2474,14 @@ function lyaideu_delete_item_variants(PDO $pdo, string $type, int $itemId): void
         return;
     }
     try {
+        try {
+            $st = $pdo->prepare('SELECT image FROM product_variants WHERE item_type = ? AND item_id = ?');
+            $st->execute([$type, $itemId]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $im) {
+                $im = trim((string)$im);
+                if ($im !== '' && str_starts_with($im, 'uploads/')) @unlink(__DIR__ . '/' . $im);
+            }
+        } catch (Throwable $e) {}
         $pdo->prepare('DELETE FROM product_variants WHERE item_type = ? AND item_id = ?')->execute([$type, $itemId]);
     } catch (Throwable $e) {
         // ignore
@@ -2462,7 +2501,7 @@ function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool
         . '<label class="pm-variant-toggle">'
         . '<input type="checkbox" class="pv-toggle" name="' . $p . '[has_variants]" value="1"' . ($hasVariants ? ' checked' : '') . '>'
         . '<span><i class="fa-solid fa-layer-group"></i> Enable size / quantity options</span>'
-        . '<small>Customers pick an option (e.g. 0.5 kg / 1 kg) with its own price. Add at least one option below.</small>'
+        . '<small>Customers pick an option (e.g. 0.5 kg / 1 kg) with its own price. Optionally add one image per option — shown on the product page when selected.</small>'
         . '</label>'
         . '<div class="pv-list"' . ($hasVariants ? '' : ' style="display:none"') . '>';
     $variants = array_values($variants);
@@ -2479,17 +2518,31 @@ function lyaideu_variants_editor_html(string $prefix, array $variants = [], bool
 
 /**
  * Single option row used by lyaideu_variants_editor_html().
+ * Now includes a single image per option (optional, responsive).
  */
 function lyaideu_variant_row_html(string $p, int $i, ?array $v): string {
     $label = $v ? htmlspecialchars((string)($v['label'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
     $price = $v ? (int)($v['price'] ?? 0) : '';
     $info = $v ? htmlspecialchars((string)($v['info'] ?? ''), ENT_QUOTES, 'UTF-8') : '';
     $def = $v && !empty($v['is_default']) ? ' checked' : '';
+    $img = $v ? trim((string)($v['image'] ?? $v['existing_image'] ?? '')) : '';
+    $imgEsc = htmlspecialchars($img, ENT_QUOTES, 'UTF-8');
+    $hasImg = $img !== '';
     return '<div class="pv-row">'
         . '<div class="pv-fields">'
         . '<input type="text" class="pv-label" name="' . $p . '[variants][' . $i . '][label]" placeholder="Option, e.g. 0.5 kg" value="' . $label . '">'
         . '<input type="number" min="0" step="1" class="pv-price" name="' . $p . '[variants][' . $i . '][price]" placeholder="Price (Rs.)" value="' . $price . '">'
         . '<input type="text" class="pv-info" name="' . $p . '[variants][' . $i . '][info]" placeholder="Info (optional)" value="' . $info . '">'
+        . '</div>'
+        . '<div class="pv-img">'
+        . '<div class="pv-img-preview' . ($hasImg ? '' : ' pv-img-empty') . '">'
+        . ($hasImg ? '<img src="' . $imgEsc . '" alt="">' : '<i class="fa-solid fa-image"></i>')
+        . '</div>'
+        . '<div class="pv-img-controls">'
+        . '<input type="file" class="pv-image-input" name="' . $p . '[variants][' . $i . '][img_file]" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">'
+        . '<input type="hidden" class="pv-existing-image" name="' . $p . '[variants][' . $i . '][existing_image]" value="' . $imgEsc . '">'
+        . ($hasImg ? '<label class="pv-remove-img"><input type="checkbox" name="' . $p . '[variants][' . $i . '][remove_image]" value="1"> <i class="fa-solid fa-trash-can"></i> Remove</label>' : '')
+        . '</div>'
         . '</div>'
         . '<div class="pv-tools">'
         . '<label class="pv-default" title="Preselect this option by default"><input type="checkbox" class="pv-default-input" name="' . $p . '[variants][' . $i . '][default]" value="1"' . $def . '> Default</label>'
@@ -2918,6 +2971,64 @@ function lyaideu_handle_item_image(string $existingImg, array $post, ?array $fil
         @unlink(__DIR__ . '/' . $img);
     }
 
+    return 'uploads/' . $filename;
+}
+
+/**
+ * Handles a single variant option image upload.
+ * - If the row's `remove_image` is checked, the old file is deleted.
+ * - If a new file is provided, it is validated (2 MB, image mime) and saved as `variant_*`.
+ * - Otherwise the existing image path is kept.
+ * Returns the final stored path (or '' when removed).
+ */
+function lyaideu_handle_variant_image(string $existingImg, array $opt, ?array $file): string {
+    $img = trim((string)($existingImg !== '' ? $existingImg : ($opt['existing_image'] ?? $opt['image'] ?? '')));
+    if (!empty($opt['remove_image'])) {
+        if ($img !== '' && str_starts_with($img, 'uploads/')) {
+            @unlink(__DIR__ . '/' . $img);
+        }
+        // Even if a new file was also chosen, removal wins — but we still handle the file
+        // as a fresh upload would compensate, so treat removal as clearing unless file overrides.
+        if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return '';
+        }
+        $img = '';
+    }
+    if ($file === null || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $img;
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Variant image upload failed. Please try again.');
+    }
+    if ($file['size'] > 2 * 1024 * 1024) {
+        throw new RuntimeException('Variant image is too large (max 2 MB).');
+    }
+    $allowed = [
+        'image/png' => 'png',
+        'image/jpeg' => 'jpg',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'image/svg+xml' => 'svg',
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string)$finfo->file($file['tmp_name']);
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Variant image must be a PNG, JPG, WebP, GIF or SVG image.');
+    }
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) {
+        if (!mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            throw new RuntimeException('Could not create the uploads folder.');
+        }
+    }
+    $ext = $allowed[$mime];
+    $filename = 'variant_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $filename)) {
+        throw new RuntimeException('Could not save the variant image.');
+    }
+    if ($img !== '' && str_starts_with($img, 'uploads/')) {
+        @unlink(__DIR__ . '/' . $img);
+    }
     return 'uploads/' . $filename;
 }
 

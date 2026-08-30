@@ -86,6 +86,51 @@ function uploaded_file_field(string $group, string|int $index, string $field): ?
     ];
 }
 
+function variant_uploaded_file(string $group, string|int $rowIdx, int $varIdx): ?array {
+    $files = $_FILES[$group] ?? null;
+    if (!is_array($files) || !isset($files['name'][$rowIdx]['variants'][$varIdx]['img_file'])) {
+        return null;
+    }
+    return [
+        'name' => $files['name'][$rowIdx]['variants'][$varIdx]['img_file'],
+        'type' => $files['type'][$rowIdx]['variants'][$varIdx]['img_file'] ?? '',
+        'tmp_name' => $files['tmp_name'][$rowIdx]['variants'][$varIdx]['img_file'],
+        'error' => $files['error'][$rowIdx]['variants'][$varIdx]['img_file'] ?? UPLOAD_ERR_NO_FILE,
+        'size' => $files['size'][$rowIdx]['variants'][$varIdx]['img_file'] ?? 0,
+    ];
+}
+
+function new_variant_uploaded_file(string $group, int $varIdx): ?array {
+    $files = $_FILES[$group] ?? null;
+    if (!is_array($files) || !isset($files['name']['variants'][$varIdx]['img_file'])) {
+        return null;
+    }
+    return [
+        'name' => $files['name']['variants'][$varIdx]['img_file'],
+        'type' => $files['type']['variants'][$varIdx]['img_file'] ?? '',
+        'tmp_name' => $files['tmp_name']['variants'][$varIdx]['img_file'],
+        'error' => $files['error']['variants'][$varIdx]['img_file'] ?? UPLOAD_ERR_NO_FILE,
+        'size' => $files['size']['variants'][$varIdx]['img_file'] ?? 0,
+    ];
+}
+
+function process_variant_images(array $rawVariants, string $group, $rowIdx = null): array {
+    $out = [];
+    foreach ($rawVariants as $vi => $opt) {
+        if (!is_array($opt)) { $out[$vi] = $opt; continue; }
+        $file = $rowIdx !== null ? variant_uploaded_file($group, $rowIdx, (int)$vi) : new_variant_uploaded_file($group, (int)$vi);
+        $existing = trim((string)($opt['existing_image'] ?? $opt['image'] ?? ''));
+        try {
+            $img = lyaideu_handle_variant_image($existing, $opt, $file);
+        } catch (Throwable $e) {
+            throw $e;
+        }
+        $opt['image'] = $img;
+        $out[$vi] = $opt;
+    }
+    return $out;
+}
+
 function handle_hotel_logo(string $existingLogo, array $post, ?array $file): string {
     $logo = $existingLogo;
 
@@ -271,7 +316,9 @@ try {
             ]);
             lyaideu_sync_item_slug('dishes', $id, $name);
             lyaideu_resolve_dish_vendor($id);
-            lyaideu_save_item_variants($pdo, 'dish', $id, !empty($d['has_variants']), $d['variants'] ?? []);
+            $rawVariants = $d['variants'] ?? [];
+            $rawVariants = is_array($rawVariants) ? process_variant_images($rawVariants, 'dishes', $i) : [];
+            lyaideu_save_item_variants($pdo, 'dish', $id, !empty($d['has_variants']), $rawVariants);
         }
 
         $newDish = $_POST['new_dish'] ?? [];
@@ -304,7 +351,9 @@ try {
             $newDishId = (int)$pdo->lastInsertId();
             lyaideu_sync_item_slug('dishes', $newDishId, clean_text($newDish['name'] ?? ''));
             lyaideu_resolve_dish_vendor($newDishId);
-            lyaideu_save_item_variants($pdo, 'dish', $newDishId, !empty($newDish['has_variants']), $newDish['variants'] ?? []);
+            $rawNewVariants = $newDish['variants'] ?? [];
+            $rawNewVariants = is_array($rawNewVariants) ? process_variant_images($rawNewVariants, 'new_dish', null) : [];
+            lyaideu_save_item_variants($pdo, 'dish', $newDishId, !empty($newDish['has_variants']), $rawNewVariants);
         }
     }
 
@@ -377,7 +426,9 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('mart_items', $id, $name);
-            lyaideu_save_item_variants($pdo, 'mart', $id, !empty($m['has_variants']), $m['variants'] ?? []);
+            $rawVariants = $m['variants'] ?? [];
+            $rawVariants = is_array($rawVariants) ? process_variant_images($rawVariants, 'mart', $i) : [];
+            lyaideu_save_item_variants($pdo, 'mart', $id, !empty($m['has_variants']), $rawVariants);
         }
 
         $newItem = $_POST['new_mart'] ?? [];
@@ -413,7 +464,9 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_mart_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'mart', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            $rawNewVariants = $newItem['variants'] ?? [];
+            $rawNewVariants = is_array($rawNewVariants) ? process_variant_images($rawNewVariants, 'new_mart', null) : [];
+            lyaideu_save_item_variants($pdo, 'mart', $newItemId, !empty($newItem['has_variants']), $rawNewVariants);
         }
     }
 
@@ -487,7 +540,9 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('other_items', $id, $name);
-            lyaideu_save_item_variants($pdo, 'other', $id, !empty($m['has_variants']), $m['variants'] ?? []);
+            $rawVariants = $m['variants'] ?? [];
+            $rawVariants = is_array($rawVariants) ? process_variant_images($rawVariants, 'others', $i) : [];
+            lyaideu_save_item_variants($pdo, 'other', $id, !empty($m['has_variants']), $rawVariants);
         }
 
         $newItem = $_POST['new_others'] ?? [];
@@ -523,7 +578,9 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_other_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'other', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            $rawNewVariants = $newItem['variants'] ?? [];
+            $rawNewVariants = is_array($rawNewVariants) ? process_variant_images($rawNewVariants, 'new_others', null) : [];
+            lyaideu_save_item_variants($pdo, 'other', $newItemId, !empty($newItem['has_variants']), $rawNewVariants);
         }
     }
 
@@ -597,7 +654,9 @@ try {
                 ':vendor_id' => $vid > 0 ? $vid : null,
             ]);
             lyaideu_sync_item_slug('beverage_items', $id, $name);
-            lyaideu_save_item_variants($pdo, 'beverage', $id, !empty($m['has_variants']), $m['variants'] ?? []);
+            $rawVariants = $m['variants'] ?? [];
+            $rawVariants = is_array($rawVariants) ? process_variant_images($rawVariants, 'beverages', $i) : [];
+            lyaideu_save_item_variants($pdo, 'beverage', $id, !empty($m['has_variants']), $rawVariants);
         }
 
         $newItem = $_POST['new_beverages'] ?? [];
@@ -633,7 +692,9 @@ try {
             if ($vid <= 0) {
                 lyaideu_resolve_beverage_vendor($newItemId);
             }
-            lyaideu_save_item_variants($pdo, 'beverage', $newItemId, !empty($newItem['has_variants']), $newItem['variants'] ?? []);
+            $rawNewVariants = $newItem['variants'] ?? [];
+            $rawNewVariants = is_array($rawNewVariants) ? process_variant_images($rawNewVariants, 'new_beverages', null) : [];
+            lyaideu_save_item_variants($pdo, 'beverage', $newItemId, !empty($newItem['has_variants']), $rawNewVariants);
         }
     }
 

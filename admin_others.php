@@ -242,6 +242,6 @@ admin_page_start('Others', 'others', 'Others');
   });
 })();
 </script>
-<script src="js/admin-variants.js?v=5"></script>
+<script src="js/admin-variants.js?v=6"></script>
 <?php
 admin_page_end();
