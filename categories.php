@@ -84,7 +84,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=63">
-<link rel="stylesheet" href="css/categories-mobile.css?v=8">
+<link rel="stylesheet" href="css/categories-mobile.css?v=9">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
 </head>
 <body>
@@ -208,6 +208,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
 </script>
-<script src="js/categories-mobile.js?v=18"></script>
+<script src="js/categories-mobile.js?v=20"></script>
 </body>
 </html>

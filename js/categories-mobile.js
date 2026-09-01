@@ -37,6 +37,16 @@
   var cache = null;
   var current = null;      // { type, slug }
   var syncTimer = null;
+  var mcHistoryPushed = false;
+
+  /* Legacy hash cleanup: older builds used #mc=… which could stick to
+     unrelated URLs after history coalescing. Remove it once if present. */
+  try {
+    if (location.hash && location.hash.indexOf('#mc=') === 0) {
+      history.replaceState(history.state, '', location.pathname + location.search);
+      if (window.LYAI_TRAIL_UPDATE) window.LYAI_TRAIL_UPDATE(location.pathname + location.search);
+    }
+  } catch (e) {}
 
   /* ---- Browse-view state lives in sessionStorage, NOT the URL ----------
      The previous implementation kept this in a #mc=… URL hash managed
@@ -201,6 +211,35 @@
   }
   function stopSync() { if (syncTimer) { clearInterval(syncTimer); syncTimer = null; } }
 
+  function setBottomNavHidden(hidden) {
+    try {
+      var bn = document.getElementById('bottomNav');
+      if (!bn) return;
+      if (hidden) {
+        bn.setAttribute('aria-hidden', 'true');
+        bn.style.display = 'none';
+        bn.style.visibility = 'hidden';
+        bn.style.pointerEvents = 'none';
+      } else {
+        bn.removeAttribute('aria-hidden');
+        bn.style.display = '';
+        bn.style.visibility = '';
+        bn.style.pointerEvents = '';
+      }
+    } catch (e) {}
+  }
+
+  /* If #bottomNav is injected after mc-view is already open (script.js
+     injects it on DOMContentLoaded), the CSS rule body.mc-open #bottomNav
+     already hides it, but this observer makes the inline-hide immediate
+     even for that race. */
+  try {
+    var bnObserver = new MutationObserver(function () {
+      if (view.classList.contains('open') && isMobile()) setBottomNavHidden(true);
+    });
+    bnObserver.observe(document.body, { childList: true });
+  } catch (e) {}
+
   /* ---- Left category rail: the tapped parent + its subcategories ---- */
   function renderRail(type, scopeSlug, activeSlug) {
     var list = TREES[type] || [];
@@ -335,7 +374,46 @@
     }
   }
 
-  /* ---- Open / close ---- */
+  /* ---- Open / close (with history handling) ---- */
+  function doCloseView() {
+    if (!view.classList.contains('open')) return false;
+    view.classList.remove('open');
+    view.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('mc-open');
+    setBottomNavHidden(false);
+    stopSync();
+    clearState();
+    return true;
+  }
+
+  function closeView() {
+    if (!view.classList.contains('open')) return;
+    /* If we pushed a history entry when opening, the UI back button
+       should pop that entry instead of directly hiding the overlay.
+       That keeps the browser Back button and the in-page back button
+       perfectly in sync: one tap → one history step → front page. */
+    if (mcHistoryPushed) {
+      try {
+        if (history.state && history.state.lyMc) {
+          mcHistoryPushed = false;
+          history.back();
+          return;
+        }
+      } catch (e) {}
+    }
+    doCloseView();
+    mcHistoryPushed = false;
+    /* If history somehow still holds our marker (e.g. direct close
+       without back), clean it so future Back goes to the real previous
+       page instead of needing two presses. */
+    try {
+      if (history.state && history.state.lyMc) {
+        history.replaceState(null, '', location.pathname + location.search);
+        if (window.LYAI_TRAIL_UPDATE) window.LYAI_TRAIL_UPDATE(location.pathname + location.search);
+      }
+    } catch (e) {}
+  }
+
   function openView(type, slug) {
     var scope = rootSlug(type, slug);
     current = { type: type, slug: slug, scope: scope };
@@ -347,8 +425,25 @@
     view.classList.add('open');
     view.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mc-open');
+    setBottomNavHidden(true);
     startSync();
     saveState();
+    /* Push a history entry so the mobile OS / browser Back button
+       closes the overlay instead of leaving categories.php entirely.
+       The URL itself is unchanged (same pathname+search), so no hash
+       leaks to other pages. */
+    if (isMobile()) {
+      try {
+        var hasMarker = history.state && history.state.lyMc;
+        if (!hasMarker && !mcHistoryPushed) {
+          history.pushState({ lyMc: 1 }, '', location.href);
+          mcHistoryPushed = true;
+          if (window.LYAI_TRAIL_UPDATE) window.LYAI_TRAIL_UPDATE(location.pathname + location.search + location.hash);
+        } else if (hasMarker) {
+          mcHistoryPushed = true;
+        }
+      } catch (e) {}
+    }
     try { backBtn.focus({ preventScroll: true }); } catch (e) {}
     fetchCatalog().then(function (d) {
       if (!d) return;
@@ -370,14 +465,28 @@
     saveState();
   }
 
-  function closeView() {
-    if (!view.classList.contains('open')) return;
-    view.classList.remove('open');
-    view.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('mc-open');
-    stopSync();
-    clearState();
-  }
+  /* Browser / OS Back while the overlay is open must return to the
+     categories grid, not to the previous site page. */
+  window.addEventListener('popstate', function () {
+    if (!isMobile()) return;
+    if (view.classList.contains('open')) {
+      doCloseView();
+      mcHistoryPushed = false;
+    }
+  });
+
+  /* bfcache restore can bring back a page with the overlay already in
+     the DOM but with a stale flag. Sync the flag to the actual history. */
+  window.addEventListener('pageshow', function () {
+    try {
+      if (view.classList.contains('open') && history.state && history.state.lyMc) {
+        mcHistoryPushed = true;
+      }
+      if (!view.classList.contains('open') && history.state && history.state.lyMc && !isMobile()) {
+        history.replaceState(null, '', location.pathname + location.search);
+      }
+    } catch (e) {}
+  });
 
   /* ---- Wire up ---- */
   document.addEventListener('click', function (e) {
@@ -421,8 +530,6 @@
   });
 
   backBtn.addEventListener('click', function () {
-    /* Just close the overlay. The URL is never touched, so there is
-       nothing to unwind in the history stack. */
     closeView();
   });
 
@@ -432,7 +539,14 @@
 
   function onViewportChange() {
     if (!isMobile() && view.classList.contains('open')) {
-      closeView();
+      doCloseView();
+      mcHistoryPushed = false;
+      try {
+        if (history.state && history.state.lyMc) {
+          history.replaceState(null, '', location.pathname + location.search);
+          if (window.LYAI_TRAIL_UPDATE) window.LYAI_TRAIL_UPDATE(location.pathname + location.search);
+        }
+      } catch (e) {}
     }
   }
   if (MQ && MQ.addEventListener) MQ.addEventListener('change', onViewportChange);
@@ -446,6 +560,15 @@
     if (saved && GROUPS[saved.type] && findCat(saved.type, saved.slug)) {
       openView(saved.type, saved.slug);
       restoreMainScroll(Number(saved.main) || 0);
+    } else {
+      /* If history still claims we are in the overlay but storage was
+         cleared, clean the stray marker so Back goes to the real page. */
+      try {
+        if (history.state && history.state.lyMc && !view.classList.contains('open')) {
+          history.replaceState(null, '', location.pathname + location.search);
+          if (window.LYAI_TRAIL_UPDATE) window.LYAI_TRAIL_UPDATE(location.pathname + location.search);
+        }
+      } catch (e) {}
     }
   }
 })();

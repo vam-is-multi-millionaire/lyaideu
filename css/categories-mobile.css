@@ -85,6 +85,8 @@
   .mc-view.open{display:flex;}
 
   body.mc-open{overflow:hidden;}
+  /* Hide the site bottom-nav while the category browse overlay is open */
+  body.mc-open #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}
 
   .mc-head{
     display:flex;
