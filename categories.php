@@ -84,7 +84,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=63">
-<link rel="stylesheet" href="css/categories-mobile.css?v=11">
+<link rel="stylesheet" href="css/categories-mobile.css?v=16">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
 </head>
 <body>
@@ -149,11 +149,18 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                     <a class="see-all" href="<?= $ce($group['page']) ?>">View all <i class="fa-solid fa-arrow-right"></i></a>
                 </div>
                 <p class="cat-section-desc"><?= $ce($group['desc']) ?></p>
-                <div class="cat-grid">
-                    <?php foreach ($tree['parents'] as $pc):
+                <?php
+                $visibleLimit = 19;
+                $totalParents = count($tree['parents']);
+                $showMore = $totalParents > 20;
+                $extraCount = $showMore ? $totalParents - $visibleLimit : 0;
+                ?>
+                <div class="cat-grid<?= $showMore ? ' has-more' : '' ?>" data-cat-grid="<?= $ce($type) ?>">
+                    <?php foreach ($tree['parents'] as $idx => $pc):
                         $pcImg = lyaideu_category_image_url($pc);
+                        $isExtra = $showMore && $idx >= $visibleLimit;
                     ?>
-                    <div class="cat-card<?= $pcImg !== '' ? ' has-img' : '' ?>">
+                    <div class="cat-card<?= $pcImg !== '' ? ' has-img' : '' ?><?= $isExtra ? ' cat-extra' : '' ?>">
                         <a class="cat-card-main" href="<?= lyaideu_group_category_href($group, (string)$pc['slug']) ?>" data-mc-open="<?= $ce($type) ?>" data-mc-slug="<?= $ce($pc['slug']) ?>">
                             <?php if ($pcImg !== ''): ?><span class="cat-card-img-wrap"><img class="cat-card-img" src="<?= $ce($pcImg) ?>" alt="<?= $ce($pc['name']) ?>" loading="lazy"></span><?php endif; ?>
                             <strong><?= $ce($pc['name']) ?></strong>
@@ -167,6 +174,25 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
                         </div>
                         <?php endif; ?>
                     </div>
+                    <?php if ($showMore && $idx === $visibleLimit - 1):
+                        $moreCat = $tree['parents'][$visibleLimit] ?? null;
+                        $moreImg = $moreCat ? lyaideu_category_image_url($moreCat) : '';
+                        $moreIcon = $moreCat ? (string)($moreCat['icon'] ?? '') : '';
+                    ?>
+                    <div class="cat-card cat-card-more has-img" data-cat-more="<?= $ce($type) ?>">
+                        <button type="button" class="cat-card-main cat-more-btn" aria-expanded="false" aria-label="Show all <?= $ce($group['label']) ?> categories">
+                            <span class="cat-card-img-wrap cat-more-img-wrap">
+                                <?php if ($moreImg !== ''): ?>
+                                    <img class="cat-card-img" src="<?= $ce($moreImg) ?>" alt="" loading="lazy">
+                                <?php else: ?>
+                                    <span class="cat-more-fallback"><i class="fa-solid <?= $moreIcon !== '' ? $ce($moreIcon) : 'fa-ellipsis' ?>"></i></span>
+                                <?php endif; ?>
+                                <span class="cat-more-fade"></span>
+                            </span>
+                            <strong class="more-label"><span class="more-count">+<?= $extraCount ?> More</span></strong>
+                        </button>
+                    </div>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -208,6 +234,6 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;
 </script>
-<script src="js/categories-mobile.js?v=23"></script>
+<script src="js/categories-mobile.js?v=25"></script>
 </body>
 </html>

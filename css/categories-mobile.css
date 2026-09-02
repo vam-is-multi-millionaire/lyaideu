@@ -7,6 +7,7 @@
 
 /* ---- Base: the browse overlay must never appear on desktop ---- */
 .mc-view{display:none;}
+.cat-card-more{display:none;}
 
 @media (max-width:960px){
 
@@ -63,6 +64,54 @@
   /* Child category pills are handled inside the browse overlay rail —
      keep the main grid clean on mobile */
   .cat-card-children{display:none;}
+
+  /* ---- Mobile "More" card: 20th image faded, clean "More" below ---- */
+  .cat-grid.has-more .cat-card.cat-extra{display:none;}
+  .cat-grid.has-more.is-expanded .cat-card.cat-extra{display:block;}
+  .cat-grid.has-more .cat-card-more{display:block;}
+  .cat-card-more{
+    border:1px solid var(--orange-100);
+    background:#fff;
+  }
+  .cat-card-more .cat-more-btn{
+    width:100%;height:100%;
+    border:0;background:transparent;cursor:pointer;
+  }
+  .cat-card-more .cat-more-img-wrap{
+    position:relative;
+    overflow:hidden;
+    background:var(--orange-50);
+  }
+  .cat-card-more .cat-more-img-wrap .cat-card-img{
+    opacity:.42;
+    filter:saturate(.88) brightness(1.06);
+  }
+  .cat-card-more .cat-more-fade{
+    position:absolute;inset:0;
+    background:linear-gradient(to bottom,rgba(255,255,255,0) 38%,rgba(255,255,255,.86) 100%),
+               linear-gradient(180deg,rgba(255,140,40,.05),rgba(255,107,0,.07));
+    pointer-events:none;
+  }
+  .cat-card-more .cat-more-fallback{
+    width:100%;height:100%;
+    display:grid;place-items:center;
+    background:linear-gradient(145deg,var(--orange-100),var(--orange-50));
+    color:var(--orange-600);font-size:1.15rem;
+  }
+  .cat-card-more .more-label{
+    display:block;
+    font-size:.78rem;font-weight:900;color:var(--orange-900);
+    line-height:1.2;margin-top:.1rem;text-align:center;
+  }
+  .cat-card-more .more-count{
+    background:transparent;color:var(--ink);
+    padding:0;border-radius:0;
+    font-size:.7rem;font-weight:900;line-height:1.25;
+    box-shadow:none;
+  }
+  .cat-card-more:active{transform:scale(.97);}
+  /* After tap, remove More btn and show all categories */
+  .cat-grid.has-more.is-expanded .cat-card-more{display:none !important;}
 
   /* Very small phones: keep 4 columns, just tighten spacing */
   @media (max-width:360px){

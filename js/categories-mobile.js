@@ -615,6 +615,26 @@
     openView(type, slug);
   });
 
+  /* Mobile "More" card: expand then remove (mobile only) */
+  document.addEventListener('click', function (e) {
+    var moreCard = e.target.closest('.cat-card-more');
+    if (!moreCard) return;
+    if (!isMobile()) return;
+    var grid = moreCard.closest('.cat-grid');
+    if (!grid || !grid.classList.contains('has-more')) return;
+    if (grid.classList.contains('is-expanded')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    grid.classList.add('is-expanded');
+    var btn = moreCard.querySelector('.cat-more-btn');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'true');
+      btn.setAttribute('aria-label', 'All categories shown');
+    }
+    // CSS hides the card via .is-expanded, this is a JS fallback
+    try { moreCard.style.display = 'none'; } catch (err) {}
+  });
+
   /* Bottom-nav "Categories" tab: while the browse overlay is open, tapping
      it must return to the categories grid instantly. Letting the link
      navigate would reload the page — and the saved-state restore below
