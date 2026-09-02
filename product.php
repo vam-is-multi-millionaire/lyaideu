@@ -228,6 +228,7 @@ echo lyaideu_seo_page([
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=63">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
+<style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}}</style>
 </head>
 <body class="product-pg" data-needs-catalog>
 
@@ -492,6 +493,35 @@ echo lyaideu_seo_page([
   }
   opts.forEach(function(r){ r.addEventListener('change', apply); });
   apply();
+})();
+</script>
+<script>
+// Product page — hide bottomNav on mobile (desktop untouched)
+(function(){
+  var mq = window.matchMedia ? window.matchMedia('(max-width: 960px)') : null;
+  function isMobile(){ return mq ? mq.matches : window.innerWidth <= 960; }
+  function hide(){
+    try{
+      var bn = document.getElementById('bottomNav');
+      if(!bn) return;
+      if(isMobile()){
+        bn.style.display = 'none';
+        bn.style.visibility = 'hidden';
+        bn.style.pointerEvents = 'none';
+        bn.setAttribute('aria-hidden','true');
+      } else {
+        bn.style.display = '';
+        bn.style.visibility = '';
+        bn.style.pointerEvents = '';
+        bn.removeAttribute('aria-hidden');
+      }
+    }catch(e){}
+  }
+  hide();
+  document.addEventListener('DOMContentLoaded', hide);
+  try{ new MutationObserver(hide).observe(document.body, {childList:true}); }catch(e){}
+  if(mq && mq.addEventListener) mq.addEventListener('change', hide);
+  else window.addEventListener('resize', hide);
 })();
 </script>
 </body>
