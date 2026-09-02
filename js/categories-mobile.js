@@ -381,6 +381,9 @@
     view.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('mc-open');
     setBottomNavHidden(false);
+    try { if (document.activeElement === backBtn) backBtn.blur(); } catch (e) {}
+    // Ensure button never stays stuck in :focus/:active visual state after close (esp. on mobile)
+    try { backBtn.style.transform = ''; } catch (e) {}
     stopSync();
     clearState();
     return true;
@@ -414,7 +417,8 @@
     } catch (e) {}
   }
 
-  function openView(type, slug) {
+  function openView(type, slug, opts) {
+    opts = opts || {};
     var scope = rootSlug(type, slug);
     current = { type: type, slug: slug, scope: scope };
     var cat = findCat(type, slug);
@@ -444,7 +448,17 @@
         }
       } catch (e) {}
     }
-    try { backBtn.focus({ preventScroll: true }); } catch (e) {}
+    // Focus only for fresh tap-open (keyboard a11y). On restore from product Back
+    // the button must NOT stay focused or its focus shadow sticks on mobile.
+    if (opts.skipFocus) {
+      try { backBtn.blur(); } catch (e) {}
+    } else {
+      try { backBtn.focus({ preventScroll: true }); } catch (e) {}
+      // On touch devices focus sticks + shows shadow/outline - clear it shortly after
+      try {
+        setTimeout(function(){ try{ if(document.activeElement===backBtn) backBtn.blur(); }catch(e2){} }, 600);
+      } catch (e) {}
+    }
     fetchCatalog().then(function (d) {
       if (!d) return;
       applyCatalogImages(d);
@@ -472,6 +486,10 @@
     if (view.classList.contains('open')) {
       doCloseView();
       mcHistoryPushed = false;
+      try { backBtn.blur(); } catch (e) {}
+    } else {
+      // Overlay already closed but button may still be focused from before - clear sticky focus shadow
+      try { if (document.activeElement === backBtn) backBtn.blur(); } catch (e) {}
     }
   });
 
@@ -481,6 +499,10 @@
     try {
       if (view.classList.contains('open') && history.state && history.state.lyMc) {
         mcHistoryPushed = true;
+        // Coming back from product via bfcache: ensure back btn not stuck focused with shadow
+        try { if (document.activeElement === backBtn) backBtn.blur(); } catch (e) {}
+        // Also clear any stuck :active transform
+        try { backBtn.style.transform = ''; } catch (e) {}
       }
       if (!view.classList.contains('open') && history.state && history.state.lyMc && !isMobile()) {
         history.replaceState(null, '', location.pathname + location.search);
@@ -558,8 +580,10 @@
   if (isMobile()) {
     var saved = readState();
     if (saved && GROUPS[saved.type] && findCat(saved.type, saved.slug)) {
-      openView(saved.type, saved.slug);
+      openView(saved.type, saved.slug, { skipFocus: true });
       restoreMainScroll(Number(saved.main) || 0);
+      // Safety: ensure no stuck focus shadow right after restore (back from product)
+      try { setTimeout(function(){ try{ backBtn.blur(); backBtn.style.transform=''; }catch(e){} }, 50); } catch (e) {}
     } else {
       /* If history still claims we are in the overlay but storage was
          cleared, clean the stray marker so Back goes to the real page. */
