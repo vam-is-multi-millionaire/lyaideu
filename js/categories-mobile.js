@@ -81,6 +81,95 @@
     try { sessionStorage.removeItem(STATE_KEY); } catch (e) {}
   }
 
+  /* ---- Random order per mc-main (stable within page session) ----
+     First visit to a category in this page session gets a Fisher-Yates
+     shuffle and is saved in sessionStorage. Switching rail/categories or
+     going to a product and Back reuses that same order (no reshuffle)
+     for better UX - user doesn't lose place. Refresh or page switch
+     (navigate/reload) clears the map so the next visit is newly random. */
+  var SHUFFLE_KEY = 'lyai_mc_shuffle_v1';
+  function navTypeMC() {
+    try {
+      var es = performance.getEntriesByType('navigation');
+      if (es && es.length) return es[0].type;
+    } catch (e) {}
+    try {
+      if (window.performance && window.performance.navigation) {
+        var n = window.performance.navigation.type;
+        return n === 1 ? 'reload' : (n === 2 ? 'back_forward' : 'navigate');
+      }
+    } catch (e) {}
+    return 'navigate';
+  }
+  function getShuffleMap() {
+    try { return JSON.parse(sessionStorage.getItem(SHUFFLE_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function saveShuffleMap(m) {
+    try { sessionStorage.setItem(SHUFFLE_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  // Fresh page load (not Back from product) => new random next time
+  try {
+    if (navTypeMC() !== 'back_forward') {
+      // Keep map but it will be lazily overwritten on next fresh visits.
+      // We do NOT clear on back_forward so product Back keeps same order.
+      // On reload/navigate we want new random - clear now so first visits are fresh.
+      if (navTypeMC() === 'reload' || navTypeMC() === 'navigate') {
+        try { sessionStorage.removeItem(SHUFFLE_KEY); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+  function shuffleArray(a) {
+    var arr = a.slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function applyShuffle(type, slug, rows, forceNew) {
+    if (!rows || rows.length <= 1) return rows;
+    var key = type + ':' + slug;
+    var map = getShuffleMap();
+    var stored = map[key];
+    // Fresh visit => always new random (better discovery)
+    if (forceNew) {
+      var shuffled = shuffleArray(rows);
+      map[key] = { ids: rows.map(function(r){ return r.src+':'+r.p.id; }).join('|'), order: shuffled.map(function(r){ return r.src+':'+r.p.id; }) };
+      saveShuffleMap(map);
+      return shuffled;
+    }
+    // Not forced: try to reuse previous random order (product Back, live sync)
+    if (stored && Array.isArray(stored.order) && stored.order.length) {
+      var byId = {};
+      rows.forEach(function(r){ byId[r.src + ':' + r.p.id] = r; });
+      var reused = [];
+      var seen = {};
+      stored.order.forEach(function(id){ if (byId[id]) { reused.push(byId[id]); seen[id] = true; } });
+      var newRows = [];
+      rows.forEach(function(r){ var id = r.src + ':' + r.p.id; if (!seen[id]) newRows.push(r); });
+      if (reused.length) {
+        if (newRows.length) {
+          // Keep existing random order stable; new items are shuffled among themselves and appended
+          newRows = shuffleArray(newRows);
+          reused = reused.concat(newRows);
+        }
+        if (reused.length === rows.length) {
+          // Persist updated order (with new items) for next renders
+          if (newRows.length) {
+            map[key] = { ids: rows.map(function(r){ return r.src+':'+r.p.id; }).join('|'), order: reused.map(function(r){ return r.src+':'+r.p.id; }) };
+            saveShuffleMap(map);
+          }
+          return reused;
+        }
+      }
+    }
+    // First visit or no reusable order => new random
+    var shuffled2 = shuffleArray(rows);
+    map[key] = { ids: rows.map(function(r){ return r.src+':'+r.p.id; }).join('|'), order: shuffled2.map(function(r){ return r.src+':'+r.p.id; }) };
+    saveShuffleMap(map);
+    return shuffled2;
+  }
+
   /* The product grid renders asynchronously, so keep re-applying for a
      short window — otherwise late renders/images clamp the position. */
   function restoreMainScroll(y) {
@@ -204,7 +293,7 @@
         applyCatalogImages(d);
         if (view.classList.contains('open') && current) {
           renderRail(current.type, current.scope, current.slug);
-          renderProducts(current.type, current.slug);
+          renderProducts(current.type, current.slug, false);
         }
       }).catch(function () {});
     }, 20000);
@@ -326,7 +415,7 @@
     '</article>';
   }
 
-  function renderProducts(type, slug) {
+  function renderProducts(type, slug, forceNew) {
     var cat = findCat(type, slug);
     var group = GROUPS[type];
     var isCustom = !!(group && group.custom);
@@ -345,6 +434,10 @@
         });
         rows = list.map(function (p) { return { p: p, src: type }; });
       }
+    }
+    // Shuffle for better discovery: fresh visit => new random, product Back => keep
+    if (rows && rows.length > 1) {
+      rows = applyShuffle(type, slug, rows, !!forceNew);
     }
 
     if (rows === null) {
@@ -425,7 +518,7 @@
     headLabel.textContent = GROUPS[type].label;
     headSub.textContent = cat ? cat.name : slug;
     renderRail(type, scope, slug);
-    renderProducts(type, slug);
+    renderProducts(type, slug, false);
     view.classList.add('open');
     view.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mc-open');
@@ -464,7 +557,7 @@
       applyCatalogImages(d);
       if (view.classList.contains('open') && current && current.type === type) {
         renderRail(current.type, current.scope, current.slug);
-        renderProducts(current.type, current.slug);
+        renderProducts(current.type, current.slug, false);
       }
     });
   }
@@ -475,7 +568,7 @@
     var cat = findCat(current.type, slug);
     headSub.textContent = cat ? cat.name : slug;
     renderRail(current.type, current.scope, slug);
-    renderProducts(current.type, slug);
+    renderProducts(current.type, slug, false);
     saveState();
   }
 
