@@ -83,7 +83,7 @@ function delivery_login_attempt(string $role): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['delivery_login'])) {
         return;
     }
-    $username = trim((string)($_POST['username'] ?? ''));
+    $email = strtolower(trim((string)($_POST['email'] ?? $_POST['username'] ?? '')));
     $password = (string)($_POST['password'] ?? '');
     $tokenValid = hash_equals($_SESSION['csrf_delivery'] ?? '', $_POST['csrf_token'] ?? '');
     if (!$tokenValid) {
@@ -91,8 +91,13 @@ function delivery_login_attempt(string $role): void {
         header('Location: ' . $role);
         exit;
     }
-    if ($username === '' || $password === '') {
-        $_SESSION['delivery_login_error'] = 'Please enter your username and password.';
+    if ($email === '' || $password === '') {
+        $_SESSION['delivery_login_error'] = 'Please enter your email and password.';
+        header('Location: ' . $role);
+        exit;
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['delivery_login_error'] = 'Please enter a valid email address.';
         header('Location: ' . $role);
         exit;
     }
@@ -107,15 +112,13 @@ function delivery_login_attempt(string $role): void {
 
     try {
         $cols = $role === 'rider' ? 'id, name, email, phone, vehicle, avatar, pass, is_active'
-                                  : 'id, name, email, phone, pass, is_active';
+                                   : 'id, name, email, phone, pass, is_active';
         $stmt = $pdo->prepare(
             "SELECT $cols FROM `$table`
-             WHERE LOWER(name) = LOWER(:n) OR phone = :p OR LOWER(email) = LOWER(:e) LIMIT 1"
+             WHERE LOWER(email) = LOWER(:e) LIMIT 1"
         );
         $stmt->execute([
-            ':n' => $username,
-            ':p' => $username,
-            ':e' => strtolower($username),
+            ':e' => $email,
         ]);
         $u = $stmt->fetch();
     } catch (Throwable $e) {
@@ -125,7 +128,7 @@ function delivery_login_attempt(string $role): void {
     }
 
     if (!$u || !password_verify($password, (string)$u['pass'])) {
-        $_SESSION['delivery_login_error'] = 'Invalid username or password.';
+        $_SESSION['delivery_login_error'] = 'Invalid email or password.';
         header('Location: ' . $role);
         exit;
     }
@@ -214,7 +217,7 @@ function delivery_show_login(string $role): void {
     }
     echo '<form method="POST" autocomplete="off">
         <input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '">
-        <input type="text" name="username" placeholder="Name, phone or email" required autocomplete="username" style="width:100%; padding:12px; margin:5px 0 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem; box-sizing:border-box;">
+        <input type="email" name="email" placeholder="you@gmail.com" required autocomplete="email" style="width:100%; padding:12px; margin:5px 0 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem; box-sizing:border-box;">
         <input type="password" name="password" placeholder="Password" required autocomplete="current-password" style="width:100%; padding:12px; margin:15px 0; border:2px solid var(--orange-200); border-radius:8px; font-size:1rem; box-sizing:border-box;">
         <button type="submit" name="delivery_login" value="1" class="btn btn-primary btn-block">Login to ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . ' Dashboard</button>
     </form>
