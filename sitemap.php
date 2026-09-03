@@ -10,7 +10,7 @@ header('X-Robots-Tag: noindex');
 require_once __DIR__ . '/seo.php';
 
 $urls = [];
-$add = function (string $loc, string $priority, string $changefreq = 'weekly') use (&$urls): void {
+$add = function (string $loc, string $priority = '1.0', string $changefreq = 'daily') use (&$urls): void {
     $loc = htmlspecialchars(lyaideu_seo_abs($loc), ENT_QUOTES, 'UTF-8');
     $urls[$loc] = '  <url>'
         . '<loc>' . $loc . '</loc>'
@@ -19,17 +19,17 @@ $add = function (string $loc, string $priority, string $changefreq = 'weekly') u
         . '</url>';
 };
 
-/* Static storefront pages. */
+/* Static storefront pages - all daily/1.0 for SEO. */
 $add('', '1.0', 'daily');
-$add('menu', '0.9');
-$add('mart', '0.9');
-$add('beverages', '0.8');
-$add('others', '0.8');
-$add('categories', '0.8');
-$add('store', '0.8');
-$add('contact', '0.6', 'monthly');
-$add('faq', '0.5', 'monthly');
-$add('terms', '0.3', 'monthly');
+$add('menu', '1.0', 'daily');
+$add('mart', '1.0', 'daily');
+$add('beverages', '1.0', 'daily');
+$add('others', '1.0', 'daily');
+$add('categories', '1.0', 'daily');
+$add('store', '1.0', 'daily');
+$add('contact', '1.0', 'daily');
+$add('faq', '1.0', 'daily');
+$add('terms', '1.0', 'daily');
 
 /** Best-effort id/slug/category rows from one product table. */
 function lyaideu_sitemap_product_rows(string $table): array {
@@ -79,9 +79,9 @@ try {
         $slug = rawurlencode((string)$cat['slug']);
         if (isset($builtinSectionOf[$type])) {
             [$page, $param] = $builtinSectionOf[$type];
-            $add($page . '?' . $param . '=' . $slug, '0.7');
+            $add($page . '?' . $param . '=' . $slug, '1.0', 'daily');
         } else {
-            $add('section?s=' . rawurlencode($type) . '&cat=' . $slug, '0.6');
+            $add('section?s=' . rawurlencode($type) . '&cat=' . $slug, '1.0', 'daily');
         }
     }
 
@@ -93,7 +93,7 @@ try {
             }
             $slug = trim((string)($row['name_slug'] ?? ''));
             $loc = $section . '/' . ($slug !== '' ? rawurlencode($slug) : (string)$row['id']);
-            $add($loc, '0.6', 'weekly');
+            $add($loc, '1.0', 'daily');
         }
     }
 
@@ -101,7 +101,7 @@ try {
     $pdo = lyaideu_load_pdo();
     if ($pdo instanceof PDO) {
         foreach ($pdo->query('SELECT name FROM hotels ORDER BY id') as $hotel) {
-            $add('store/' . rawurlencode(lyaideu_slugify((string)$hotel['name'])), '0.6');
+            $add('store/' . rawurlencode(lyaideu_slugify((string)$hotel['name'])), '1.0', 'daily');
         }
     }
 } catch (Throwable $e) {
