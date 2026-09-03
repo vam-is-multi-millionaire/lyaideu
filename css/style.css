@@ -682,13 +682,25 @@ section{scroll-margin-top:96px;}
 .hero-actions{display:flex;gap:.7rem;margin-top:1rem;align-items:center}
 .cart-count{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:#fff;color:var(--orange-700);font-size:.75rem;margin-left:.25rem}
 .menu-toolbar{display:flex;justify-content:space-between;gap:1rem;align-items:center;margin-bottom:1.5rem}
-.menu-toolbar .chip-row{margin:0}
-/* ---- Mobile: category chip rows scroll horizontally instead of wrapping
-   (same UX as the Stores page #storeKinds row) ---- */
+.menu-toolbar .chip-row{margin:0;flex:1;min-width:0}
+/* ---- PC+Mobile: chip row stays on one line with horizontal scroll ---- */
+.menu-toolbar .chip-row{
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:var(--orange-200) transparent;
+  align-items:center;
+  padding:.35rem .25rem .55rem;
+}
+.menu-toolbar .chip-row::-webkit-scrollbar{height:4px}
+.menu-toolbar .chip-row::-webkit-scrollbar-thumb{background:var(--orange-200);border-radius:999px}
+.menu-toolbar .chip-row::-webkit-scrollbar-track{background:transparent}
+.menu-toolbar .chip-row .chip{flex:0 0 auto;white-space:nowrap}
 @media (max-width:960px){
-  .menu-toolbar .chip-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;padding:.35rem .25rem .55rem;}
+  .menu-toolbar .chip-row{scrollbar-width:none;padding:.35rem .25rem .55rem;}
   .menu-toolbar .chip-row::-webkit-scrollbar{display:none;}
-  .menu-toolbar .chip-row .chip{flex:0 0 auto;white-space:nowrap;}
 }
 .sort-select{border:2px solid var(--orange-200);background:#fff;border-radius:999px;padding:.6rem 1rem;font:inherit;font-weight:800;color:var(--orange-900)}
 .dish-actions{display:flex;gap:.45rem;align-items:center}
