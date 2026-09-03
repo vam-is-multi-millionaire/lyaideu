@@ -46,6 +46,7 @@ if ($user) {
                     };
                     $_SESSION['flash'] = ['type' => 'success', 'msg' => $flashMsg];
                     $aggregate = lyaideu_recompute_order_status($orderId);
+                    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.status.vendor','order',$orderId,['new'=>$newStatus,'aggregate'=>$aggregate,'vendor_id'=>$vendorId]); } catch (Throwable $e) {}
                     $st = $pdo->prepare('SELECT user_id FROM orders WHERE id = ? LIMIT 1');
                     $st->execute([$orderId]);
                     $orderUserId = (int)$st->fetchColumn();

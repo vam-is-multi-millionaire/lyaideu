@@ -1391,6 +1391,7 @@ try {
     }
 
     $pdo->commit();
+    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity($section.'.save', $section, null, ['section'=>$section]); } catch (Throwable $e) {}
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

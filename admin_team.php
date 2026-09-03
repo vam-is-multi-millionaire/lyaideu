@@ -15,7 +15,7 @@ function team_page_groups(): array {
         'Storefront Control' => ['control', 'promos'],
         'Operations' => ['orders', 'hotels', 'riders', 'messages', 'contacts'],
         'People' => ['users', 'kyc'],
-        'System' => ['settings'],
+        'System' => ['activity', 'settings'],
     ];
 }
 

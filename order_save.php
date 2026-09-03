@@ -290,6 +290,7 @@ try {
     }
 
     $pdo->commit();
+    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.create','order',(int)$orderId,['total'=>$order['total'],'subtotal'=>$order['subtotal'],'delivery_fee'=>$order['delivery_fee']]); } catch (Throwable $e) {}
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

@@ -25,6 +25,7 @@ if ($user) {
                 ':oid' => $claimId,
             ]);
             if ($upd->rowCount() > 0) {
+                try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.claim','order',$claimId,['rider_id'=>$riderId]); } catch (Throwable $e) {}
                 $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Order #' . $claimId . ' is yours — go pick it up!'];
                 try {
                     $st = $pdo->prepare('SELECT user_id, vendor_id FROM orders WHERE id = ? LIMIT 1');
@@ -66,6 +67,7 @@ if ($user) {
                     $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                     $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
                     if ($upd->rowCount() > 0) {
+                        try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.out_for_delivery','order',$orderId,['rider_id'=>$riderId]); } catch (Throwable $e) {}
                         $riderName = (string)$user['name'];
                         lyaideu_notify($orderId, 'user', (int)$order['user_id'], 'Rider ' . $riderName . ' picked up your order #' . $orderId . ' — it\'s on the way!', 'orders?id=' . $orderId);
                         if ((int)$order['vendor_id'] > 0) {
@@ -76,6 +78,7 @@ if ($user) {
                     $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
                     $upd->execute([$newStatus, date('Y-m-d H:i:s'), $orderId]);
                     if ($upd->rowCount() > 0) {
+                        try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.delivered','order',$orderId,['rider_id'=>$riderId]); } catch (Throwable $e) {}
                         $riderName = (string)$user['name'];
                         lyaideu_notify($orderId, 'user', (int)$order['user_id'], 'Your order #' . $orderId . ' was delivered by ' . $riderName . '. Enjoy!', 'orders?id=' . $orderId);
                         if ((int)$order['vendor_id'] > 0) {

@@ -129,6 +129,7 @@ if ($action === 'signup') {
         ]);
 
         $userId = (int)$pdo->lastInsertId();
+        try { require_once __DIR__.'/site_config.php'; if(function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.signup','user',$userId,['email'=>$email]); } catch(Throwable $e){}
     } catch (Throwable $e) {
         flash('error', 'Could not create your account right now. Please try again.');
         redirect('login?tab=signup' . $nextQS);
@@ -168,6 +169,7 @@ if ($action === 'login') {
         $u = $stmt->fetch();
 
         if ($u && password_verify($pass, $u['pass'])) {
+            try { require_once __DIR__.'/site_config.php'; if(function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.login','user',(int)$u['id'],['email'=>$u['email']]); } catch(Throwable $e){}
             session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id'    => $u['id'],

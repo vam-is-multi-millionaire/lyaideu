@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':updated_at' => date('Y-m-d H:i:s'),
                 ':id' => $id,
             ]);
+            try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.status.admin','order',$id,['new'=>$status]); } catch (Throwable $e) {}
         } catch (Throwable $e) {
             // Fall through to redirect without saved flag on failure.
         }

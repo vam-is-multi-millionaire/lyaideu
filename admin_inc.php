@@ -44,6 +44,7 @@ function admin_nav_items(): array {
         'users' => ['label' => 'Users', 'href' => 'admin_users', 'icon' => '<i class="fa-solid fa-users"></i>'],
         'team' => ['label' => 'Staff & Roles', 'href' => 'admin_team', 'icon' => '<i class="fa-solid fa-user-shield"></i>'],
         'kyc' => ['label' => 'KYC', 'href' => 'admin_kyc', 'icon' => '<i class="fa-solid fa-shield-halved"></i>'],
+        'activity' => ['label' => 'Activity Log', 'href' => 'admin_activity', 'icon' => '<i class="fa-solid fa-clock-rotate-left"></i>'],
         'settings' => ['label' => 'Settings', 'href' => 'admin_settings', 'icon' => '<i class="fa-solid fa-gear"></i>'],
         'account' => ['label' => 'My Account', 'href' => 'admin_account', 'icon' => '<i class="fa-solid fa-id-badge"></i>'],
     ];
@@ -58,7 +59,7 @@ function admin_grantable_page_keys(): array {
     return [
         'control', 'categories', 'sections', 'promos', 'orders', 'dishes',
         'mart', 'beverages', 'others', 'hotels', 'riders', 'contacts',
-        'messages', 'users', 'kyc', 'settings',
+        'messages', 'users', 'kyc', 'activity', 'settings',
     ];
 }
 
@@ -215,6 +216,7 @@ function admin_handle_auth(): ?string {
         } catch (Throwable $e2) {
             /* non-fatal */
         }
+        try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('admin.login','admin',(int)$row['id'],['username'=>$row['username']]); } catch (Throwable $e3) {}
         header('Location: admin');
         exit;
     }
@@ -264,6 +266,8 @@ function admin_show_login(?string $error = null): void {
 
 function admin_require_login(): void {
     lyaideu_ensure_admin_users_tables();
+    try { if (function_exists('lyaideu_ensure_activity_log_table')) lyaideu_ensure_activity_log_table(); } catch (Throwable $e) {}
+    try { if (function_exists('lyaideu_activity_purge')) lyaideu_activity_purge(); } catch (Throwable $e) {}
     $error = admin_handle_auth();
     if (!admin_is_logged_in()) {
         admin_show_login($error);

@@ -80,6 +80,7 @@ try {
         $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE type = :t');
         $st->execute([':a' => $active, ':t' => $type]);
     }
+    try { if ($isKyc) lyaideu_log_activity('setting.kyc_toggle','setting',null,['active'=>$active]); elseif ($id>0) lyaideu_log_activity('category.toggle','category',$id,['active'=>$active]); else lyaideu_log_activity('category.bulk_toggle','category',null,['type'=>$type,'active'=>$active]); } catch (Throwable $e2) {}
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Could not save the toggle.'], 500);
 }

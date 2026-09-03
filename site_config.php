@@ -1707,6 +1707,78 @@ function lyaideu_notify_riders(int $orderId, string $message, string $link = '')
     }
 }
 
+/* ==========================================================
+   Activity Log — who did what, when, from where (live admin page)
+   ========================================================== */
+function lyaideu_ensure_activity_log_table(): bool {
+    static $done = false;
+    if ($done) return true;
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) return false;
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS activity_log (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                actor_type ENUM(\'admin\',\'vendor\',\'rider\',\'user\',\'system\') NOT NULL,
+                actor_id INT UNSIGNED NULL DEFAULT NULL,
+                actor_name VARCHAR(150) NOT NULL DEFAULT \'\',
+                actor_role VARCHAR(20) NOT NULL DEFAULT \'\',
+                action VARCHAR(60) NOT NULL,
+                entity_type VARCHAR(30) NOT NULL,
+                entity_id INT UNSIGNED NULL DEFAULT NULL,
+                details JSON NULL,
+                ip VARCHAR(45) NOT NULL DEFAULT \'\',
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                KEY idx_created (created_at),
+                KEY idx_actor (actor_type,actor_id,created_at),
+                KEY idx_entity (entity_type,entity_id),
+                KEY idx_action (action,created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        $done = true;
+        return true;
+    } catch (Throwable $e) { return false; }
+}
+function lyaideu_log_activity(string $action, string $entityType, ?int $entityId, array $meta = []): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) return;
+    try { lyaideu_ensure_activity_log_table(); } catch (Throwable $e) {}
+    $actorType = 'system'; $actorId = null; $actorName = 'System'; $actorRole = '';
+    try {
+        if (function_exists('admin_current_user') && !empty($_SESSION['is_admin']) && !empty($_SESSION['admin_id'])) {
+            $au = admin_current_user();
+            if ($au) { $actorType='admin'; $actorId=(int)$au['id']; $actorName=(string)($au['name'] ?? $au['username'] ?? 'Admin'); $actorRole=(string)($au['role'] ?? ''); }
+            else { $actorType='admin'; $actorId=(int)$_SESSION['admin_id']; $actorName=(string)($_SESSION['admin_name'] ?? 'Admin'); $actorRole=(string)($_SESSION['admin_role'] ?? ''); }
+        } elseif (!empty($_SESSION['vendor_id'])) {
+            $actorType='vendor'; $actorId=(int)$_SESSION['vendor_id']; $actorName=(string)($_SESSION['vendor_name'] ?? 'Vendor');
+        } elseif (!empty($_SESSION['rider_id'])) {
+            $actorType='rider'; $actorId=(int)$_SESSION['rider_id']; $actorName=(string)($_SESSION['rider_name'] ?? 'Rider');
+        } elseif (!empty($_SESSION['user']['id'])) {
+            $actorType='user'; $actorId=(int)$_SESSION['user']['id']; $actorName=(string)($_SESSION['user']['name'] ?? 'User');
+        } elseif (!empty($_SESSION['user']['email'])) {
+            $actorType='user'; $actorName=(string)$_SESSION['user']['email'];
+        }
+    } catch (Throwable $e) {}
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    if (strlen($ip) > 45) $ip = substr($ip,0,45);
+    $details = null;
+    if ($meta) {
+        $j = json_encode($meta, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+        if ($j !== false && strlen($j) > 8000) $j = substr($j,0,8000);
+        $details = $j;
+    }
+    try {
+        $pdo->prepare('INSERT INTO activity_log (actor_type,actor_id,actor_name,actor_role,action,entity_type,entity_id,details,ip,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)')
+            ->execute([$actorType,$actorId,$actorName,$actorRole,$action,$entityType,$entityId,$details,$ip,date('Y-m-d H:i:s')]);
+    } catch (Throwable $e) {}
+}
+function lyaideu_activity_purge(int $days = 90): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) return;
+    try { if (mt_rand(1,20) !== 1) return; $pdo->prepare('DELETE FROM activity_log WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY) LIMIT 1000')->execute([$days]); } catch (Throwable $e) {}
+}
+
 /**
  * Human-readable per-vendor summary of an order's items, e.g.
  * "4 to 9 cafe: Chicken Momo ×2, Veg Thukpa ×1 · Subodh Mart: Coke ×1".
