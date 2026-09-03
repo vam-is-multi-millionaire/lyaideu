@@ -1750,6 +1750,10 @@ function lyaideu_log_activity(string $action, string $entityType, ?int $entityId
             $au = admin_current_user();
             if ($au) { $actorType='admin'; $actorId=(int)$au['id']; $actorName=(string)($au['name'] ?? $au['username'] ?? 'Admin'); $actorRole=(string)($au['role'] ?? ''); }
             else { $actorType='admin'; $actorId=(int)$_SESSION['admin_id']; $actorName=(string)($_SESSION['admin_name'] ?? 'Admin'); $actorRole=(string)($_SESSION['admin_role'] ?? ''); }
+        } elseif (!empty($_SESSION['delivery_user']) && !empty($_SESSION['delivery_role'])) {
+            $du = $_SESSION['delivery_user']; $dr = (string)$_SESSION['delivery_role'];
+            if ($dr === 'vendor') { $actorType='vendor'; $actorId=(int)($du['id'] ?? 0); $actorName=(string)($du['name'] ?? 'Vendor'); $actorRole='vendor'; }
+            elseif ($dr === 'rider') { $actorType='rider'; $actorId=(int)($du['id'] ?? 0); $actorName=(string)($du['name'] ?? 'Rider'); $actorRole='rider'; }
         } elseif (!empty($_SESSION['vendor_id'])) {
             $actorType='vendor'; $actorId=(int)$_SESSION['vendor_id']; $actorName=(string)($_SESSION['vendor_name'] ?? 'Vendor');
         } elseif (!empty($_SESSION['rider_id'])) {

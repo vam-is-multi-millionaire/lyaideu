@@ -175,6 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $rawVp = $_POST['product'][$id]['variants'] ?? [];
                     $rawVp = is_array($rawVp) ? vendor_process_variants($rawVp, $id) : [];
                     lyaideu_save_item_variants($pdo, $itemType, $id, $hasVariants, $rawVp);
+                    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('product.update', $itemType, (int)$id, ['name'=>$name,'price'=>$price,'vendor_id'=>$vendorId]); } catch (Throwable $e) {}
                 } else {
                     $discountPct = lyaideu_deal_percent($_POST['discount'] ?? 0);
                     if ($isMart) {
@@ -195,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $rawNewVp = $_POST['new_product']['variants'] ?? [];
                     $rawNewVp = is_array($rawNewVp) ? vendor_process_variants($rawNewVp, null) : [];
                     lyaideu_save_item_variants($pdo, $itemType, $newItemId, $hasVariants, $rawNewVp);
+                    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('product.create', $itemType, (int)$newItemId, ['name'=>$name,'price'=>$price,'vendor_id'=>$vendorId]); } catch (Throwable $e) {}
                 }
                 header('Location: vendor_products?msg=' . urlencode('Product saved. It is now live on the website.'));
                 exit;
@@ -212,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $del = $pdo->prepare("DELETE FROM `$table` WHERE id = ? AND vendor_id = ?");
             $del->execute([$id, $vendorId]);
             lyaideu_delete_item_variants($pdo, $itemType, $id);
+            try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('product.delete', $itemType, (int)$id, ['vendor_id'=>$vendorId]); } catch (Throwable $e) {}
             header('Location: vendor_products?msg=' . urlencode('Product deleted.'));
             exit;
         } catch (Throwable $e) {
