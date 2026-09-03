@@ -1782,6 +1782,18 @@ function lyaideu_activity_purge(int $days = 90): void {
     if (!$pdo instanceof PDO) return;
     try { if (mt_rand(1,20) !== 1) return; $pdo->prepare('DELETE FROM activity_log WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY) LIMIT 1000')->execute([$days]); } catch (Throwable $e) {}
 }
+function lyaideu_ensure_users_phone_allows_duplicate(): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) return;
+    try {
+        $idx = $pdo->query("SHOW INDEX FROM `users` WHERE Key_name = 'uq_users_phone'")->fetch();
+        if ($idx) {
+            $pdo->exec("ALTER TABLE `users` DROP INDEX `uq_users_phone`");
+            // Re-create as non-unique for faster lookups (ignore if already exists)
+            try { $pdo->exec("CREATE INDEX `idx_users_phone` ON `users` (`phone`)"); } catch (Throwable $e2) {}
+        }
+    } catch (Throwable $e) {}
+}
 
 /**
  * Human-readable per-vendor summary of an order's items, e.g.

@@ -71,11 +71,11 @@ require_once __DIR__ . '/site_config.php';
             <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
             <div class="field">
-                <label for="li-user">Username</label>
+                <label for="li-user">Email</label>
                 <div class="control">
-                    <span class="control-ico"><i class="fa-solid fa-user"></i></span>
-                    <input type="text" id="li-user" name="username" placeholder="Your full name OR 10-digit phone" data-validate="username" required>
-                </div><small class="field-msg field-hint">Login with your name, phone number, or email</small>
+                    <span class="control-ico"><i class="fa-solid fa-envelope"></i></span>
+                    <input type="email" id="li-user" name="email" placeholder="you@gmail.com" data-validate="email" required>
+                </div><small class="field-msg field-hint">Login with your email</small>
                 
             </div>
 
@@ -109,7 +109,7 @@ require_once __DIR__ . '/site_config.php';
                 <label for="su-name">Full Name</label>
                 <div class="control">
                     <span class="control-ico"><i class="fa-solid fa-user"></i></span>
-                    <input type="text" id="su-name" name="name" placeholder="e.g. Aarav Shrestha" value="<?= htmlspecialchars($old['name']) ?>" data-validate="name" required>
+                    <input type="text" id="su-name" name="name" placeholder="e.g. Karan Thapa" value="<?= htmlspecialchars($old['name']) ?>" data-validate="name" required>
                 </div>
                 <small class="field-msg"></small>
             </div>

@@ -97,18 +97,7 @@ if ($post && isset($_POST['save_profile'])) {
         $errors[] = 'Please enter a valid date of birth (10 to 80 years old).';
     }
     if (empty($errors)) {
-        try {
-            $chk = $pdo->prepare('SELECT id FROM users WHERE phone = :phone AND id <> :id LIMIT 1');
-            $chk->execute([':phone' => $phone, ':id' => $uid]);
-            if ($chk->fetch()) {
-                $errors[] = 'This contact number is already used by another account.';
-            }
-        } catch (Throwable $e) {
-            $errors[] = 'Could not check your phone number right now.';
-        }
-    }
-
-    if (empty($errors)) {
+        try { if (function_exists('lyaideu_ensure_users_phone_allows_duplicate')) lyaideu_ensure_users_phone_allows_duplicate(); } catch (Throwable $e) {}
         try {
             $upd = $pdo->prepare('UPDATE users SET name = :name, phone = :phone, dob = :dob, address = :address WHERE id = :id');
             $upd->execute([

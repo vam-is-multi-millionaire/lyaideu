@@ -102,16 +102,13 @@ if ($action === 'signup') {
     }
 
     try {
-        $check = $pdo->prepare('SELECT email, phone FROM users WHERE email = :email OR phone = :phone LIMIT 1');
-        $check->execute([':email' => $email, ':phone' => $phone]);
+        try { require_once __DIR__.'/site_config.php'; if (function_exists('lyaideu_ensure_users_phone_allows_duplicate')) lyaideu_ensure_users_phone_allows_duplicate(); } catch (Throwable $e) {}
+        $check = $pdo->prepare('SELECT email FROM users WHERE email = :email LIMIT 1');
+        $check->execute([':email' => $email]);
         $existing = $check->fetch();
 
-        if ($existing && $existing['email'] === $email) {
+        if ($existing) {
             flash('error', 'This email is already registered. Please login instead.');
-            redirect('login?tab=signup' . $nextQS);
-        }
-        if ($existing && $existing['phone'] === $phone) {
-            flash('error', 'This contact number is already registered. Please login instead.');
             redirect('login?tab=signup' . $nextQS);
         }
 
@@ -144,11 +141,11 @@ if ($action === 'signup') {
 
 /* ===================== LOGIN ===================== */
 if ($action === 'login') {
-    $username = trim($_POST['username'] ?? '');
+    $emailLogin = strtolower(trim($_POST['email'] ?? $_POST['username'] ?? ''));
     $pass     = $_POST['password'] ?? '';
 
-    if ($username === '' || $pass === '') {
-        flash('error', 'Please enter your username and password.');
+    if ($emailLogin === '' || $pass === '') {
+        flash('error', 'Please enter your email and password.');
         redirect('login' . $loginQS);
     }
 
@@ -156,15 +153,11 @@ if ($action === 'login') {
         $stmt = $pdo->prepare(
             'SELECT id, name, email, phone, dob, avatar, address, kyc_status, pass
              FROM users
-             WHERE LOWER(name) = LOWER(:name_login)
-                OR phone = :phone_login
-                OR email = :email_login
+             WHERE email = :email_login
              LIMIT 1'
         );
         $stmt->execute([
-            ':name_login' => $username,
-            ':phone_login' => $username,
-            ':email_login' => strtolower($username),
+            ':email_login' => $emailLogin,
         ]);
         $u = $stmt->fetch();
 
@@ -188,7 +181,7 @@ if ($action === 'login') {
         redirect('login' . $loginQS);
     }
 
-    flash('error', 'Invalid username or password. Please try again or sign up.');
+    flash('error', 'Invalid email or password. Please try again or sign up.');
     redirect('login' . $loginQS);
 }
 
