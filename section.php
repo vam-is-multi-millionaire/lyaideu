@@ -300,7 +300,7 @@ document.addEventListener('click', function (e) {
     if (url) window.location.href = url;
 });
 </script>
-<script src="js/script.js?v=41"></script>
+<script src="js/script.js?v=42"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 </body>

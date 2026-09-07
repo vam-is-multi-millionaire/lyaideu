@@ -252,11 +252,22 @@ function renderDishes(dishes){
       <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="dish" data-price="${deal.now}" data-hotel="${hotel}"${d.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
-  $$('#menu-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('dish',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyFilters();
 }
 function storeKindLabel(k){k=(k||'hotel').toLowerCase();return k==='mart'?'Mart':k==='other'?'Other':k==='beverage'?'Beverages':'Hotel'}
 function renderHotels(hotels){const g=$('#hotels-grid');if(!g)return;g.innerHTML=hotels.map(h=>{const logo=esc(h.logo)||'';const kind=(h.kind||'hotel').toLowerCase();const storeUrl='store/'+slugify(h.name);const vendor=kind==='hotel'&&h.vendor_name?`<p class="hotel-vendor"><i class="fa-solid fa-store"></i> Kitchen: ${esc(h.vendor_name)}</p>`:'';const call=`<div class="hotel-call-row">${h.phone?`<a class="hotel-call" href="tel:+977${esc(h.phone)}"><i class="fa-solid fa-phone"></i> Call</a>`:''}<a class="hotel-call" href="${storeUrl}"><i class="fa-solid fa-store"></i> View Store</a></div>`;return `<div class="hotel-card reveal visible" data-kind="${kind}" data-store-url="${storeUrl}" data-search="${esc((h.name+' '+h.type+' '+storeKindLabel(kind)+' '+(h.hotel||'')+' '+(h.location||'')+' '+(h.vendor_name||'')).toLowerCase())}"><div class="hotel-avatar">${logo?`<img class="hotel-logo" src="${logo}" alt="${esc(h.name)}" loading="lazy">`:faIcon(h.emoji)}</div><div class="hotel-info"><span class="hotel-kind-badge">${storeKindLabel(kind)}</span><h3>${esc(h.name)}</h3><p>${esc(h.type)}</p>${vendor}</div>${call}</div>`}).join('');applyHotelFilters()}
+// Delegated product card click - survives catalog-order.js snapshot restore (innerHTML)
+document.addEventListener('click',function(e){
+  var card=e.target.closest('#menu-grid .dish-card, #mart-grid .dish-card, #others-grid .dish-card, #beverages-grid .dish-card');
+  if(!card) return;
+  if(e.target.closest('.btn-order')||e.target.closest('a')) return;
+  var grid=card.closest('.dish-grid');
+  var map={'menu-grid':'dish','mart-grid':'mart','others-grid':'other','beverages-grid':'beverage'};
+  var type=(grid&&map[grid.id])||card.getAttribute('data-type')||'dish';
+  var slug=card.getAttribute('data-slug')||'';
+  var cats=(card.getAttribute('data-cats')||'').split(',').filter(function(s){return s.trim();});
+  if(slug) window.location.href=productUrl(type,slug,cats);
+});
 document.addEventListener('click',e=>{const card=e.target.closest('.hotel-card[data-store-url]');if(!card)return;if(e.target.closest('.hotel-call'))return;const u=card.dataset.storeUrl;if(u)window.location.href=u})
 let currentStoreKind='all';
 function applyHotelFilters(){
@@ -288,7 +299,6 @@ function renderMart(items){
       <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="mart" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
-  $$('#mart-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('mart',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyMartFilters();
 }
 function renderOthers(items){
@@ -307,7 +317,6 @@ function renderOthers(items){
       <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="other" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
-  $$('#others-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('other',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyOthersFilters();
 }
 function applyOthersFilters(){
@@ -345,7 +354,6 @@ function renderBeverages(items){
       <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> ${deal.now}</span>${dealTag(deal)}
       <button class="btn-order add-cart" data-id="${id}" data-type="beverage" data-name="${name}" data-price="${deal.now}" data-unit="${unit}" data-hotel="${hotel}"${m.has_variants?' data-has-variants="1"':''} type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div></div></article>`;
   }).join('');
-  $$('#beverages-grid .dish-card').forEach(c=>c.addEventListener('click',e=>{if(e.target.closest('.btn-order'))return;window.location.href=productUrl('beverage',c.dataset.slug,(c.dataset.cats||'').split(','))}));
   applyBeveragesFilters();
 }
 function applyBeveragesFilters(){

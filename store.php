@@ -170,8 +170,32 @@ if ($isDetail) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=63">
+<link rel="stylesheet" href="css/style.css?v=64">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
+<script>
+(function(){
+  try {
+    var doc = document.documentElement;
+    var searchLoad = false, mobileView = false;
+    try { searchLoad = !!((new URLSearchParams(location.search).get('q') || '').trim()); } catch (e) {}
+    try { mobileView = window.matchMedia('(max-width: 960px)').matches; } catch (e) {}
+    var doRestore = sessionStorage.getItem('lyaideu_scroll_do_restore:1') === location.pathname;
+    var hasCatalogSnap = false;
+    try {
+      var snap = JSON.parse(sessionStorage.getItem('lyaideu_catalog_v1:' + location.pathname.replace(/\/+$/,'')) || 'null');
+      if (snap && snap.html) {
+        var t = 0; try { var e = performance.getEntriesByType('navigation'); if(e&&e.length) t = e[0].type; } catch(err){}
+        if (!t) { try { t = window.performance && window.performance.navigation ? (window.performance.navigation.type===2?'back_forward':(window.performance.navigation.type===1?'reload':'navigate')) : 'navigate'; } catch(err){} }
+        if (t === 'back_forward') hasCatalogSnap = true;
+      }
+    } catch (e) {}
+    if (!(searchLoad && mobileView) && (doRestore || hasCatalogSnap)) {
+      doc.classList.add('lyai-restoring');
+    }
+    window.addEventListener('load', function () { doc.classList.remove('lyai-restoring'); });
+  } catch (e) {}
+})();
+</script>
 <style>
 /* Hide the per-store "Call" button on the stores listing (all viewports);
    "View Store" stays as the card's single action. */
@@ -185,7 +209,7 @@ if ($isDetail) {
   #storeKinds .chip{flex:0 0 auto;white-space:nowrap;}
 }
 </style>
-<script>window.LYADEU_BACK_TO_TOP=1;</script>
+<?php if ($isDetail): ?><script>window.LYAIDEU_BACK_TO_TOP=1;</script><?php endif; ?>
 </head>
 <body<?= $isDetail ? ' class="store-pg"' : '' ?>>
 
@@ -277,7 +301,7 @@ if ($isDetail) {
                     <?php endif; ?>
                 </h2>
                 <?php if ($products): ?>
-                    <div class="grid dish-grid store-grid">
+                    <div class="grid dish-grid store-grid" id="store-grid">
                         <?php foreach ($products as $p):
                             $isMart = $kind === 'mart';
                             $isOther = $kind === 'other';
@@ -357,7 +381,8 @@ if ($isDetail) {
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=41"></script>
+<script src="js/script.js?v=42"></script>
+<script src="js/catalog-order.js?v=2"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=8"></script>
 <script>
