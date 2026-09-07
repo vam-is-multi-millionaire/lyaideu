@@ -150,8 +150,9 @@ if ($action === 'login') {
     }
 
     try {
+        try { require_once __DIR__.'/site_config.php'; if (function_exists('lyaideu_ensure_users_block_column')) lyaideu_ensure_users_block_column(); } catch (Throwable $e) {}
         $stmt = $pdo->prepare(
-            'SELECT id, name, email, phone, dob, avatar, address, kyc_status, pass
+            'SELECT id, name, email, phone, dob, avatar, address, kyc_status, is_blocked, pass
              FROM users
              WHERE email = :email_login
              LIMIT 1'
@@ -160,6 +161,11 @@ if ($action === 'login') {
             ':email_login' => $emailLogin,
         ]);
         $u = $stmt->fetch();
+
+        if ($u && (int)($u['is_blocked'] ?? 0) === 1) {
+            flash('error', 'Your account has been blocked by the administrator. Please contact support.');
+            redirect('login' . $loginQS);
+        }
 
         if ($u && password_verify($pass, $u['pass'])) {
             try { require_once __DIR__.'/site_config.php'; if(function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.login','user',(int)$u['id'],['email'=>$u['email']]); } catch(Throwable $e){}

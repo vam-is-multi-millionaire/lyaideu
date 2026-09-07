@@ -3442,6 +3442,12 @@ function lyaideu_ensure_kyc_tables(): bool {
     }
 }
 
+function lyaideu_ensure_users_block_column(): bool {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) return false;
+    try { lyaideu_ensure_column($pdo, 'users', 'is_blocked', "TINYINT(1) NOT NULL DEFAULT 0"); return true; } catch (Throwable $e) { return false; }
+}
+
 /**
  * Ensures the location columns used for home pins and order delivery pins.
  */
@@ -3487,10 +3493,11 @@ function lyaideu_user_profile(int $userId): ?array {
         return null;
     }
     try {
+        try { lyaideu_ensure_users_block_column(); } catch (Throwable $e) {}
         $st = $pdo->prepare(
             'SELECT id, name, email, phone, dob, avatar, address,
                     home_lat, home_lng, home_address,
-                    kyc_status, kyc_reason, kyc_submitted_at, kyc_reviewed_at, kyc_reviewer
+                    kyc_status, kyc_reason, kyc_submitted_at, kyc_reviewed_at, kyc_reviewer, is_blocked
              FROM users WHERE id = ? LIMIT 1'
         );
         $st->execute([$userId]);

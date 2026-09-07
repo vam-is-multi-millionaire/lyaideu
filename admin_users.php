@@ -6,10 +6,33 @@ admin_require_page('users');
 require_once __DIR__ . '/db.php';
 
 lyaideu_ensure_kyc_tables();
+try { if (function_exists('lyaideu_ensure_users_block_column')) lyaideu_ensure_users_block_column(); } catch (Throwable $e) {}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_block'])) {
+    if (!hash_equals($_SESSION['csrf_admin'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid token'); }
+    if (!admin_can('users') && !admin_is_superadmin()) { http_response_code(403); exit('No permission'); }
+    $uid = (int)($_POST['user_id'] ?? 0);
+    if ($uid > 0) {
+        try {
+            $st = $pdo->prepare('SELECT is_blocked FROM users WHERE id = ? LIMIT 1');
+            $st->execute([$uid]);
+            $cur = $st->fetchColumn();
+            if ($cur !== false) {
+                $new = ((int)$cur === 1) ? 0 : 1;
+                $pdo->prepare('UPDATE users SET is_blocked = ? WHERE id = ?')->execute([$new, $uid]);
+                try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity($new ? 'user.block' : 'user.unblock','user',$uid,['by'=>admin_display_name()]); } catch (Throwable $e) {}
+                header('Location: admin_users?' . ($new ? 'saved=1' : 'saved=1'));
+                exit;
+            }
+        } catch (Throwable $e) {}
+    }
+    header('Location: admin_users?error=' . urlencode('Could not update user.'));
+    exit;
+}
 
 try {
     $users = $pdo->query(
-        'SELECT id, name, email, phone, dob, avatar, address, kyc_status, created_at FROM users ORDER BY created_at DESC'
+        'SELECT id, name, email, phone, dob, avatar, address, kyc_status, is_blocked, created_at FROM users ORDER BY created_at DESC'
     )->fetchAll();
 } catch (Throwable $e) {
     http_response_code(500);
@@ -58,6 +81,14 @@ admin_page_start('Users', 'users', 'Registered Users');
                     <span><?= $ce($u['dob']) ?></span>
                     <span><?= $ce((string)$u['address'] ?: '—') ?></span>
                     <span><?= $ce($u['created_at']) ?></span>
+                </span>
+                <span class="pm-price" style="display:flex;flex-direction:column;gap:.35rem;align-items:flex-end;min-width:110px">
+                    <span class="order-status-pill <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'kyc-rejected' : 'kyc-approved' ?>" style="font-size:.72rem"><?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Blocked' : 'Active' ?></span>
+                    <form method="POST" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
+                        <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                        <button type="submit" name="toggle_block" value="1" class="btn <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'btn-outline' : 'btn-primary' ?> btn-sm" style="<?= (int)($u['is_blocked'] ?? 0) === 1 ? '' : 'background:#c93a3a;border-color:#c93a3a;box-shadow:0 3px 0 #a02a2a' ?>" onclick="return confirm('<?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Unblock' : 'Block' ?> <?= $ce($u['name']) ?>?')"><i class="fa-solid <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'fa-unlock' : 'fa-ban' ?>"></i> <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Unblock' : 'Block' ?></button>
+                    </form>
                 </span>
             </div>
         </div>

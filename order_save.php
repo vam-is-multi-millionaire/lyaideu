@@ -17,6 +17,11 @@ function clean_phone($v): string { return preg_replace('/[^0-9]/','',(string)$v)
 function flash_checkout(string $msg): void { $_SESSION['flash'] = ['type' => 'error', 'msg' => $msg]; header('Location: checkout'); exit; }
 
 $kycUser = lyaideu_user_profile((int)$_SESSION['user']['id']);
+if ($kycUser && (int)($kycUser['is_blocked'] ?? 0) === 1) {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Your account has been blocked. You cannot place orders. Please contact support.'];
+    header('Location: profile');
+    exit;
+}
 $kycStatus = $kycUser ? (string)$kycUser['kyc_status'] : 'none';
 /* Control Panel toggle: when KYC is switched OFF, everyone can order. */
 if (lyaideu_kyc_required() && $kycStatus !== 'approved') {
