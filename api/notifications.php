@@ -116,7 +116,7 @@ $loadFeed = function () use ($pdo, $recipientType, $recipientId) {
 
     return [
         'unread' => (int)$unread->fetchColumn(),
-        'items' => array_reverse($rows),
+        'items' => $rows,
     ];
 };
 
