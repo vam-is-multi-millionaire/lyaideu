@@ -343,7 +343,8 @@ section{scroll-margin-top:96px;}
 /* ---------------- TOAST ---------------- */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;
        background:var(--orange-900);color:#fff;font-weight:800;font-size:.9rem;padding:.85rem 1.5rem;
-       border-radius:999px;box-shadow:var(--shadow-md);z-index:99;transition:.3s;pointer-events:none;max-width:90vw;}
+       border-radius:999px;box-shadow:var(--shadow-md);z-index:99;transition:.3s;pointer-events:none;max-width:90vw;
+       display:inline-flex;align-items:center;justify-content:center;gap:.45rem;max-width:min(92vw,560px);width:fit-content;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal;overflow-wrap:normal;text-align:center;line-height:1.4;flex-wrap:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* ---------------- SCROLL REVEAL ---------------- */

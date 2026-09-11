@@ -226,7 +226,7 @@ echo lyaideu_seo_page([
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=63">
+<link rel="stylesheet" href="css/style.css?v=68">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
 <style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}}</style>
 </head>
@@ -415,9 +415,9 @@ echo lyaideu_seo_page([
 
 <?= lyaideu_footer_html() ?>
 
-<script src="js/script.js?v=42"></script>
+<script src="js/script.js?v=47"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=8"></script>
+<script src="js/notify.js?v=9"></script>
 <script>
 (function(){
   /* Back link: use the browser's own history so the previous page is

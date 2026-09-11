@@ -30,7 +30,7 @@ require_once __DIR__ . '/site_config.php';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=63">
+<link rel="stylesheet" href="css/style.css?v=68">
 </head>
 <body class="auth-body">
 
@@ -200,9 +200,9 @@ require_once __DIR__ . '/site_config.php';
     <a class="bn-item" data-nav="profile" href="profile"><span class="bn-ico"><i class="fa-solid fa-user"></i></span><span class="bn-label">Profile</span></a>
 </nav>
 
-<script src="js/script.js?v=42"></script>
+<script src="js/script.js?v=47"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=8"></script>
+<script src="js/notify.js?v=9"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)
 document.addEventListener('click', function (e) {

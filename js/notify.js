@@ -25,10 +25,11 @@
     function toast(msg, link) {
         var el = document.createElement('div');
         el.className = 'flash-banner flash-success delivery-flash notify-toast';
-        el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;max-width:92vw;';
+        el.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;max-width:min(92vw,560px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-flex;align-items:center;gap:.4rem;';
         el.innerHTML = '<i class="fa-solid fa-bell"></i> ' + msg;
         if (link) el.addEventListener('click', function () { window.location.href = link; });
         document.body.appendChild(el);
+        try{var s=0.9;el.style.fontSize=s+'rem';void el.offsetWidth;var m=0.66,step=0.02;while(el.scrollWidth>el.clientWidth+2&&s>m){s-=step;el.style.fontSize=s.toFixed(2)+'rem';void el.offsetWidth;}}catch(e){}
         setTimeout(function () { el.remove(); }, 5200);
     }
 
