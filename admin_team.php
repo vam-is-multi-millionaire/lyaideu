@@ -355,7 +355,7 @@ admin_page_start('Staff & Roles', 'team', 'Staff & Roles');
                 </span>
                 <span class="pm-user-meta pm-meta">
                     <span><?= $ce($pageCount) ?></span>
-                    <span>Last login: <?= $s['last_login'] !== null ? $ce(substr((string)$s['last_login'], 0, 16)) : 'never' ?></span>
+                    <span>Last login: <?= $s['last_login'] !== null ? $ce(lyaideu_np_time((string)$s['last_login'])) : 'never' ?></span>
                 </span>
                 <span class="pm-actions">
                     <?php if ($isSelf): ?>

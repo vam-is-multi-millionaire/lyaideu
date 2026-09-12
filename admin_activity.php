@@ -34,7 +34,7 @@ if (isset($_GET['export']) && $_GET['export']==='csv') {
     header('Content-Disposition: attachment; filename="activity_'.date('Y-m-d').'.csv"');
     $out=fopen('php://output','w');
     fputcsv($out,['id','created_at','actor_type','actor_name','actor_role','action','entity_type','entity_id','ip','details']);
-    try { $st=$pdo->prepare($sql); $st->execute($params); while($r=$st->fetch(PDO::FETCH_ASSOC)){ fputcsv($out,[$r['id'],$r['created_at'],$r['actor_type'],$r['actor_name'],$r['actor_role'],$r['action'],$r['entity_type'],$r['entity_id'],$r['ip'],$r['details']]); } } catch (Throwable $e) {}
+    try { $st=$pdo->prepare($sql); $st->execute($params); while($r=$st->fetch(PDO::FETCH_ASSOC)){ fputcsv($out,[$r['id'],lyaideu_np_time($r['created_at']),$r['actor_type'],$r['actor_name'],$r['actor_role'],$r['action'],$r['entity_type'],$r['entity_id'],$r['ip'],$r['details']]); } } catch (Throwable $e) {}
     fclose($out); exit;
 }
 
@@ -86,7 +86,7 @@ try {
       if((int)$r['id']>$maxId) $maxId=(int)$r['id'];
       $det=$r['details']; $detShort=''; try{ $j=json_decode($det,true); $detShort=$j? htmlspecialchars(json_encode($j,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),ENT_QUOTES,'UTF-8'): htmlspecialchars($det??'',ENT_QUOTES,'UTF-8'); }catch(Throwable $e){ $detShort=htmlspecialchars($det??'',ENT_QUOTES,'UTF-8'); }
       if(strlen($detShort)>120) $detShort=substr($detShort,0,120).'…';
-      echo '<tr data-id="'.(int)$r['id'].'"><td>'.(int)$r['id'].'</td><td style="white-space:nowrap">'.htmlspecialchars($r['created_at']).'</td><td><span class="chip" style="font-size:.72rem;padding:.2rem .5rem">'.htmlspecialchars($r['actor_type']).'</span> '.htmlspecialchars($r['actor_name']).' <small style="color:var(--muted)">'.htmlspecialchars($r['actor_role']).'</small></td><td><span class="pm-badge">'.htmlspecialchars($r['action']).'</span></td><td>'.htmlspecialchars($r['entity_type'].'#'.($r['entity_id']??'-')).'</td><td class="hide-sm">'.htmlspecialchars($r['ip']).'</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'.htmlspecialchars($r['details']??'',ENT_QUOTES,'UTF-8').'">'.$detShort.'</td></tr>';
+      echo '<tr data-id="'.(int)$r['id'].'"><td>'.(int)$r['id'].'</td><td style="white-space:nowrap">'.htmlspecialchars(lyaideu_np_time($r['created_at'])).'</td><td><span class="chip" style="font-size:.72rem;padding:.2rem .5rem">'.htmlspecialchars($r['actor_type']).'</span> '.htmlspecialchars($r['actor_name']).' <small style="color:var(--muted)">'.htmlspecialchars($r['actor_role']).'</small></td><td><span class="pm-badge">'.htmlspecialchars($r['action']).'</span></td><td>'.htmlspecialchars($r['entity_type'].'#'.($r['entity_id']??'-')).'</td><td class="hide-sm">'.htmlspecialchars($r['ip']).'</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'.htmlspecialchars($r['details']??'',ENT_QUOTES,'UTF-8').'">'.$detShort.'</td></tr>';
     }
     if(!$rows) echo '<tr><td colspan="7" style="text-align:center;padding:1.2rem;color:var(--muted)">No activity yet.</td></tr>';
   }
@@ -158,7 +158,7 @@ try {
           });
           // keep 50 rows
           while(tbody.children.length>50) tbody.removeChild(tbody.lastChild);
-          statusEl.textContent='updated '+new Date().toLocaleTimeString();
+          statusEl.textContent='updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kathmandu'});
           setTimeout(function(){ statusEl.textContent='live'; }, 2000);
         } else {
           statusEl.textContent='live';

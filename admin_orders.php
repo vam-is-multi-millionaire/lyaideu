@@ -138,7 +138,7 @@ admin_page_start('Orders', 'orders', 'Order Management');
                 <div class="order-card-head">
                     <div>
                         <h2>#<?= (int)$o['id'] ?> · <?= htmlspecialchars((string)$o['customer_name'], ENT_QUOTES, 'UTF-8') ?></h2>
-                        <p><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$o['created'], ENT_QUOTES, 'UTF-8') ?> · <i class="fa-solid fa-phone"></i> <a href="tel:+977<?= htmlspecialchars((string)$o['phone'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$o['phone'], ENT_QUOTES, 'UTF-8') ?></a></p>
+                        <p><i class="fa-regular fa-clock"></i> <?= htmlspecialchars(lyaideu_np_time((string)$o['created']), ENT_QUOTES, 'UTF-8') ?> · <i class="fa-solid fa-phone"></i> <a href="tel:+977<?= htmlspecialchars((string)$o['phone'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars((string)$o['phone'], ENT_QUOTES, 'UTF-8') ?></a></p>
                     </div>
                     <div class="admin-card-actions">
                         <span class="order-status-pill status-<?= $pill ?>"><i class="fa-solid <?= $statusIcon[$o['status']] ?? 'fa-circle-info' ?>"></i> <?= htmlspecialchars((string)$o['status'], ENT_QUOTES, 'UTF-8') ?></span>

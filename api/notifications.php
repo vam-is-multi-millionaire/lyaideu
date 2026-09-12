@@ -107,6 +107,8 @@ $loadFeed = function () use ($pdo, $recipientType, $recipientId) {
     );
     $items->execute([$recipientType, $recipientId]);
     $rows = $items->fetchAll();
+    foreach ($rows as &$nr) { $nr['created_at'] = lyaideu_np_time($nr['created_at'] ?? null); }
+    unset($nr);
 
     $unread = $pdo->prepare(
         'SELECT COUNT(*) FROM notifications

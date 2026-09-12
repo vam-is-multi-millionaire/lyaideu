@@ -37,6 +37,8 @@ try {
     $st=$pdo->prepare($sql);
     $st->execute($params);
     $items=$st->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($items as &$r) { $r['created_at'] = lyaideu_np_time($r['created_at'] ?? null); }
+    unset($r);
     // reverse to ascending for prepend logic on client (optional, keep DESC)
     $maxId=$since;
     foreach($items as $r){ if((int)$r['id']>$maxId) $maxId=(int)$r['id']; }

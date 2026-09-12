@@ -119,8 +119,8 @@ admin_page_start('My Account', 'account', 'My Account');
         <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
         <h3><i class="fa-solid fa-id-badge"></i> Profile &amp; Username</h3>
         <div class="acct-meta">
-            <span><i class="fa-solid fa-calendar-plus"></i> Member since <?= $ce(substr((string)$me['created_at'], 0, 16)) ?></span>
-            <span><i class="fa-solid fa-clock-rotate-left"></i> Last login: <?= $me['last_login'] !== null ? $ce(substr((string)$me['last_login'], 0, 16)) : 'never' ?></span>
+            <span><i class="fa-solid fa-calendar-plus"></i> Member since <?= $ce(lyaideu_np_time((string)$me['created_at'])) ?></span>
+            <span><i class="fa-solid fa-clock-rotate-left"></i> Last login: <?= $me['last_login'] !== null ? $ce(lyaideu_np_time((string)$me['last_login'])) : 'never' ?></span>
         </div>
         <label>Display Name</label>
         <input type="text" name="name" maxlength="100" value="<?= $ce($me['name']) ?>" required>

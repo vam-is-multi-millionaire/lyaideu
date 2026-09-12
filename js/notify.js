@@ -8,6 +8,18 @@
     var bell = null, badge = null, list = null, open = false;
     var lastItems = [], lastSig = '';
 
+    /* Server already sends NPT 12h strings; raw UTC datetimes fall back here. */
+    function fmtNP12(dt) {
+        var s = String(dt == null ? '' : dt);
+        if (!s || s.indexOf('M') >= 0 || /[AP]M/i.test(s)) return s;
+        var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+        if (!m) return s;
+        try {
+            var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)));
+            return d.toLocaleString('en-US', { timeZone: 'Asia/Kathmandu', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        } catch (e) { return s; }
+    }
+
     function beep() {
         try {
             var Ctx = window.AudioContext || window.webkitAudioContext;
@@ -114,7 +126,7 @@
         lastItems.forEach(function (it) {
             var link = it.link || 'orders';
             html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (it.is_read ? '' : 'background:var(--orange-50);font-weight:700;') + '">' + it.message +
-                '<small style="display:block;color:#888;font-weight:400;">' + (it.created_at || '') + '</small></a>';
+                '<small style="display:block;color:#888;font-weight:400;">' + (fmtNP12(it.created_at) || '') + '</small></a>';
         });
         list.innerHTML = html;
         var ma = list.querySelector('#notifyMarkAll');

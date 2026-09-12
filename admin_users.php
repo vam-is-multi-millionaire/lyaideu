@@ -80,7 +80,7 @@ admin_page_start('Users', 'users', 'Registered Users');
                 <span class="pm-user-meta pm-meta">
                     <span><?= $ce($u['dob']) ?></span>
                     <span><?= $ce((string)$u['address'] ?: '—') ?></span>
-                    <span><?= $ce($u['created_at']) ?></span>
+                    <span><?= $ce(lyaideu_np_time($u['created_at'])) ?></span>
                 </span>
                 <span class="pm-price" style="display:flex;flex-direction:column;gap:.35rem;align-items:flex-end;min-width:110px">
                     <span class="order-status-pill <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'kyc-rejected' : 'kyc-approved' ?>" style="font-size:.72rem"><?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Blocked' : 'Active' ?></span>

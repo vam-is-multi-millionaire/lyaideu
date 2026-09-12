@@ -30,6 +30,9 @@ try {
     foreach ($ids as $id) {
         $track = lyaideu_order_tracking($id);
         if ($track) {
+            if (isset($track['created_at'])) {
+                $track['created_at'] = lyaideu_np_time($track['created_at']);
+            }
             $orders[] = $track;
         }
     }

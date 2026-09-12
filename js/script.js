@@ -711,9 +711,25 @@ window.LYAIDEU_ORDER_LIVE={};
 var POLL_MS=5000,FULL_MS=60000;
 
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+/* Stored DB datetimes arrive as UTC ("YYYY-MM-DD HH:MM:SS"); already-formatted
+   NPT strings pass through untouched. Fallback for any raw value. */
+function fmtNP12(dt){
+  var s=String(dt==null?'':dt);
+  if(!s||s.indexOf('M')>=0||/[AP]M/i.test(s))return s;
+  var m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(!m)return s;
+  try{
+    var d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)));
+    return d.toLocaleString('en-US',{timeZone:'Asia/Kathmandu',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  }catch(e){return s;}
+}
 function reltime(dt){
   if(!dt)return '';
-  var ts=Date.parse(String(dt).replace(' ','T'));
+  var s=String(dt);
+  /* Raw DB datetimes are UTC; mark them so browsers don't parse as local. */
+  if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(s)&&s.indexOf('Z')<0&&s.indexOf('+')<0)s=s.replace(' ','T')+'Z';
+  else s=s.replace(' ','T');
+  var ts=Date.parse(s);
   if(isNaN(ts))return dt;
   var diff=(Date.now()-ts)/1000;
   if(diff<60)return 'just now';
@@ -788,7 +804,7 @@ function deliveryHtml(o){
   return '<div class="order-delivery"><i class="fa-solid fa-hourglass-half"></i> Vendors are preparing your order.</div>';
 }
 function cardHeadHtml(o,vendorCount){
-  return '<div class="order-card-head"><div><h2>Order #'+(o.id||0)+'</h2><p>'+esc(o.created_at||'')+'</p></div>'
+  return '<div class="order-card-head"><div><h2>Order #'+(o.id||0)+'</h2><p>'+esc(fmtNP12(o.created_at||o.created||''))+'</p></div>'
     +'<span class="order-status-pill status-'+pillClass(o.status)+'">'+esc(o.status)+'</span></div>';
 }
 function bodyHtml(o,vendorCount){

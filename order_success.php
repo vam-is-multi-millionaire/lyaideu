@@ -81,7 +81,7 @@ $orderId = (int)$order['id'];
     </nav>
 </header><main class="success-page container"><div class="success-icon"><i class="fa-solid fa-circle-check"></i></div><p class="kicker">Order placed</p><h1 class="display">Thanks, <?= htmlspecialchars($_SESSION['user']['name']) ?>!</h1><p class="section-sub">Your order <strong>#<?= (int)$order['id'] ?></strong> has been received.</p><div class="success-card" id="orderTracker" data-live-order="<?= $orderId ?>">
     <div class="order-card-head">
-        <div><h2>Order #<?= $orderId ?></h2><p><?= htmlspecialchars($order['created']) ?></p></div>
+        <div><h2>Order #<?= $orderId ?></h2><p><?= htmlspecialchars(lyaideu_np_time($order['created'])) ?></p></div>
         <span class="order-status-pill status-<?= lyaideu_order_pill_class($order['status']) ?>"><?= htmlspecialchars($order['status']) ?></span>
     </div>
     <?= lyaideu_order_track_html($order['status']) ?>

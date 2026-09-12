@@ -112,7 +112,7 @@ admin_page_start('Messages', 'messages', 'Contact Messages');
                         <h2><i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($m['subject']) ?>
                             <?php if ($m['status'] === 'unread'): ?><span class="message-badge">New</span><?php endif; ?>
                         </h2>
-                        <p><?= htmlspecialchars($m['created_at']) ?> · <?= htmlspecialchars($m['name']) ?> · <i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($m['email']) ?><?php if ($m['phone']): ?> · <i class="fa-solid fa-phone"></i> <?= htmlspecialchars($m['phone']) ?><?php endif; ?></p>
+                        <p><?= htmlspecialchars(lyaideu_np_time($m['created_at'])) ?> · <?= htmlspecialchars($m['name']) ?> · <i class="fa-solid fa-envelope"></i> <?= htmlspecialchars($m['email']) ?><?php if ($m['phone']): ?> · <i class="fa-solid fa-phone"></i> <?= htmlspecialchars($m['phone']) ?><?php endif; ?></p>
                     </div>
                     <div class="message-actions">
                         <a class="btn btn-outline" href="mailto:<?= htmlspecialchars($m['email'], ENT_QUOTES, 'UTF-8') ?>?subject=Re: <?= rawurlencode($m['subject']) ?>"><i class="fa-solid fa-reply"></i> Reply</a>

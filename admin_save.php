@@ -1298,8 +1298,14 @@ try {
             if ($raw === '') {
                 return null;
             }
-            $ts = strtotime(str_replace('T', ' ', $raw));
-            return $ts ? date('Y-m-d H:i:s', $ts) : null;
+            /* Admin types Nepal wall time (datetime-local has no zone); the DB
+               stores UTC, so convert NPT -> UTC here. */
+            try {
+                $dt = new DateTimeImmutable(str_replace('T', ' ', $raw), new DateTimeZone('Asia/Kathmandu'));
+                return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            } catch (Throwable $e) {
+                return null;
+            }
         };
         $sanitizeTypeValue = static function (string $type, int $value): array {
             if (!in_array($type, lyaideu_promo_types(), true)) {

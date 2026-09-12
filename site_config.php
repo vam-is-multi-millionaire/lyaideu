@@ -4,6 +4,14 @@
  * Values live in the `settings` table and fall back to defaults.
  */
 
+/* Server clock: the live server runs on UTC, so all date() writes below store
+   UTC. Display helpers (lyaideu_np_time) convert UTC -> Asia/Kathmandu for
+   screens. Do NOT change this to NPT: new rows must stay UTC, otherwise
+   fresh orders would show ~5h45m in the future. */
+if (function_exists('date_default_timezone_set')) {
+    @date_default_timezone_set('UTC');
+}
+
 function lyaideu_load_pdo(): ?PDO {
     static $pdo = null;
     static $tried = false;
@@ -1945,10 +1953,49 @@ function lyaideu_recompute_order_status(int $orderId): string {
 }
 
 /**
+ * Format a stored DB datetime as Nepal time in 12-hour format:
+ * "Aug 10, 2026, 2:15 PM" (or "2:15 PM" with $withDate=false).
+ * Stored values were written in server time (UTC on live), so they are
+ * interpreted as UTC then converted to Asia/Kathmandu (+5:45). This fixes
+ * the ~5h45m offset seen on the live site. Display-only: never used for
+ * SQL filters or datetime-local inputs.
+ */
+function lyaideu_np_time(?string $raw, bool $withDate = true): string {
+    $raw = trim((string)$raw);
+    if ($raw === '' || $raw === '0000-00-00 00:00:00' || $raw === '0000-00-00') {
+        return '';
+    }
+    try {
+        $dt = new DateTimeImmutable($raw, new DateTimeZone('UTC'));
+        $dt = $dt->setTimezone(new DateTimeZone('Asia/Kathmandu'));
+        return $withDate ? $dt->format('M j, Y, g:i A') : $dt->format('g:i A');
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+/**
+ * Unix timestamp of a stored DB datetime, anchored to UTC so relative
+ * labels ("2 min ago") and data-ts attributes stay correct regardless of
+ * the PHP default timezone.
+ */
+function lyaideu_np_ts(?string $raw): int {
+    $raw = trim((string)$raw);
+    if ($raw === '' || $raw === '0000-00-00 00:00:00') {
+        return 0;
+    }
+    try {
+        return (new DateTimeImmutable($raw, new DateTimeZone('UTC')))->getTimestamp();
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
  * Relative human time for the order tracker ("just now", "2 min ago", ...).
  */
 function lyaideu_reltime(string $datetime): string {
-    $ts = strtotime($datetime);
+    $ts = lyaideu_np_ts($datetime);
     if (!$ts) {
         return '';
     }

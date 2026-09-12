@@ -41,15 +41,20 @@ function promo_expiry_label(?string $expiresAt): string {
     }
     $days = (int)floor($diff / 86400);
     $hours = (int)floor(($diff % 86400) / 3600);
-    return date('M j, Y H:i', $ts) . ' · ' . ($days > 0 ? $days . 'd ' . $hours . 'h left' : $hours . 'h left');
+    return lyaideu_np_time($expiresAt) . ' · ' . ($days > 0 ? $days . 'd ' . $hours . 'h left' : $hours . 'h left');
 }
 
 function promo_local_input(?string $expiresAt): string {
     if ($expiresAt === null || $expiresAt === '' || $expiresAt === '0000-00-00 00:00:00') {
         return '';
     }
-    $ts = strtotime($expiresAt);
-    return $ts ? date('Y-m-d\TH:i', $ts) : '';
+    /* DB stores UTC; the datetime-local input needs Nepal wall time. */
+    try {
+        $dt = new DateTimeImmutable($expiresAt, new DateTimeZone('UTC'));
+        return $dt->setTimezone(new DateTimeZone('Asia/Kathmandu'))->format('Y-m-d\TH:i');
+    } catch (Throwable $e) {
+        return '';
+    }
 }
 
 admin_page_start('Promo Codes', 'promos', 'Promo Codes');

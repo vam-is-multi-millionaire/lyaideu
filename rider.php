@@ -436,7 +436,7 @@ if ($user) {
                     <h2>Order #<?= (int)$o['id'] ?>
                         <span class="order-status-pill status-<?= $pill ?>"><i class="fa-solid <?= $statusIcon ?>"></i> <?= delivery_esc($o['status']) ?></span>
                     </h2>
-                    <p><span data-rel-time data-ts="<?= (int)strtotime((string)$o['created_at']) ?>"></span> · <?= delivery_esc($o['created_at']) ?></p>
+                    <p><span data-rel-time data-ts="<?= lyaideu_np_ts((string)$o['created_at']) ?>"></span> · <?= delivery_esc(lyaideu_np_time((string)$o['created_at'])) ?></p>
                 </div>
                 <div class="delivery-total-wrap">
                     <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
@@ -563,7 +563,7 @@ if ($user) {
             ?>
             <article class="delivery-card status-delivered">
                 <div class="delivery-card-head">
-                    <div><h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-delivered"><?= delivery_esc($o['status']) ?></span></h2><p><?= delivery_esc($o['created_at']) ?></p></div>
+                    <div><h2>Order #<?= (int)$o['id'] ?> <span class="order-status-pill status-delivered"><?= delivery_esc($o['status']) ?></span></h2><p><?= delivery_esc(lyaideu_np_time((string)$o['created_at'])) ?></p></div>
                     <strong class="delivery-total">Rs. <?= (int)$o['total'] ?></strong>
                 </div>
                 <p class="delivery-customer"><i class="fa-solid fa-user"></i> <?= delivery_esc($o['customer_name']) ?> · <i class="fa-solid fa-location-dot"></i> <?= delivery_esc($o['address']) ?></p>

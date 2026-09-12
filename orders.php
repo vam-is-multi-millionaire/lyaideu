@@ -116,7 +116,7 @@ foreach ($rows as $row) {
 <?php foreach ($orders as $o): $cls = lyaideu_order_pill_class($o['status']); ?>
 <article class="order-card" data-order-id="<?= (int)$o['id'] ?>">
     <div class="order-card-head">
-        <div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars($o['created']) ?></p></div>
+        <div><h2>Order #<?= (int)$o['id'] ?></h2><p><?= htmlspecialchars(lyaideu_np_time($o['created'])) ?></p></div>
         <span class="order-status-pill status-<?= $cls ?>"><?= htmlspecialchars($o['status']) ?></span>
     </div>
     <?= lyaideu_order_track_html($o['status']) ?>
