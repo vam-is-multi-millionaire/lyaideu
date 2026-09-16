@@ -15,9 +15,10 @@ try {
     lyaideu_ensure_categories_table();
     lyaideu_ensure_variant_tables();
     lyaideu_ensure_discount_columns();
+    lyaideu_ensure_delivery_tables();
 
     $dishes = $pdo->query(
-        'SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants
+        'SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id
          FROM dishes
          ORDER BY id'
     )->fetchAll();
@@ -39,7 +40,7 @@ try {
     )->fetchAll();
 
     $mart = $pdo->query(
-        'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+        'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants, m.vendor_id,
                 COALESCE(h.name, \'\') AS hotel
          FROM mart_items m
          LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -50,7 +51,7 @@ try {
     lyaideu_ensure_other_table();
 
     $others = $pdo->query(
-        'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+        'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants, oi.vendor_id,
                 COALESCE(h.name, \'\') AS hotel
          FROM other_items oi
          LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -61,7 +62,7 @@ try {
     lyaideu_ensure_beverage_table();
 
     $beverages = $pdo->query(
-        'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+        'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants, bi.vendor_id,
                 COALESCE(h.name, \'\') AS hotel
          FROM beverage_items bi
          LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -89,9 +90,48 @@ try {
     }
     unset($b);
 
+    /* Vendor shop flags: closed shops stay visible with Add blocked;
+       vendors with products_hidden=1 are removed everywhere. */
+    $attachVendor = function (array &$item, string $type): void {
+        $vid = $type === 'dish'
+            ? lyaideu_product_vendor_id('dish', $item)
+            : (int)($item['vendor_id'] ?? 0);
+        $item['vendor_id'] = $vid;
+        if ($vid > 0) {
+            $st = lyaideu_vendor_is_orderable($vid);
+            $item['vendor_open'] = !empty($st['open']) ? 1 : 0;
+            $item['vendor_label'] = (string)($st['label'] ?? '');
+            $item['vendor_hidden'] = !empty($st['hidden']) ? 1 : 0;
+        } else {
+            $item['vendor_open'] = 1;
+            $item['vendor_label'] = '';
+            $item['vendor_hidden'] = 0;
+        }
+    };
+    foreach ($dishes as &$d) {
+        $attachVendor($d, 'dish');
+    }
+    unset($d);
+    foreach ($mart as &$m) {
+        $attachVendor($m, 'mart');
+    }
+    unset($m);
+    foreach ($others as &$o) {
+        $attachVendor($o, 'other');
+    }
+    unset($o);
+    foreach ($beverages as &$b) {
+        $attachVendor($b, 'beverage');
+    }
+    unset($b);
+
     /* Control Panel: drop every product whose category subtree is switched
-       off. Items without a category stay visible. */
+       off, plus every product of a vendor with products_hidden=1.
+       Items without a category stay visible. */
     $keepVisible = function (array $item): bool {
+        if (!empty($item['vendor_hidden'])) {
+            return false;
+        }
         $cid = (int)($item['category_id'] ?? 0);
         return $cid <= 0 || lyaideu_category_is_active($cid);
     };
@@ -128,6 +168,8 @@ try {
         'sections' => $customSections,
         'links' => lyaideu_public_section_links(),
         'delivery' => lyaideu_delivery_config(),
+        'maintenance' => lyaideu_maintenance_on() ? 1 : 0,
+        'unavailable' => lyaideu_unavailable_on() ? 1 : 0,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     @file_put_contents(__DIR__ . '/api_error.log', '[' . date('Y-m-d H:i:s') . '] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL, FILE_APPEND);

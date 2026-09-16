@@ -221,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = 'Could not delete the product.';
         }
     }
+
 }
 
 $products = [];

@@ -43,7 +43,7 @@ $related = [];
 try {
     if ($type === 'mart') {
         lyaideu_ensure_mart_table();
-        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+        $st = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants, m.vendor_id,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM mart_items m
                              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -52,7 +52,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants,
+            $r = $pdo->prepare('SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants, m.vendor_id,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM mart_items m
                                LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -63,7 +63,7 @@ try {
         }
     } elseif ($type === 'other') {
         lyaideu_ensure_other_table();
-        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+        $st = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants, oi.vendor_id,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM other_items oi
                              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -72,7 +72,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants,
+            $r = $pdo->prepare('SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug AS slug, oi.has_variants, oi.vendor_id,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM other_items oi
                                LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -83,7 +83,7 @@ try {
         }
     } elseif ($type === 'beverage') {
         lyaideu_ensure_beverage_table();
-        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+        $st = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants, bi.vendor_id,
                                     COALESCE(h.name, \'\') AS hotel
                              FROM beverage_items bi
                              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -92,7 +92,7 @@ try {
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants,
+            $r = $pdo->prepare('SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug AS slug, bi.has_variants, bi.vendor_id,
                                       COALESCE(h.name, \'\') AS hotel
                                FROM beverage_items bi
                                LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -102,11 +102,11 @@ try {
             $related = $r->fetchAll();
         }
     } else {
-        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE id = :id');
+        $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM dishes WHERE id = :id');
         $st->execute([':id' => $id]);
         $item = $st->fetch();
         if ($item) {
-            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
+            $r = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM dishes WHERE cat = :cat AND id <> :id ORDER BY id LIMIT 6');
             $r->execute([':cat' => $item['cat'], ':id' => $id]);
             $related = $r->fetchAll();
         }
@@ -118,6 +118,8 @@ if ($item) {
     lyaideu_attach_variants($related, $type);
     /* Control Panel: keep switched-off category products out of Related too. */
     $related = array_values(array_filter($related, fn($r) => (int)($r['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$r['category_id'])));
+    /* Vendor hide-all: drop hidden vendors from Related; closed stays visible (JS blocks Add). */
+    lyaideu_attach_vendor_status($related, $type);
 }
 
 if (!$item) {
@@ -133,6 +135,25 @@ if ((int)($item['category_id'] ?? 0) > 0 && !lyaideu_category_is_active((int)$it
     header('Location: ' . lyaideu_base_url() . $back);
     exit;
 }
+
+/* Vendor shop status: hidden products bounce like category-hidden ones;
+   closed shops stay viewable but Add is blocked in the template. */
+$itemVendorId = $type === 'dish' ? lyaideu_product_vendor_id('dish', $item) : (int)($item['vendor_id'] ?? 0);
+$itemVendorStatus = $itemVendorId > 0 ? lyaideu_vendor_is_orderable($itemVendorId) : ['open' => true, 'label' => '', 'hidden' => false];
+if (!empty($itemVendorStatus['hidden'])) {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'This item is currently unavailable.'];
+    header('Location: ' . lyaideu_base_url() . $back);
+    exit;
+}
+$itemVendorOpen = !empty($itemVendorStatus['open']);
+$itemVendorLabel = (string)($itemVendorStatus['label'] ?? '');
+/* Site gates (maintenance + unavailable): whole site paused — Add shows the
+   winning text (unavailable wins when both are ON). */
+$maintMode = lyaideu_maintenance_on();
+$unavailMode = lyaideu_unavailable_on();
+$siteGateMode = $unavailMode || $maintMode;
+$siteGateLabel = $unavailMode ? 'LyaiDeu is Currently Unavailable' : 'LyaiDeu is Under Maintenance';
+$siteGateIcon = $unavailMode ? 'fa-ban' : 'fa-screwdriver-wrench';
 
 $parts = $user ? preg_split('/\s+/', trim($user['name'])) : [];
 $firstName = $parts[0] ?? '';
@@ -228,7 +249,18 @@ echo lyaideu_seo_page([
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=68">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
-<style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}}</style>
+<style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}}
+/* Narrow phones: long gate text (e.g. "LyaiDeu is Currently Unavailable") must
+   never push .product-main off the right edge — shrink + wrap the button. */
+@media (max-width:640px){
+  body.product-pg .product-main,
+  body.product-pg .product-details{min-width:0;max-width:100%;}
+  body.product-pg .product-actions .add-cart{font-size:.78rem;line-height:1.35;white-space:normal;text-align:center;overflow-wrap:anywhere;min-width:0;max-width:100%;}
+  body.product-pg .product-actions .add-cart i{flex:none;}
+}
+@media (max-width:380px){
+  body.product-pg .product-actions .add-cart{font-size:.7rem;}
+}</style>
 </head>
 <body class="product-pg" data-needs-catalog>
 
@@ -343,7 +375,7 @@ echo lyaideu_seo_page([
                 <?php endif; ?>
 
                 <div class="product-actions">
-                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>" data-price="<?= $dealPrice ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-name="' . e($item['name']) . '"' : '' ?> type="button"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
+                    <button class="btn btn-primary add-cart" data-id="<?= (int)$item['id'] ?>" data-type="<?= $type ?>" data-hotel="<?= e($item['hotel'] ?? '') ?>" data-price="<?= $dealPrice ?>"<?= $hasVariants && $defaultVariant ? ' data-variant="' . e($defaultVariant['label']) . '" data-name="' . e($item['name']) . '"' : '' ?><?= ($siteGateMode || !$itemVendorOpen) ? ' data-vendor-open="0" data-vendor-label="' . e($siteGateMode ? $siteGateLabel : ($itemVendorLabel !== '' ? $itemVendorLabel : 'This shop is closed now')) . '" disabled style="opacity:.5;cursor:not-allowed;"' : '' ?> type="button"><?php if ($siteGateMode): ?><i class="fa-solid <?= $siteGateIcon ?>"></i> <?= e($siteGateLabel) ?><?php elseif (!$itemVendorOpen): ?><i class="fa-solid fa-circle-pause"></i> Shop is Closed !<?php else: ?><i class="fa-solid fa-cart-plus"></i> Add to Cart<?php endif; ?></button>
                     <button class="btn btn-outline cart-open-btn" type="button"><i class="fa-solid fa-cart-shopping"></i> View Cart <span class="cart-count">0</span></button>
                 </div>
 
@@ -391,7 +423,7 @@ echo lyaideu_seo_page([
                                 <?= ($rItem['hotel'] ?? '') !== '' ? '<p class="dish-hotel"><i class="fa-solid fa-store"></i> ' . e($rItem['hotel']) . '</p>' : '' ?>
                                 <div class="related-foot">
                                     <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $rPrice ?><?= ($type !== 'dish' && $rUnit !== '') ? ' <span class="unit">/ ' . e($rUnit) . '</span>' : '' ?></span>
-                                    <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>" type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
+                                    <button class="btn-order add-cart" data-id="<?= (int)$rItem['id'] ?>" data-type="<?= $type ?>" data-name="<?= e($rItem['name']) ?>" data-price="<?= $rPrice ?>"<?= ($type !== 'dish' && $rUnit !== '') ? ' data-unit="' . e($rUnit) . '"' : '' ?> data-hotel="<?= e($rItem['hotel'] ?? '') ?>" data-img="<?= e($rItem['img']) ?>"<?= $siteGateMode ? ' data-vendor-open="0" data-vendor-label="' . e($siteGateLabel) . '" disabled style="opacity:.5;cursor:not-allowed;"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                                 </div>
                             </div>
                         </div>

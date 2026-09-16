@@ -91,6 +91,45 @@ function lyaideu_set_kyc_required(bool $required): void {
     lyaideu_settings_clear();
 }
 
+/* Control Panel: global maintenance gate. ON = nobody can add to cart or
+   place orders anywhere on the storefront (browsing stays visible).
+   OFF = normal ordering. Stored in the settings table under `maintenance_mode`. */
+function lyaideu_maintenance_on(): bool {
+    return site_setting('maintenance_mode', '0') === '1';
+}
+
+function lyaideu_set_maintenance(bool $on): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    lyaideu_ensure_settings_table();
+    $st = $pdo->prepare('INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                         ON DUPLICATE KEY UPDATE sval = VALUES(sval)');
+    $st->execute([':skey' => 'maintenance_mode', ':sval' => $on ? '1' : '0']);
+    lyaideu_settings_clear();
+}
+
+/* Control Panel: global unavailable gate. Same effect as the maintenance
+   gate (nobody can add to cart or place orders; browsing stays visible).
+   Either switch ON blocks ordering; when both are ON the unavailable text
+   wins on buttons. Stored in the settings table under `site_unavailable`. */
+function lyaideu_unavailable_on(): bool {
+    return site_setting('site_unavailable', '0') === '1';
+}
+
+function lyaideu_set_unavailable(bool $on): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    lyaideu_ensure_settings_table();
+    $st = $pdo->prepare('INSERT INTO settings (skey, sval) VALUES (:skey, :sval)
+                         ON DUPLICATE KEY UPDATE sval = VALUES(sval)');
+    $st->execute([':skey' => 'site_unavailable', ':sval' => $on ? '1' : '0']);
+    lyaideu_settings_clear();
+}
+
 function lyaideu_ensure_settings_table(): bool {
     $pdo = lyaideu_load_pdo();
     if (!$pdo instanceof PDO) {
@@ -1449,6 +1488,11 @@ function lyaideu_ensure_delivery_tables(): bool {
         $changed = false;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'scope', "VARCHAR(20) NOT NULL DEFAULT 'hotel'") || $changed;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'hotel_id', 'INT UNSIGNED NULL DEFAULT NULL') || $changed;
+        /* Shop open/close + hide-all-products (Control Panel + vendor dashboard). */
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'is_open', 'TINYINT(1) NOT NULL DEFAULT 1') || $changed;
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'products_hidden', 'TINYINT(1) NOT NULL DEFAULT 0') || $changed;
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'open_time', 'TIME NULL DEFAULT NULL') || $changed;
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'close_time', 'TIME NULL DEFAULT NULL') || $changed;
         $dishColAdded = lyaideu_ensure_column($pdo, 'dishes', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
         $martColAdded = lyaideu_ensure_column($pdo, 'mart_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
 
@@ -3051,6 +3095,180 @@ function lyaideu_beverage_store_name(int $itemId): string {
         return $name !== '' ? $name : 'LyaiDeu Beverages';
     } catch (Throwable $e) {
         return 'LyaiDeu Beverages';
+    }
+}
+
+/**
+ * Vendor shop open/close + hide-all-products support.
+ * A shop is orderable only when its manual switch is ON *and* the current
+ * Asia/Kathmandu time falls inside [open_time, close_time] (NULL = no limit,
+ * close < open = overnight window). products_hidden only controls listing
+ * visibility — closed shops stay visible with Add blocked.
+ */
+function lyaideu_vendor_shop_row(int $vendorId): ?array {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO || $vendorId <= 0) {
+        return null;
+    }
+    try {
+        $st = $pdo->prepare('SELECT id, name, scope, hotel_id, is_active, is_open, products_hidden, open_time, close_time FROM vendors WHERE id = ? LIMIT 1');
+        $st->execute([$vendorId]);
+        $row = $st->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function lyaideu_vendor_time_minutes(?string $t): ?int {
+    if ($t === null || $t === '') {
+        return null;
+    }
+    if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', trim((string)$t), $m)) {
+        $h = max(0, min(23, (int)$m[1]));
+        $min = max(0, min(59, (int)$m[2]));
+        return $h * 60 + $min;
+    }
+    return null;
+}
+
+/**
+ * Formats a vendor opening-hours value ("HH:MM" or "HH:MM:SS") for display in
+ * 12-hour format, e.g. "9:00 AM", "10:30 PM". Returns '' when invalid/empty.
+ */
+function lyaideu_vendor_time_12h(?string $t): string {
+    $m = lyaideu_vendor_time_minutes($t);
+    if ($m === null) {
+        return '';
+    }
+    $h = intdiv($m, 60);
+    $min = $m % 60;
+    $suffix = $h < 12 ? 'AM' : 'PM';
+    $h12 = $h % 12;
+    if ($h12 === 0) {
+        $h12 = 12;
+    }
+    return $h12 . ':' . sprintf('%02d', $min) . ' ' . $suffix;
+}
+
+function lyaideu_vendor_is_orderable(int $vendorId): array {
+    $row = lyaideu_vendor_shop_row($vendorId);
+    if (!$row) {
+        return ['open' => true, 'reason' => '', 'label' => '', 'hidden' => false, 'vendor_id' => 0];
+    }
+    if ((int)($row['is_active'] ?? 1) === 0) {
+        return ['open' => false, 'reason' => 'off', 'label' => 'Vendor closed', 'hidden' => !empty($row['products_hidden']), 'vendor_id' => (int)$row['id']];
+    }
+    if (empty($row['is_open'])) {
+        return ['open' => false, 'reason' => 'off', 'label' => 'Closed now', 'hidden' => !empty($row['products_hidden']), 'vendor_id' => (int)$row['id']];
+    }
+    $openMin = lyaideu_vendor_time_minutes(isset($row['open_time']) ? (string)$row['open_time'] : null);
+    $closeMin = lyaideu_vendor_time_minutes(isset($row['close_time']) ? (string)$row['close_time'] : null);
+    if ($openMin !== null && $closeMin !== null) {
+        try {
+            $now = new DateTime('now', new DateTimeZone('Asia/Kathmandu'));
+        } catch (Throwable $e) {
+            $now = new DateTime('now');
+        }
+        $cur = ((int)$now->format('G')) * 60 + ((int)$now->format('i'));
+        $inside = $openMin <= $closeMin
+            ? ($cur >= $openMin && $cur <= $closeMin)
+            : ($cur >= $openMin || $cur <= $closeMin);
+        if (!$inside) {
+            $label = 'Closed · Opens ' . lyaideu_vendor_time_12h((string)$row['open_time']) . '–' . lyaideu_vendor_time_12h((string)$row['close_time']);
+            return ['open' => false, 'reason' => 'hours', 'label' => $label, 'hidden' => !empty($row['products_hidden']), 'vendor_id' => (int)$row['id']];
+        }
+    }
+    return ['open' => true, 'reason' => '', 'label' => '', 'hidden' => !empty($row['products_hidden']), 'vendor_id' => (int)$row['id']];
+}
+
+function lyaideu_vendor_products_hidden(int $vendorId): bool {
+    $row = lyaideu_vendor_shop_row($vendorId);
+    return $row ? !empty($row['products_hidden']) : false;
+}
+
+/**
+ * Resolve the owning vendor id for a product row (dish/mart/other/beverage).
+ * Dishes may predate vendor_id — fall back to hotel-name matching like
+ * lyaideu_resolve_dish_vendor() but without writing to the DB.
+ */
+function lyaideu_product_vendor_id(string $type, array $row): int {
+    $vid = (int)($row['vendor_id'] ?? 0);
+    if ($vid > 0) {
+        return $vid;
+    }
+    if ($type === 'dish') {
+        $hotel = trim((string)($row['hotel'] ?? ''));
+        if ($hotel === '') {
+            return 0;
+        }
+        $pdo = lyaideu_load_pdo();
+        if (!$pdo instanceof PDO) {
+            return 0;
+        }
+        try {
+            $st = $pdo->prepare("SELECT v.id FROM vendors v JOIN hotels h ON h.id = v.hotel_id WHERE v.scope = 'hotel' AND h.name = :h ORDER BY v.id LIMIT 1");
+            $st->execute([':h' => $hotel]);
+            $found = (int)$st->fetchColumn();
+            if ($found > 0) {
+                return $found;
+            }
+            $norm = lyaideu_normalize_name($hotel);
+            if ($norm !== '') {
+                foreach ($pdo->query("SELECT id, name FROM vendors WHERE scope = 'hotel'") as $v) {
+                    if (lyaideu_normalize_name((string)$v['name']) === $norm) {
+                        return (int)$v['id'];
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+    return 0;
+}
+
+function lyaideu_sanitize_vendor_time(?string $v): ?string {
+    $v = trim((string)($v ?? ''));
+    if ($v === '') {
+        return null;
+    }
+    if (preg_match('/^(\d{1,2}):(\d{2})$/', $v, $m)) {
+        $h = max(0, min(23, (int)$m[1]));
+        $min = max(0, min(59, (int)$m[2]));
+        return sprintf('%02d:%02d:00', $h, $min);
+    }
+    if (preg_match('/^(\d{1,2}):(\d{2}):(\d{2})$/', $v, $m)) {
+        $h = max(0, min(23, (int)$m[1]));
+        $min = max(0, min(59, (int)$m[2]));
+        return sprintf('%02d:%02d:00', $h, $min);
+    }
+    return null;
+}
+
+/**
+ * Attach `_vendor_open` / `_vendor_label` to product rows and optionally drop
+ * rows whose vendor hid all products. Closed shops stay in the list (Add is
+ * blocked in templates/JS); hidden shops are removed.
+ */
+function lyaideu_attach_vendor_status(array &$rows, string $type, bool $dropHidden = true): void {
+    foreach ($rows as &$r) {
+        $vid = $type === 'dish' ? lyaideu_product_vendor_id('dish', $r) : (int)($r['vendor_id'] ?? 0);
+        $r['_vendor_id'] = $vid;
+        if ($vid > 0) {
+            $st = lyaideu_vendor_is_orderable($vid);
+            $r['_vendor_open'] = !empty($st['open']) ? 1 : 0;
+            $r['_vendor_label'] = (string)($st['label'] ?? '');
+            $r['_vendor_hidden'] = !empty($st['hidden']) ? 1 : 0;
+        } else {
+            $r['_vendor_open'] = 1;
+            $r['_vendor_label'] = '';
+            $r['_vendor_hidden'] = 0;
+        }
+    }
+    unset($r);
+    if ($dropHidden) {
+        $rows = array_values(array_filter($rows, fn($r) => empty($r['_vendor_hidden'])));
     }
 }
 

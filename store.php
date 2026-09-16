@@ -80,7 +80,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM mart_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM mart_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -95,7 +95,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM other_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM other_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -110,7 +110,7 @@ if ($isDetail) {
                 $vendorId = 0;
             }
             if ($vendorId > 0) {
-                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM beverage_items WHERE vendor_id = ? ORDER BY id');
+                $st = $pdo->prepare('SELECT id, name, cat, unit, price, discount_percent, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM beverage_items WHERE vendor_id = ? ORDER BY id');
                 $st->execute([$vendorId]);
                 $products = $st->fetchAll();
             }
@@ -118,7 +118,7 @@ if ($isDetail) {
             $st = $pdo->prepare("SELECT id FROM vendors WHERE scope = 'hotel' AND hotel_id = ? AND is_active = 1 ORDER BY id LIMIT 1");
             $st->execute([$id]);
             $vendorId = (int)$st->fetchColumn();
-            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
+            $st = $pdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug AS slug, has_variants, vendor_id FROM dishes WHERE (vendor_id = ?) OR (hotel = ?) ORDER BY id');
             $st->execute([$vendorId > 0 ? $vendorId : 0, $storeName]);
             $products = $st->fetchAll();
         }
@@ -133,7 +133,29 @@ if ($isDetail) {
     /* Control Panel: products in switched-off category subtrees don't show
        on the store page. Uncategorised items stay visible. */
     $products = array_values(array_filter($products, fn($p) => (int)($p['category_id'] ?? 0) <= 0 || lyaideu_category_is_active((int)$p['category_id'])));
+    /* Vendor hide-all: when the store vendor hid its products, show nothing. */
+    $storeVendorStatus = $vendorId > 0 ? lyaideu_vendor_is_orderable($vendorId) : ['open' => true, 'label' => '', 'hidden' => false];
+    if (!empty($storeVendorStatus['hidden'])) {
+        $products = [];
+    } else {
+        $ptype = $kind === 'mart' ? 'mart' : ($kind === 'other' ? 'other' : ($kind === 'beverage' ? 'beverage' : 'dish'));
+        foreach ($products as &$sp) {
+            $svid = $ptype === 'dish' ? lyaideu_product_vendor_id('dish', $sp) : (int)($sp['vendor_id'] ?? $vendorId);
+            $sp['_vendor_id'] = $svid > 0 ? $svid : $vendorId;
+            $sst = $sp['_vendor_id'] > 0 ? lyaideu_vendor_is_orderable($sp['_vendor_id']) : ['open' => true, 'label' => ''];
+            $sp['_vendor_open'] = !empty($sst['open']) ? 1 : 0;
+            $sp['_vendor_label'] = (string)($sst['label'] ?? '');
+        }
+        unset($sp);
+    }
 }
+
+/* Site gates (maintenance + unavailable): whole site paused — every Add is
+   disabled, no banners. Unavailable text wins when both are ON. */
+$maintMode = lyaideu_maintenance_on();
+$unavailMode = lyaideu_unavailable_on();
+$siteGateMode = $unavailMode || $maintMode;
+$siteGateLabel = $unavailMode ? 'LyaiDeu is Currently Unavailable' : 'LyaiDeu is Under Maintenance';
 
 $kindLabel = $kind === 'mart' ? 'Mart' : ($kind === 'other' ? 'Other' : ($kind === 'beverage' ? 'Beverages' : 'Hotel'));
 $kindIcon = $kind === 'mart' ? 'fa-basket-shopping' : ($kind === 'other' ? 'fa-gift' : ($kind === 'beverage' ? 'fa-champagne-glasses' : 'fa-hotel'));
@@ -275,6 +297,7 @@ if ($isDetail) {
                 </div>
                 <div class="store-hero-info">
                     <span class="hotel-kind-badge"><i class="fa-solid <?= e($kindIcon) ?>"></i> <?= e($kindLabel) ?></span>
+                    <?php if ($isDetail && empty($storeVendorStatus['open'])): ?><span class="hotel-kind-badge" style="background:#fdeaea;color:#c93a3a;border:1px solid #f5c2c2;"><i class="fa-solid fa-circle-pause"></i> <?= e($storeVendorStatus['label'] !== '' ? $storeVendorStatus['label'] : 'Closed now') ?></span><?php endif; ?>
                     <h1 class="display"><?= e($store['name']) ?></h1>
                     <?php if ($store['type'] !== ''): ?>
                         <p class="store-hero-type"><i class="fa-solid fa-location-dot"></i> <?= e($store['type']) ?></p>
@@ -323,13 +346,15 @@ if ($isDetail) {
                             $art = $img !== '' ? '<img src="' . e($img) . '" alt="' . e($p['name']) . '" loading="lazy">' : ($hasUnit ? '<span class="mart-art"><i class="fa-solid ' . e($catIcon) . '"></i></span>' : '<span class="dish-art-ico"><i class="fa-solid fa-utensils"></i></span>');
                             $url = ($isMart ? 'mart' : ($isOther ? 'others' : ($isBeverage ? 'beverages' : 'menu'))) . '/' . (int)$p['id'];
                             $cardType = $isMart ? 'mart' : ($isOther ? 'other' : ($isBeverage ? 'beverage' : 'dish'));
+                            $pVendorOpen = !isset($p['_vendor_open']) || !empty($p['_vendor_open']);
+                            $pVendorLabel = (string)($p['_vendor_label'] ?? '');
                         ?>
                         <article class="dish-card reveal visible" data-url="<?= $url ?>" data-type="<?= $cardType ?>">
-                            <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?></div>
+                            <div class="dish-art <?= $hasUnit ? 'mart-art' : '' ?>"><?= $art ?><?= $p['tag'] !== '' ? '<span class="dish-tag">' . e($p['tag']) . '</span>' : '' ?><?= !$pVendorOpen ? '<span class="dish-tag" style="background:#c93a3a;">Closed</span>' : '' ?></div>
                             <div class="dish-body">
                                 <div class="dish-top"><h3><?= e($p['name']) ?></h3></div>
                                 <div class="dish-foot"><span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= $dealNow ?></span><?= $dealPct > 0 ? '<span class="deal-badge deal-badge-inline">-' . $dealPct . '%</span>' : '' ?>
-                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $dealNow ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
+                                <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $cardType ?>" data-name="<?= e($p['name']) ?>" data-price="<?= $dealNow ?>"<?= $hasUnit && $unitLabel !== '' ? ' data-unit="' . e($unitLabel) . '"' : '' ?> data-hotel="<?= e($store['name']) ?>" data-img="<?= e($img) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?><?= ($siteGateMode || !$pVendorOpen) ? ' data-vendor-open="0" data-vendor-label="' . e($siteGateMode ? $siteGateLabel : ($pVendorLabel !== '' ? $pVendorLabel : 'This shop is closed now')) . '" disabled style="opacity:.5;cursor:not-allowed;"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button></div>
                             </div>
                         </article>
                         <?php endforeach; ?>

@@ -59,6 +59,8 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
 .co-oc-actions .btn{flex:1;margin:0}
 #ocCancelBtn{border-color:#eec4bd;background:#fff7f5;color:#c0392b}
 #ocCancelBtn:hover{background:#fdeae6;border-color:#e39a8d;color:#a93226}
+/* Gate button (maintenance / unavailable) has long text — keep it small and wrappable so it never gets cut off */
+#placeOrderBtn[disabled]{font-size:.82rem;line-height:1.35;white-space:normal;text-align:center;}
 </style>
 </head><body class="checkout-body">
 <header class="topbar">
@@ -141,7 +143,10 @@ $prefillAddress = ($profile && trim((string)$profile['home_address']) !== '') ? 
       <div class="promo-box"><input id="promoInput" type="text" placeholder="Promo code"><button type="button" class="btn btn-outline" id="promoBtn">Apply</button></div>
       <p id="promoMsg" class="small-note"></p>
       <div class="summary-row total"><span>Total</span><strong id="coTotal">Rs. 0</strong></div>
-      <?php if ($kycVerified): ?>
+      <?php $siteGateCo = lyaideu_unavailable_on() || lyaideu_maintenance_on(); ?>
+      <?php if ($siteGateCo): ?>
+      <button class="btn btn-primary btn-block" type="button" id="placeOrderBtn" disabled style="opacity:.5;cursor:not-allowed;"><i class="fa-solid <?= lyaideu_unavailable_on() ? 'fa-ban' : 'fa-screwdriver-wrench' ?>"></i> <?= lyaideu_unavailable_on() ? 'LyaiDeu is Currently Unavailable' : 'LyaiDeu is Under Maintenance' ?></button>
+      <?php elseif ($kycVerified): ?>
       <button class="btn btn-primary btn-block" type="submit" id="placeOrderBtn"><i class="fa-solid fa-rocket"></i> Place Order</button>
       <?php else: ?>
       <a class="btn btn-primary btn-block" href="profile"><i class="fa-solid fa-shield-halved"></i> Complete KYC to Order</a>

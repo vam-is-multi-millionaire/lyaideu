@@ -278,7 +278,7 @@ function delivery_header(string $title, string $heading, string $icon, string $r
   document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNav();});
 })();
 </script>
-<main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>? Live updates</span> New orders appear here automatically.</p></div>';
+<main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator live-on" data-live-indicator><span class="live-dot"></span> Live updates</span> New orders appear here automatically.</p></div>';
 }
 
 function delivery_footer(): void {

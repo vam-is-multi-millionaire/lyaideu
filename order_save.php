@@ -37,6 +37,13 @@ if (lyaideu_kyc_required() && $kycStatus !== 'approved') {
     exit;
 }
 
+/* Site gates (maintenance + unavailable): nobody can place orders while
+   EITHER is ON (last-resort server block — the frontend already disables
+   every order button silently). Unavailable text wins when both are ON. */
+if (lyaideu_unavailable_on() || lyaideu_maintenance_on()) {
+    flash_checkout((lyaideu_unavailable_on() ? 'LyaiDeu is Currently Unavailable' : 'LyaiDeu is Under Maintenance') . ' — ordering is paused right now.');
+}
+
 $cart = json_decode($_POST['cart_json'] ?? '[]', true);
 if (!is_array($cart) || empty($cart)) {
     flash_checkout('Your cart is empty.');
@@ -51,10 +58,24 @@ function order_item_available(array $d): bool {
     return $cid <= 0 || lyaideu_category_is_active($cid);
 }
 
+/* Vendor shop status: hidden products and closed shops can't be ordered.
+   Returns the vendor label when blocked, '' when orderable. */
+function order_vendor_blocked(int $vendorId): string {
+    if ($vendorId <= 0) {
+        return '';
+    }
+    $st = lyaideu_vendor_is_orderable($vendorId);
+    if (!empty($st['hidden']) || empty($st['open'])) {
+        return (string)($st['label'] ?? 'Closed now');
+    }
+    return '';
+}
+
 $dishStmt = $pdo->prepare('SELECT id, name, hotel, price, discount_percent, vendor_id, has_variants, category_id FROM dishes WHERE id = ? LIMIT 1');
-$martStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM mart_items WHERE id = ? LIMIT 1');
-$otherStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM other_items WHERE id = ? LIMIT 1');
-$beverageStmt = $pdo->prepare('SELECT id, name, price, discount_percent, has_variants, category_id FROM beverage_items WHERE id = ? LIMIT 1');
+$martStmt = $pdo->prepare('SELECT id, name, price, discount_percent, vendor_id, has_variants, category_id FROM mart_items WHERE id = ? LIMIT 1');
+$otherStmt = $pdo->prepare('SELECT id, name, price, discount_percent, vendor_id, has_variants, category_id FROM other_items WHERE id = ? LIMIT 1');
+$beverageStmt = $pdo->prepare('SELECT id, name, price, discount_percent, vendor_id, has_variants, category_id FROM beverage_items WHERE id = ? LIMIT 1');
+$blockedVendorLabel = '';
 
 function resolve_variant_price(PDO $pdo, string $type, int $id, string $variant): ?int {
     $st = $pdo->prepare('SELECT price FROM product_variants WHERE item_type = ? AND item_id = ? AND label = ? LIMIT 1');
@@ -80,12 +101,20 @@ foreach ($cart as $row) {
         if (!$d || !order_item_available($d)) {
             continue;
         }
+        $mvid = (int)($d['vendor_id'] ?? 0);
+        if ($mvid <= 0) {
+            $mvid = lyaideu_resolve_mart_vendor($id);
+        }
+        if (($bl = order_vendor_blocked($mvid)) !== '') {
+            $blockedVendorLabel = $bl;
+            continue;
+        }
         $item = [
             'dish_id' => null,
             'name' => $d['name'],
             'hotel' => lyaideu_mart_store_name($id),
             'price' => (int)$d['price'],
-            'vendor_id' => lyaideu_resolve_mart_vendor($id),
+            'vendor_id' => $mvid,
             'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } elseif ($type === 'other') {
@@ -95,12 +124,20 @@ foreach ($cart as $row) {
         if (!$d || !order_item_available($d)) {
             continue;
         }
+        $ovid = (int)($d['vendor_id'] ?? 0);
+        if ($ovid <= 0) {
+            $ovid = lyaideu_resolve_other_vendor($id);
+        }
+        if (($bl = order_vendor_blocked($ovid)) !== '') {
+            $blockedVendorLabel = $bl;
+            continue;
+        }
         $item = [
             'dish_id' => null,
             'name' => $d['name'],
             'hotel' => lyaideu_other_store_name($id),
             'price' => (int)$d['price'],
-            'vendor_id' => lyaideu_resolve_other_vendor($id),
+            'vendor_id' => $ovid,
             'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } elseif ($type === 'beverage') {
@@ -110,12 +147,20 @@ foreach ($cart as $row) {
         if (!$d || !order_item_available($d)) {
             continue;
         }
+        $bvid = (int)($d['vendor_id'] ?? 0);
+        if ($bvid <= 0) {
+            $bvid = lyaideu_resolve_beverage_vendor($id);
+        }
+        if (($bl = order_vendor_blocked($bvid)) !== '') {
+            $blockedVendorLabel = $bl;
+            continue;
+        }
         $item = [
             'dish_id' => null,
             'name' => $d['name'],
             'hotel' => lyaideu_beverage_store_name($id),
             'price' => (int)$d['price'],
-            'vendor_id' => lyaideu_resolve_beverage_vendor($id),
+            'vendor_id' => $bvid,
             'has_variants' => (int)($d['has_variants'] ?? 0),
         ];
     } else {
@@ -127,6 +172,10 @@ foreach ($cart as $row) {
         $vid = (int)($d['vendor_id'] ?? 0);
         if ($vid <= 0) {
             $vid = lyaideu_resolve_dish_vendor((int)$d['id']);
+        }
+        if (($bl = order_vendor_blocked($vid)) !== '') {
+            $blockedVendorLabel = $bl;
+            continue;
         }
         $item = [
             'dish_id' => (int)$d['id'],
@@ -169,6 +218,9 @@ foreach ($cart as $row) {
 }
 
 if (!$items) {
+    if ($blockedVendorLabel !== '') {
+        flash_checkout('That shop is closed now (' . $blockedVendorLabel . ') — those items were removed from your cart. Please remove them and try again.');
+    }
     flash_checkout('No valid items were found in your cart.');
 }
 

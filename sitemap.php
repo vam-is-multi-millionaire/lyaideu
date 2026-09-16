@@ -44,7 +44,10 @@ function lyaideu_sitemap_product_rows(string $table): array {
     $pdo = lyaideu_load_pdo();
     if ($pdo instanceof PDO) {
         try {
-            $rows = $pdo->query("SELECT id, name_slug, category_id FROM `$table` ORDER BY id")->fetchAll();
+            lyaideu_ensure_delivery_tables();
+            $rows = $pdo->query("SELECT id, name_slug, category_id, vendor_id, hotel FROM `$table` ORDER BY id")->fetchAll();
+            $type = $table === 'dishes' ? 'dish' : ($table === 'mart_items' ? 'mart' : ($table === 'other_items' ? 'other' : 'beverage'));
+            lyaideu_attach_vendor_status($rows, $type);
         } catch (Throwable $e) {
             $rows = [];
         }

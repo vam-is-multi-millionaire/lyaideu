@@ -4,6 +4,9 @@
    POST {id, active} → flips categories.is_active for one category and returns
    the fresh toggle state for every category plus per-type hidden product
    counts, so the Control Panel UI can update itself in place.
+   POST {vendor_id, vendor_field, active} → flips vendors.is_open or
+   vendors.products_hidden for one vendor.
+   POST {vendor_id, open_time, close_time} → sets a vendor's opening hours.
    Auth: admin session + X-CSRF-Token header (same token the admin forms use). */
 
 require_once __DIR__ . '/../db.php';
@@ -47,12 +50,20 @@ $id = (int)($body['id'] ?? 0);
 $type = strtolower(trim((string)($body['type'] ?? '')));
 $setting = strtolower(trim((string)($body['setting'] ?? '')));
 $active = !empty($body['active']) ? 1 : 0;
+$vendorId = (int)($body['vendor_id'] ?? 0);
+$vendorField = strtolower(trim((string)($body['vendor_field'] ?? $body['field'] ?? '')));
 
 $VALID_TYPES = ['menu', 'mart', 'other', 'beverage'];
 
 $isKyc = $setting === 'kyc';
-if ($id <= 0 && !in_array($type, $VALID_TYPES, true) && !$isKyc) {
+$isMaint = $setting === 'maintenance';
+$isUnavail = $setting === 'unavailable';
+$isVendor = $vendorId > 0;
+if ($id <= 0 && !in_array($type, $VALID_TYPES, true) && !$isKyc && !$isMaint && !$isUnavail && !$isVendor) {
     ctrl_res(['ok' => false, 'error' => 'Missing category id, type or setting.'], 422);
+}
+if ($isVendor && !in_array($vendorField, ['is_open', 'products_hidden', 'hours'], true)) {
+    ctrl_res(['ok' => false, 'error' => 'Unknown vendor field.'], 422);
 }
 
 $pdo = lyaideu_load_pdo();
@@ -62,7 +73,36 @@ if (!$pdo instanceof PDO) {
 
 try {
     lyaideu_ensure_categories_table();
-    if ($isKyc) {
+    lyaideu_ensure_delivery_tables();
+    if ($isVendor) {
+        $chk = $pdo->prepare('SELECT COUNT(*) FROM vendors WHERE id = ?');
+        $chk->execute([$vendorId]);
+        if (!(int)$chk->fetchColumn()) {
+            ctrl_res(['ok' => false, 'error' => 'Vendor not found.'], 404);
+        }
+        if ($vendorField === 'is_open') {
+            $pdo->prepare('UPDATE vendors SET is_open = :a WHERE id = :id')->execute([':a' => $active, ':id' => $vendorId]);
+        } elseif ($vendorField === 'products_hidden') {
+            $pdo->prepare('UPDATE vendors SET products_hidden = :a WHERE id = :id')->execute([':a' => $active, ':id' => $vendorId]);
+        } else {
+            $openTime = lyaideu_sanitize_vendor_time($body['open_time'] ?? null);
+            $closeTime = lyaideu_sanitize_vendor_time($body['close_time'] ?? null);
+            /* Empty string clears the time (24h open); invalid strings are rejected. */
+            $rawOpen = trim((string)($body['open_time'] ?? ''));
+            $rawClose = trim((string)($body['close_time'] ?? ''));
+            if (($rawOpen !== '' && $openTime === null) || ($rawClose !== '' && $closeTime === null)) {
+                ctrl_res(['ok' => false, 'error' => 'Use HH:MM for opening hours (e.g. 09:00).'], 422);
+            }
+            $pdo->prepare('UPDATE vendors SET open_time = :o, close_time = :c WHERE id = :id')
+                ->execute([':o' => $openTime, ':c' => $closeTime, ':id' => $vendorId]);
+        }
+    } elseif ($isMaint) {
+        /* Maintenance gate: nobody can add to cart or order while ON. */
+        lyaideu_set_maintenance(!empty($active));
+    } elseif ($isUnavail) {
+        /* Unavailable gate: same effect as maintenance, own button + text. */
+        lyaideu_set_unavailable(!empty($active));
+    } elseif ($isKyc) {
         /* Ordering rule: require approved KYC before placing an order. */
         lyaideu_set_kyc_required(!empty($active));
     } elseif ($id > 0) {
@@ -80,7 +120,7 @@ try {
         $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE type = :t');
         $st->execute([':a' => $active, ':t' => $type]);
     }
-    try { if ($isKyc) lyaideu_log_activity('setting.kyc_toggle','setting',null,['active'=>$active]); elseif ($id>0) lyaideu_log_activity('category.toggle','category',$id,['active'=>$active]); else lyaideu_log_activity('category.bulk_toggle','category',null,['type'=>$type,'active'=>$active]); } catch (Throwable $e2) {}
+    try { if ($isVendor) lyaideu_log_activity('vendor.shop_toggle','vendor',$vendorId,['field'=>$vendorField,'active'=>$active,'open'=>($body['open_time'] ?? null),'close'=>($body['close_time'] ?? null)]); elseif ($isMaint) lyaideu_log_activity('setting.maintenance_toggle','setting',null,['active'=>$active]); elseif ($isUnavail) lyaideu_log_activity('setting.unavailable_toggle','setting',null,['active'=>$active]); elseif ($isKyc) lyaideu_log_activity('setting.kyc_toggle','setting',null,['active'=>$active]); elseif ($id>0) lyaideu_log_activity('category.toggle','category',$id,['active'=>$active]); else lyaideu_log_activity('category.bulk_toggle','category',null,['type'=>$type,'active'=>$active]); } catch (Throwable $e2) {}
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Could not save the toggle.'], 500);
 }
@@ -136,13 +176,33 @@ try {
         $q->execute([$vt]);
         $groups[$vt] = ((int)$q->fetchColumn()) > 0;
     }
+    /* Vendor shop state for the Control Panel vendors section. */
+    $vendors = [];
+    try {
+        foreach ($pdo->query('SELECT id, name, scope, is_active, is_open, products_hidden, open_time, close_time FROM vendors ORDER BY id')->fetchAll(PDO::FETCH_ASSOC) as $v) {
+            $vid = (int)$v['id'];
+            $st = lyaideu_vendor_is_orderable($vid);
+            $vendors[$vid] = [
+                'open_switch' => !empty($v['is_open']),
+                'products_hidden' => !empty($v['products_hidden']),
+                'orderable' => !empty($st['open']),
+                'label' => (string)($st['label'] ?? ''),
+                'open_time' => $v['open_time'] ? substr((string)$v['open_time'], 0, 5) : '',
+                'close_time' => $v['close_time'] ? substr((string)$v['close_time'], 0, 5) : '',
+            ];
+        }
+    } catch (Throwable $e2) {
+        $vendors = [];
+    }
     ctrl_res([
         'ok' => true,
         'id' => $id,
         'type' => $type,
         'setting' => $setting,
         'active' => $active,
-        'state' => ['cats' => $effMap, 'hidden' => $hidden, 'groups' => $groups, 'kyc' => lyaideu_kyc_required()],
+        'vendor_id' => $vendorId,
+        'vendor_field' => $vendorField,
+        'state' => ['cats' => $effMap, 'hidden' => $hidden, 'groups' => $groups, 'kyc' => lyaideu_kyc_required(), 'maintenance' => lyaideu_maintenance_on(), 'unavailable' => lyaideu_unavailable_on(), 'vendors' => $vendors],
     ]);
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Toggle saved, but the refresh state could not be read.'], 500);

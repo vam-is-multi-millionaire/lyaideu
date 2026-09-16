@@ -12,6 +12,30 @@ $TYPE_ICONS  = ['menu' => 'fa-utensils', 'mart' => 'fa-basket-shopping', 'other'
 $TABLES      = ['menu' => 'dishes', 'mart' => 'mart_items', 'other' => 'other_items', 'beverage' => 'beverage_items'];
 
 $pdo = lyaideu_load_pdo();
+lyaideu_ensure_delivery_tables();
+
+/* Vendors / shop status (ON-OFF + opening hours + hide-all-products). */
+$vendors = [];
+try {
+    $vendors = $pdo->query(
+        'SELECT v.id, v.name, v.scope, v.is_active, v.is_open, v.products_hidden, v.open_time, v.close_time,
+                h.name AS store_name
+         FROM vendors v
+         LEFT JOIN hotels h ON h.id = v.hotel_id
+         ORDER BY v.id'
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    $vendors = [];
+}
+foreach ($vendors as &$vr) {
+    $st = lyaideu_vendor_is_orderable((int)$vr['id']);
+    $vr['_orderable'] = !empty($st['open']);
+    $vr['_label'] = (string)($st['label'] ?? '');
+}
+unset($vr);
+$vendorOpenCount = count(array_filter($vendors, fn($v) => !empty($v['_orderable'])));
+$vendorClosedCount = count($vendors) - $vendorOpenCount;
+$vendorHiddenCount = count(array_filter($vendors, fn($v) => !empty($v['products_hidden'])));
 
 /* Direct product count per category id (across all four product tables). */
 $countMap = [];
@@ -59,6 +83,12 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 /* Ordering rules: global KYC gate (ON = only approved-KYC users can order). */
 $kycOn = lyaideu_kyc_required();
 
+/* Maintenance gate: ON = nobody can add to cart or order (browsing stays). */
+$maintOn = lyaideu_maintenance_on();
+
+/* Unavailable gate: same effect as maintenance, own button + button text. */
+$unavailOn = lyaideu_unavailable_on();
+
 admin_page_start('Control Panel', 'control', 'Control Panel');
 ?>
 <style>
@@ -95,12 +125,47 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
 .ctrl-toggle.on{background:var(--orange-600);}
 .ctrl-toggle.on .ctrl-knob{left:23px;}
 .ctrl-toggle:disabled{opacity:.55;cursor:wait;}
+.ctrl-vendor-row{flex-wrap:wrap;}
+.ctrl-vendor-switches{display:flex;align-items:center;gap:.7rem;flex:none;flex-wrap:wrap;}
+.ctrl-switch-wrap{display:flex;align-items:center;gap:.35rem;}
+.ctrl-switch-label{font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap;}
+.ctrl-hours{display:flex;align-items:center;gap:.3rem;flex:none;flex-wrap:wrap;}
+.ctrl-hours input[type="time"]{border:1px solid var(--orange-200);border-radius:8px;padding:.3rem .45rem;font-size:.78rem;font-weight:800;color:var(--orange-900);background:#fff;font-family:inherit;}
+.ctrl-hours input[type="time"]:focus{outline:2px solid var(--orange-400);border-color:var(--orange-500);}
+.ctrl-hours-sep{font-size:.72rem;font-weight:800;color:var(--muted);}
+.ctrl-hours-save{border:1px solid var(--orange-300);background:var(--orange-50);color:var(--orange-800);border-radius:8px;padding:.32rem .6rem;font-size:.72rem;font-weight:900;cursor:pointer;white-space:nowrap;}
+.ctrl-hours-save:hover{background:var(--orange-100);}
+.ctrl-hours-save:disabled{opacity:.55;cursor:wait;}
+.ctrl-tabs{display:flex;gap:.5rem;overflow-x:auto;padding:.1rem .1rem .8rem;margin-bottom:.4rem;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.ctrl-tabs::-webkit-scrollbar{display:none;}
+.ctrl-tab{flex:0 0 auto;display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--orange-200);background:#fff;color:var(--orange-800);border-radius:999px;padding:.5rem .95rem;font-size:.8rem;font-weight:900;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+.ctrl-tab i{color:var(--orange-600);}
+.ctrl-tab:hover{border-color:var(--orange-500);}
+.ctrl-tab.active{background:var(--orange-600);border-color:var(--orange-600);color:#fff;}
+.ctrl-tab.active i{color:#fff;}
+.ctrl-tab-count{font-size:.68rem;font-weight:900;background:var(--orange-100);color:var(--orange-800);border-radius:999px;padding:.1rem .45rem;}
+.ctrl-tab.active .ctrl-tab-count{background:rgba(255,255,255,.25);color:#fff;}
+.ctrl-panel{display:none;}
+.ctrl-panel.active{display:block;animation:ctrlFade .18s ease;}
+@keyframes ctrlFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ctrl-search{display:flex;align-items:center;gap:.5rem;margin:.7rem .9rem .3rem;border:1px solid var(--orange-200);border-radius:10px;padding:.45rem .7rem;background:#fff;}
+.ctrl-search:focus-within{border-color:var(--orange-500);outline:2px solid var(--orange-200);}
+.ctrl-search .search-ico{color:var(--orange-500);flex:none;}
+.ctrl-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:.85rem;font-weight:700;color:var(--orange-900);}
+.ctrl-search input::placeholder{color:var(--muted);font-weight:700;}
+.ctrl-search-clear{border:0;background:var(--orange-100);color:var(--orange-800);border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;font-size:.65rem;}
+.ctrl-no-match{justify-content:center;color:var(--muted);font-size:.8rem;}
+.ctrl-search-clear[hidden],[data-ctrl-empty][hidden]{display:none!important;}
 @media (max-width:640px){
   .ctrl-path{display:none;}
   .ctrl-row{padding:.5rem .7rem;gap:.5rem;}
   .ctrl-group-head{padding:.65rem .7rem;gap:.45rem;}
   .ctrl-group-head h3{font-size:.9rem;}
   .ctrl-group-head small{font-size:.64rem;}
+  .ctrl-vendor-row{align-items:flex-start;}
+  .ctrl-vendor-switches{width:100%;justify-content:flex-start;}
+  .ctrl-hours{width:100%;}
+  .ctrl-tab{padding:.45rem .8rem;font-size:.75rem;}
 }
 </style>
 
@@ -111,10 +176,35 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
     <div class="ctrl-tile"><b id="ctrlTileLive"><?= $liveCats ?></b><span>Live categories</span></div>
     <div class="ctrl-tile ctrl-warn"><b id="ctrlTileHiddenCats"><?= $hiddenCats ?></b><span>Hidden categories</span></div>
     <div class="ctrl-tile ctrl-warn"><b id="ctrlTileHiddenItems"><?= $totalHiddenItems ?></b><span>Products hidden</span></div>
+    <div class="ctrl-tile"><b id="ctrlTileVendorsOpen"><?= $vendorOpenCount ?></b><span>Vendors open</span></div>
+    <div class="ctrl-tile ctrl-warn"><b id="ctrlTileVendorsClosed"><?= $vendorClosedCount ?></b><span>Vendors closed</span></div>
+</div>
+
+<?php
+$typeTotalCounts = [];
+foreach ($allCats as $cc) {
+    $tt = (string)$cc['type'];
+    $typeTotalCounts[$tt] = ($typeTotalCounts[$tt] ?? 0) + 1;
+}
+$ctrlTabs = array_merge(
+    [
+        ['key' => 'rules', 'label' => 'Rules', 'icon' => 'fa-shield-halved', 'count' => null],
+        ['key' => 'vendors', 'label' => 'Vendors', 'icon' => 'fa-store', 'count' => count($vendors)],
+    ],
+    array_map(
+        fn($t) => ['key' => $t, 'label' => $TYPE_LABELS[$t], 'icon' => $TYPE_ICONS[$t], 'count' => (int)($typeTotalCounts[$t] ?? 0)],
+        array_keys($TYPE_LABELS)
+    )
+);
+?>
+<div class="ctrl-tabs" id="ctrlTabs" role="tablist" aria-label="Control Panel sections">
+    <?php foreach ($ctrlTabs as $i => $tab): ?>
+    <button type="button" class="ctrl-tab<?= $i === 0 ? ' active' : '' ?>" role="tab" data-tab="<?= $ce($tab['key']) ?>" aria-selected="<?= $i === 0 ? 'true' : 'false' ?>"><i class="fa-solid <?= $ce($tab['icon']) ?>"></i> <?= $ce($tab['label']) ?><?php if ($tab['count'] !== null): ?> <span class="ctrl-tab-count"><?= (int)$tab['count'] ?></span><?php endif; ?></button>
+    <?php endforeach; ?>
 </div>
 
 <div class="ctrl-groups" id="ctrlGroups">
-<section class="ctrl-group">
+<section class="ctrl-group ctrl-panel active" data-panel="rules">
     <div class="ctrl-group-head">
         <i class="fa-solid fa-shield-halved"></i>
         <h3>Ordering Rules</h3>
@@ -131,11 +221,78 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
             </div>
             <button type="button" class="ctrl-toggle ctrl-kyc-toggle<?= $kycOn ? ' on' : '' ?>" id="ctrlKycToggle" data-active="<?= $kycOn ? '1' : '0' ?>" aria-pressed="<?= $kycOn ? 'true' : 'false' ?>" aria-label="Turn <?= $kycOn ? 'off' : 'on' ?> KYC verification" title="Turn KYC verification <?= $kycOn ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
         </div>
+        <div class="ctrl-row" data-maint-row>
+            <div class="ctrl-main">
+                <span class="ctrl-name"><i class="fa-solid fa-screwdriver-wrench" style="color:var(--orange-600);margin-right:.35rem;"></i> LyaiDeu is Under Maintenance</span>
+                <span class="ctrl-path">ON = nobody can add to cart or place orders anywhere on the website. OFF = normal ordering. Browsing always stays visible.</span>
+            </div>
+            <div class="ctrl-meta">
+                <span class="ctrl-pill <?= $maintOn ? 'ctrl-pill-off' : 'ctrl-pill-live' ?>" data-maint-pill><?= $maintOn ? 'Maintenance' : 'Live' ?></span>
+            </div>
+            <button type="button" class="ctrl-toggle ctrl-maint-toggle<?= $maintOn ? ' on' : '' ?>" id="ctrlMaintToggle" data-active="<?= $maintOn ? '1' : '0' ?>" aria-pressed="<?= $maintOn ? 'true' : 'false' ?>" aria-label="Turn <?= $maintOn ? 'off' : 'on' ?> maintenance mode" title="Turn maintenance mode <?= $maintOn ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
+        </div>
+        <div class="ctrl-row" data-unavail-row>
+            <div class="ctrl-main">
+                <span class="ctrl-name"><i class="fa-solid fa-ban" style="color:var(--orange-600);margin-right:.35rem;"></i> LyaiDeu is Currently Unavailable</span>
+                <span class="ctrl-path">ON = nobody can add to cart or place orders anywhere on the website. OFF = normal ordering. Browsing always stays visible.</span>
+            </div>
+            <div class="ctrl-meta">
+                <span class="ctrl-pill <?= $unavailOn ? 'ctrl-pill-off' : 'ctrl-pill-live' ?>" data-unavail-pill><?= $unavailOn ? 'Unavailable' : 'Live' ?></span>
+            </div>
+            <button type="button" class="ctrl-toggle ctrl-unavail-toggle<?= $unavailOn ? ' on' : '' ?>" id="ctrlUnavailToggle" data-active="<?= $unavailOn ? '1' : '0' ?>" aria-pressed="<?= $unavailOn ? 'true' : 'false' ?>" aria-label="Turn <?= $unavailOn ? 'off' : 'on' ?> unavailable mode" title="Turn unavailable mode <?= $unavailOn ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
+        </div>
+    </div>
+</section>
+<section class="ctrl-group ctrl-panel" data-panel="vendors">
+    <div class="ctrl-group-head">
+        <i class="fa-solid fa-store"></i>
+        <h3>Vendors / Shop Status</h3>
+        <small><?= count($vendors) ?> vendors · <span id="ctrlVendorHeadCount"><?= $vendorOpenCount ?> open</span></small>
+    </div>
+    <div class="ctrl-list" id="ctrlVendorList">
+        <div class="ctrl-note" style="margin:.7rem .9rem;"><i class="fa-solid fa-circle-info"></i> Shop ON + inside opening hours = customers can add to cart. OFF or outside hours = products stay visible with a Closed badge and Add is blocked. “Hide products” removes all of that vendor’s products from the site. Times are Nepal time (e.g. 9:00 AM, blank = open all day).</div>
+        <?php if ($vendors): ?>
+        <div class="ctrl-search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" placeholder="Search vendors or stores…" aria-label="Search vendors" data-ctrl-search><button type="button" class="ctrl-search-clear" data-ctrl-clear hidden aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button></div>
+        <p class="ctrl-row ctrl-no-match" data-ctrl-empty hidden>No vendors match your search.</p>
+        <?php endif; ?>
+        <?php if (!$vendors): ?>
+            <p class="ctrl-row" style="justify-content:center;color:var(--muted);font-size:.8rem;">No vendors yet.</p>
+        <?php endif; ?>
+        <?php foreach ($vendors as $v):
+            $vid = (int)$v['id'];
+            $openSwitch = !empty($v['is_open']);
+            $prodHidden = !empty($v['products_hidden']);
+            $orderable = !empty($v['_orderable']);
+            $scopeLabel = ['hotel' => 'Hotel', 'mart' => 'Mart', 'other' => 'Other', 'beverage' => 'Beverages'][$v['scope'] ?? 'hotel'] ?? (string)($v['scope'] ?? '');
+            $storeName = trim((string)($v['store_name'] ?? '')) !== '' ? (string)$v['store_name'] : (string)$v['name'];
+            $openT = $v['open_time'] ? substr((string)$v['open_time'], 0, 5) : '';
+            $closeT = $v['close_time'] ? substr((string)$v['close_time'], 0, 5) : '';
+            $open12 = $openT !== '' ? lyaideu_vendor_time_12h($openT) : '';
+            $close12 = $closeT !== '' ? lyaideu_vendor_time_12h($closeT) : '';
+            if ($prodHidden) { $vPillCls = 'ctrl-pill-off'; $vPillTxt = 'Products hidden'; }
+            elseif ($orderable) { $vPillCls = 'ctrl-pill-live'; $vPillTxt = 'Open'; }
+            else { $vPillCls = 'ctrl-pill-off'; $vPillTxt = trim((string)($v['_label'] ?? '')) !== '' ? (string)$v['_label'] : 'Closed'; }
+        ?>
+            <div class="ctrl-row ctrl-vendor-row" data-vendor-row="<?= $vid ?>">
+                <div class="ctrl-main">
+                    <span class="ctrl-name"><?= $ce($storeName) ?> <span class="ctrl-count"><?= $ce($scopeLabel) ?></span></span>
+                    <span class="ctrl-path"><?= $ce($v['name']) ?><?= empty($v['is_active']) ? ' · login disabled' : '' ?><?= ($open12 !== '' || $close12 !== '') ? ' · ' . $ce($open12 !== '' ? $open12 : '—') . '–' . $ce($close12 !== '' ? $close12 : '—') : ' · 24h' ?></span>
+                </div>
+                <div class="ctrl-meta">
+                    <span class="ctrl-pill <?= $vPillCls ?>" data-vendor-pill><?= $ce($vPillTxt) ?></span>
+                </div>
+                <div class="ctrl-vendor-switches">
+                    <span class="ctrl-switch-wrap"><span class="ctrl-switch-label">Shop</span><button type="button" class="ctrl-toggle ctrl-vendor-toggle<?= $openSwitch ? ' on' : '' ?>" data-vendor="<?= $vid ?>" data-field="is_open" data-active="<?= $openSwitch ? '1' : '0' ?>" aria-pressed="<?= $openSwitch ? 'true' : 'false' ?>" aria-label="Turn <?= $openSwitch ? 'off' : 'on' ?> <?= $ce($storeName) ?>" title="Turn shop <?= $openSwitch ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button></span>
+                    <span class="ctrl-switch-wrap"><span class="ctrl-switch-label">Products</span><button type="button" class="ctrl-toggle ctrl-vendor-toggle<?= $prodHidden ? '' : ' on' ?>" data-vendor="<?= $vid ?>" data-field="products_hidden" data-active="<?= $prodHidden ? '1' : '0' ?>" data-invert="1" aria-pressed="<?= $prodHidden ? 'false' : 'true' ?>" aria-label="<?= $prodHidden ? 'Show' : 'Hide' ?> products of <?= $ce($storeName) ?>" title="<?= $prodHidden ? 'Show' : 'Hide' ?> all products"><span class="ctrl-knob"></span></button></span>
+                    <span class="ctrl-hours"><input type="time" value="<?= $ce($openT) ?>" data-vendor-open aria-label="Opening time for <?= $ce($storeName) ?>"><span class="ctrl-hours-sep">–</span><input type="time" value="<?= $ce($closeT) ?>" data-vendor-close aria-label="Closing time for <?= $ce($storeName) ?>"><button type="button" class="ctrl-hours-save" data-vendor-hours="<?= $vid ?>">Save</button></span>
+                </div>
+            </div>
+        <?php endforeach; ?>
     </div>
 </section>
 <?php foreach ($TYPE_LABELS as $type => $label): ?>
     <?php $flat = lyaideu_categories_flat((string)$type); ?>
-    <section class="ctrl-group">
+    <section class="ctrl-group ctrl-panel" data-panel="<?= $ce($type) ?>">
         <div class="ctrl-group-head">
             <i class="fa-solid <?= $ce($TYPE_ICONS[$type]) ?>"></i>
             <h3><?= $ce($label) ?></h3>
@@ -143,7 +300,10 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
             <button type="button" class="ctrl-toggle ctrl-group-toggle<?= !empty($groupOn[$type]) ? ' on' : '' ?>" data-type="<?= $ce($type) ?>" data-active="<?= !empty($groupOn[$type]) ? '1' : '0' ?>"<?= !$flat ? ' disabled' : '' ?> aria-pressed="<?= !empty($groupOn[$type]) ? 'true' : 'false' ?>" aria-label="Turn <?= !empty($groupOn[$type]) ? 'off' : 'on' ?> all <?= $ce($label) ?> categories" title="Turn all <?= $ce($label) ?> categories <?= !empty($groupOn[$type]) ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button>
         </div>
         <div class="ctrl-list" data-type="<?= $ce($type) ?>">
-        <?php if (!$flat): ?>
+        <?php if ($flat): ?>
+        <div class="ctrl-search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" placeholder="Search <?= $ce($label) ?> categories…" aria-label="Search <?= $ce($label) ?> categories" data-ctrl-search><button type="button" class="ctrl-search-clear" data-ctrl-clear hidden aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button></div>
+        <p class="ctrl-row ctrl-no-match" data-ctrl-empty hidden>No categories match your search.</p>
+        <?php else: ?>
             <p class="ctrl-row" style="justify-content:center;color:var(--muted);font-size:.8rem;">No categories here yet.</p>
         <?php endif; ?>
         <?php foreach ($flat as $c):
@@ -249,6 +409,69 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
         kp.textContent = state.kyc ? 'Required' : 'Optional';
       }
     }
+    /* Sync the maintenance gate switch. */
+    if (typeof state.maintenance === 'boolean') {
+      var mt = document.getElementById('ctrlMaintToggle');
+      if (mt) {
+        mt.dataset.active = state.maintenance ? '1' : '0';
+        mt.classList.toggle('on', state.maintenance);
+        mt.setAttribute('aria-pressed', state.maintenance ? 'true' : 'false');
+      }
+      var mp = document.querySelector('[data-maint-pill]');
+      if (mp) {
+        mp.className = 'ctrl-pill ' + (state.maintenance ? 'ctrl-pill-off' : 'ctrl-pill-live');
+        mp.textContent = state.maintenance ? 'Maintenance' : 'Live';
+      }
+    }
+    /* Sync the unavailable gate switch. */
+    if (typeof state.unavailable === 'boolean') {
+      var ut = document.getElementById('ctrlUnavailToggle');
+      if (ut) {
+        ut.dataset.active = state.unavailable ? '1' : '0';
+        ut.classList.toggle('on', state.unavailable);
+        ut.setAttribute('aria-pressed', state.unavailable ? 'true' : 'false');
+      }
+      var up = document.querySelector('[data-unavail-pill]');
+      if (up) {
+        up.className = 'ctrl-pill ' + (state.unavailable ? 'ctrl-pill-off' : 'ctrl-pill-live');
+        up.textContent = state.unavailable ? 'Unavailable' : 'Live';
+      }
+    }
+    /* Sync vendor shop switches, hours and pills. */
+    var vendors = state.vendors || {};
+    var vOpen = 0, vClosed = 0;
+    Object.keys(vendors).forEach(function (key) {
+      var info = vendors[key];
+      var row = document.querySelector('[data-vendor-row="' + key + '"]');
+      if (!row) return;
+      if (info.orderable) vOpen++; else vClosed++;
+      var pill = row.querySelector('[data-vendor-pill]');
+      if (pill) {
+        if (info.products_hidden) { pill.className = 'ctrl-pill ctrl-pill-off'; pill.textContent = 'Products hidden'; }
+        else if (info.orderable) { pill.className = 'ctrl-pill ctrl-pill-live'; pill.textContent = 'Open'; }
+        else { pill.className = 'ctrl-pill ctrl-pill-off'; pill.textContent = info.label || 'Closed'; }
+      }
+      row.querySelectorAll('.ctrl-vendor-toggle').forEach(function (tb) {
+        var field = tb.dataset.field;
+        if (field === 'is_open') {
+          tb.dataset.active = info.open_switch ? '1' : '0';
+          tb.classList.toggle('on', !!info.open_switch);
+          tb.setAttribute('aria-pressed', info.open_switch ? 'true' : 'false');
+        } else if (field === 'products_hidden') {
+          tb.dataset.active = info.products_hidden ? '1' : '0';
+          tb.classList.toggle('on', !info.products_hidden);
+          tb.setAttribute('aria-pressed', info.products_hidden ? 'false' : 'true');
+        }
+      });
+      var oI = row.querySelector('[data-vendor-open]');
+      var cI = row.querySelector('[data-vendor-close]');
+      if (oI && document.activeElement !== oI) oI.value = info.open_time || '';
+      if (cI && document.activeElement !== cI) cI.value = info.close_time || '';
+    });
+    var to, tc, th;
+    if ((to = document.getElementById('ctrlTileVendorsOpen'))) to.textContent = vOpen;
+    if ((tc = document.getElementById('ctrlTileVendorsClosed'))) tc.textContent = vClosed;
+    if ((th = document.getElementById('ctrlVendorHeadCount'))) th.textContent = vOpen + ' open';
   }
 
   function sendToggle(payload, btn, msg) {
@@ -271,12 +494,117 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
     });
   }
 
+  /* Tabs: one section visible at a time. Remembers the last tab. */
+  var CTRL_TABS = ['rules', 'vendors', 'menu', 'mart', 'other', 'beverage'];
+  function ctrlShowTab(key, save) {
+    if (CTRL_TABS.indexOf(key) === -1) key = 'rules';
+    document.querySelectorAll('#ctrlGroups [data-panel]').forEach(function (p) {
+      p.classList.toggle('active', p.getAttribute('data-panel') === key);
+    });
+    document.querySelectorAll('#ctrlTabs .ctrl-tab').forEach(function (t) {
+      var on = t.getAttribute('data-tab') === key;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (save !== false) {
+      try { localStorage.setItem('lyaideu_ctrl_tab', key); } catch (err) {}
+      /* Full URL (not a bare "#..."): the page has a <base href> tag, so a
+         fragment-only replaceState would resolve to the site root and a
+         refresh would land on index.php instead of this page. */
+      try { history.replaceState(null, '', location.href.split('#')[0] + '#ctrl=' + key); } catch (err) {}
+    }
+  }
+  (function ctrlInitTab() {
+    var start = 'rules';
+    try {
+      var m = (location.hash || '').match(/#ctrl=([a-z]+)/);
+      if (m && m[1] && CTRL_TABS.indexOf(m[1]) !== -1) start = m[1];
+      else {
+        var saved = localStorage.getItem('lyaideu_ctrl_tab');
+        if (saved && CTRL_TABS.indexOf(saved) !== -1) start = saved;
+      }
+    } catch (err) {}
+    ctrlShowTab(start, false);
+  })();
+  var tabsBar = document.getElementById('ctrlTabs');
+  if (tabsBar) {
+    tabsBar.addEventListener('click', function (e) {
+      var t = e.target.closest('.ctrl-tab');
+      if (t) ctrlShowTab(t.getAttribute('data-tab'));
+    });
+  }
+
+  /* Per-tab search: filters vendor / category rows by name as you type. */
+  document.querySelectorAll('[data-ctrl-search]').forEach(function (input) {
+    var panel = input.closest('[data-panel]');
+    if (!panel) return;
+    var empty = panel.querySelector('[data-ctrl-empty]');
+    var clearBtn = panel.querySelector('[data-ctrl-clear]');
+    function applySearch() {
+      var q = (input.value || '').trim().toLowerCase();
+      var total = 0, visible = 0;
+      panel.querySelectorAll('[data-cat-row],[data-vendor-row]').forEach(function (row) {
+        total++;
+        var hay = ((row.querySelector('.ctrl-name') || {}).textContent || '') + ' ' +
+                  ((row.querySelector('.ctrl-path') || {}).textContent || '');
+        var show = !q || hay.toLowerCase().indexOf(q) !== -1;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (empty) empty.hidden = !(total > 0 && visible === 0);
+      if (clearBtn) clearBtn.hidden = !q;
+    }
+    input.addEventListener('input', applySearch);
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      input.value = '';
+      applySearch();
+      input.focus();
+    });
+  });
+
   document.getElementById('ctrlGroups').addEventListener('click', function (e) {
+    var hoursBtn = e.target.closest('[data-vendor-hours]');
+    if (hoursBtn) {
+      var hRow = hoursBtn.closest('[data-vendor-row]');
+      var hId = parseInt(hoursBtn.getAttribute('data-vendor-hours'), 10);
+      var oVal = hRow ? (hRow.querySelector('[data-vendor-open]') || {}).value || '' : '';
+      var cVal = hRow ? (hRow.querySelector('[data-vendor-close]') || {}).value || '' : '';
+      sendToggle({ vendor_id: hId, vendor_field: 'hours', open_time: oVal, close_time: cVal }, hoursBtn,
+        'Opening hours saved for vendor #' + hId + '. Live across the site within ~5 seconds.');
+      return;
+    }
+    var vendorBtn = e.target.closest('.ctrl-vendor-toggle');
+    if (vendorBtn) {
+      var vId = parseInt(vendorBtn.dataset.vendor, 10);
+      var vField = vendorBtn.dataset.field;
+      var vNext = vendorBtn.dataset.active === '1' ? 0 : 1;
+      var vName = (vendorBtn.closest('[data-vendor-row]') || {}).querySelector
+        ? vendorBtn.closest('[data-vendor-row]').querySelector('.ctrl-name').textContent.trim() : ('vendor #' + vId);
+      var vMsg = vField === 'is_open'
+        ? ('Shop ' + (vNext ? 'OPENED' : 'CLOSED') + ' for ' + vName + '. Live across the site within ~5 seconds.')
+        : ((vNext ? 'All products HIDDEN for ' : 'All products VISIBLE for ') + vName + '. Live across the site within ~5 seconds.');
+      sendToggle({ vendor_id: vId, vendor_field: vField, active: vNext }, vendorBtn, vMsg);
+      return;
+    }
     var kycBtn = e.target.closest('.ctrl-kyc-toggle');
     if (kycBtn) {
       var kNext = kycBtn.dataset.active === '1' ? 0 : 1;
       sendToggle({ setting: 'kyc', active: kNext }, kycBtn,
         'KYC verification turned ' + (kNext ? 'ON' : 'OFF') + '. ' + (kNext ? 'Only approved-KYC users can order now.' : 'Everyone can order without verification now.'));
+      return;
+    }
+    var maintBtn = e.target.closest('.ctrl-maint-toggle');
+    if (maintBtn) {
+      var mNext = maintBtn.dataset.active === '1' ? 0 : 1;
+      sendToggle({ setting: 'maintenance', active: mNext }, maintBtn,
+        'Maintenance mode turned ' + (mNext ? 'ON' : 'OFF') + '. ' + (mNext ? 'Nobody can add to cart or order now.' : 'Ordering is back to normal now.'));
+      return;
+    }
+    var unavailBtn = e.target.closest('.ctrl-unavail-toggle');
+    if (unavailBtn) {
+      var uNext = unavailBtn.dataset.active === '1' ? 0 : 1;
+      sendToggle({ setting: 'unavailable', active: uNext }, unavailBtn,
+        'Unavailable mode turned ' + (uNext ? 'ON' : 'OFF') + '. ' + (uNext ? 'Nobody can add to cart or order now.' : 'Ordering is back to normal now.'));
       return;
     }
     var groupBtn = e.target.closest('.ctrl-group-toggle');

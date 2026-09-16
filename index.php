@@ -53,9 +53,9 @@ if ($featuredPdo instanceof PDO) {
         lyaideu_ensure_stores();
         lyaideu_ensure_other_table();
         lyaideu_ensure_beverage_table();
-        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes ORDER BY id')->fetchAll();
+        $featured['dishes'] = $featuredPdo->query('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug, has_variants, vendor_id FROM dishes ORDER BY id')->fetchAll();
         $featured['mart']   = $featuredPdo->query(
-            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants, m.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM mart_items m
              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -63,7 +63,7 @@ if ($featuredPdo instanceof PDO) {
              ORDER BY m.id'
         )->fetchAll();
         $featured['others'] = $featuredPdo->query(
-            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants, oi.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM other_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -71,7 +71,7 @@ if ($featuredPdo instanceof PDO) {
              ORDER BY oi.id'
         )->fetchAll();
         $featured['beverages'] = $featuredPdo->query(
-            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants, bi.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM beverage_items bi
              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -89,6 +89,11 @@ if ($featuredPdo instanceof PDO) {
         $featured['mart'] = $featVisible($featured['mart']);
         $featured['others'] = $featVisible($featured['others']);
         $featured['beverages'] = $featVisible($featured['beverages']);
+        /* Vendor hide-all: drop hidden vendors; closed vendors stay with a badge. */
+        lyaideu_attach_vendor_status($featured['dishes'], 'dish');
+        lyaideu_attach_vendor_status($featured['mart'], 'mart');
+        lyaideu_attach_vendor_status($featured['others'], 'other');
+        lyaideu_attach_vendor_status($featured['beverages'], 'beverage');
     } catch (Throwable $e) {
 $featured = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => [], 'mart_stores' => [], 'other_stores' => [], 'partners' => []];
     }
@@ -126,11 +131,11 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
     $searchResults = ['dishes' => [], 'mart' => [], 'others' => [], 'beverages' => [], 'hotels' => []];
     try {
         $qp = '%' . $q . '%';
-        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug, has_variants FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
+        $st = $featuredPdo->prepare('SELECT id, name, hotel, cat, price, discount_percent, phone, tag, `desc`, img, category_id, name_slug, has_variants, vendor_id FROM dishes WHERE name LIKE ? OR tag LIKE ? OR `desc` LIKE ? ORDER BY name LIMIT 30');
         $st->execute([$qp, $qp, $qp]);
         $searchResults['dishes'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants,
+            'SELECT m.id, m.name, m.cat, m.unit, m.price, m.discount_percent, m.tag, m.`desc`, m.img, m.category_id, m.name_slug, m.has_variants, m.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM mart_items m
              LEFT JOIN vendors v ON v.id = m.vendor_id
@@ -141,7 +146,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['mart'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants,
+            'SELECT oi.id, oi.name, oi.cat, oi.unit, oi.price, oi.discount_percent, oi.tag, oi.`desc`, oi.img, oi.category_id, oi.name_slug, oi.has_variants, oi.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM other_items oi
              LEFT JOIN vendors v ON v.id = oi.vendor_id
@@ -152,7 +157,7 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $st->execute([$qp, $qp, $qp]);
         $searchResults['others'] = $st->fetchAll();
         $st = $featuredPdo->prepare(
-            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants,
+            'SELECT bi.id, bi.name, bi.cat, bi.unit, bi.price, bi.discount_percent, bi.tag, bi.`desc`, bi.img, bi.category_id, bi.name_slug, bi.has_variants, bi.vendor_id,
                     COALESCE(h.name, \'\') AS hotel
              FROM beverage_items bi
              LEFT JOIN vendors v ON v.id = bi.vendor_id
@@ -171,6 +176,11 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
         $searchResults['mart'] = $searchVisible($searchResults['mart']);
         $searchResults['others'] = $searchVisible($searchResults['others']);
         $searchResults['beverages'] = $searchVisible($searchResults['beverages']);
+        /* Vendor hide-all: drop hidden vendors from search; closed stays with badge. */
+        lyaideu_attach_vendor_status($searchResults['dishes'], 'dish');
+        lyaideu_attach_vendor_status($searchResults['mart'], 'mart');
+        lyaideu_attach_vendor_status($searchResults['others'], 'other');
+        lyaideu_attach_vendor_status($searchResults['beverages'], 'beverage');
         $st = $featuredPdo->prepare('SELECT id, name, type, phone, emoji, logo, kind FROM hotels WHERE name LIKE ? OR type LIKE ? ORDER BY name LIMIT 20');
         $st->execute([$qp, $qp]);
         $searchResults['hotels'] = $st->fetchAll();
@@ -183,6 +193,21 @@ if ($q !== '' && $featuredPdo instanceof PDO) {
     }
 }
 $totalResults = $searchResults ? count($searchResults['dishes']) + count($searchResults['mart']) + count($searchResults['others']) + count($searchResults['beverages']) + count($searchResults['hotels']) : 0;
+
+/* Vendor closed map for instant Add-blocking before api.js loads. */
+$vendorClosedMap = ['dish' => [], 'mart' => [], 'other' => [], 'beverage' => []];
+foreach (['dishes' => 'dish', 'mart' => 'mart', 'others' => 'other', 'beverages' => 'beverage'] as $fk => $tk) {
+    foreach (($featured[$fk] ?? []) as $fr) {
+        if (isset($fr['_vendor_open']) && empty($fr['_vendor_open'])) {
+            $vendorClosedMap[$tk][(int)$fr['id']] = (string)($fr['_vendor_label'] ?? 'This shop is closed now');
+        }
+    }
+    foreach (($searchResults[$fk] ?? []) as $sr) {
+        if (isset($sr['_vendor_open']) && empty($sr['_vendor_open'])) {
+            $vendorClosedMap[$tk][(int)$sr['id']] = (string)($sr['_vendor_label'] ?? 'This shop is closed now');
+        }
+    }
+}
 
 $FEATURED_MART_ICONS = [
     'vegetables' => 'fa-carrot', 'fruits' => 'fa-apple-whole', 'dairy' => 'fa-cow',
@@ -865,6 +890,7 @@ echo lyaideu_seo_page([
 </aside>
 <?= lyaideu_footer_html() ?>
 
+<script>window.LYAIDEU_VENDOR_CLOSED = <?= json_encode($vendorClosedMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
 <script src="js/script.js?v=47"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=9"></script>

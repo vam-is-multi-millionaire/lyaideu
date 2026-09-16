@@ -80,21 +80,21 @@ if ($pdo instanceof PDO && $scopeIds) {
     try {
         $ph = implode(',', array_fill(0, count($scopeIds), '?'));
         $sql =
-            "SELECT 'dish' AS itype, d.id, d.name, d.cat, d.price, d.discount_percent, d.tag, '' AS unit, d.`desc`, d.img, d.category_id, d.name_slug AS slug, d.has_variants, d.hotel AS hotel
+            "SELECT 'dish' AS itype, d.id, d.name, d.cat, d.price, d.discount_percent, d.tag, '' AS unit, d.`desc`, d.img, d.category_id, d.name_slug AS slug, d.has_variants, d.hotel AS hotel, d.vendor_id
              FROM dishes d JOIN section_item_links sil ON sil.item_type = 'dish' AND sil.item_id = d.id
              WHERE sil.category_id IN ($ph)
              UNION ALL
-             SELECT 'mart' AS itype, m.id, m.name, m.cat, m.price, m.discount_percent, m.tag, m.unit, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants, COALESCE(h.name, '') AS hotel
+             SELECT 'mart' AS itype, m.id, m.name, m.cat, m.price, m.discount_percent, m.tag, m.unit, m.`desc`, m.img, m.category_id, m.name_slug AS slug, m.has_variants, COALESCE(h.name, '') AS hotel, m.vendor_id
              FROM mart_items m JOIN section_item_links sil ON sil.item_type = 'mart' AND sil.item_id = m.id
              LEFT JOIN vendors v ON v.id = m.vendor_id LEFT JOIN hotels h ON h.id = v.hotel_id
              WHERE sil.category_id IN ($ph)
              UNION ALL
-             SELECT 'beverage' AS itype, b.id, b.name, b.cat, b.price, b.discount_percent, b.tag, b.unit, b.`desc`, b.img, b.category_id, b.name_slug AS slug, b.has_variants, COALESCE(h.name, '') AS hotel
+             SELECT 'beverage' AS itype, b.id, b.name, b.cat, b.price, b.discount_percent, b.tag, b.unit, b.`desc`, b.img, b.category_id, b.name_slug AS slug, b.has_variants, COALESCE(h.name, '') AS hotel, b.vendor_id
              FROM beverage_items b JOIN section_item_links sil ON sil.item_type = 'beverage' AND sil.item_id = b.id
              LEFT JOIN vendors v ON v.id = b.vendor_id LEFT JOIN hotels h ON h.id = v.hotel_id
              WHERE sil.category_id IN ($ph)
              UNION ALL
-             SELECT 'other' AS itype, o.id, o.name, o.cat, o.price, o.discount_percent, o.tag, o.unit, o.`desc`, o.img, o.category_id, o.name_slug AS slug, o.has_variants, COALESCE(h.name, '') AS hotel
+             SELECT 'other' AS itype, o.id, o.name, o.cat, o.price, o.discount_percent, o.tag, o.unit, o.`desc`, o.img, o.category_id, o.name_slug AS slug, o.has_variants, COALESCE(h.name, '') AS hotel, o.vendor_id
              FROM other_items o JOIN section_item_links sil ON sil.item_type = 'other' AND sil.item_id = o.id
              LEFT JOIN vendors v ON v.id = o.vendor_id LEFT JOIN hotels h ON h.id = v.hotel_id
              WHERE sil.category_id IN ($ph)
@@ -113,6 +113,20 @@ if ($pdo instanceof PDO && $scopeIds) {
             $natCat = (int)($row['category_id'] ?? 0);
             if ($natCat > 0 && !lyaideu_category_is_active($natCat)) {
                 continue;
+            }
+            $rvType = ($row['itype'] ?? 'dish') === 'dish' ? 'dish' : (string)$row['itype'];
+            $rvId = $rvType === 'dish' ? lyaideu_product_vendor_id('dish', $row) : (int)($row['vendor_id'] ?? 0);
+            $row['_vendor_id'] = $rvId;
+            if ($rvId > 0) {
+                $rvSt = lyaideu_vendor_is_orderable($rvId);
+                if (!empty($rvSt['hidden'])) {
+                    continue;
+                }
+                $row['_vendor_open'] = !empty($rvSt['open']) ? 1 : 0;
+                $row['_vendor_label'] = (string)($rvSt['label'] ?? '');
+            } else {
+                $row['_vendor_open'] = 1;
+                $row['_vendor_label'] = '';
             }
             if ($searchNeedle !== '') {
                 $hay = mb_strtolower((string)$row['name'] . ' ' . (string)$row['desc'], 'UTF-8');
@@ -259,10 +273,12 @@ echo lyaideu_seo_page([
                     $img = trim((string)($p['img'] ?? ''));
                     $catsAttr = implode(',', lyaideu_item_cats(isset($p['category_id']) ? (int)$p['category_id'] : 0, (string)($p['cat'] ?? '')));
                 ?>
+                <?php $pClosed = isset($p['_vendor_open']) && empty($p['_vendor_open']); $pLabel = (string)($p['_vendor_label'] ?? ''); $maintSec = lyaideu_maintenance_on(); $unavailSec = lyaideu_unavailable_on(); $siteGateSec = $unavailSec || $maintSec; $siteGateLabelSec = $unavailSec ? 'LyaiDeu is Currently Unavailable' : 'LyaiDeu is Under Maintenance'; ?>
                 <article class="dish-card reveal visible" data-id="<?= (int)$p['id'] ?>" data-slug="<?= $sce((string)$p['slug']) ?>" data-cats="<?= $sce($catsAttr) ?>" data-url="<?= $cardHref($p) ?>">
                     <div class="dish-art mart-art">
                         <?php if ($img !== ''): ?><img src="<?= $sce($img) ?>" alt="<?= $sce((string)$p['name']) ?>" loading="lazy"><?php else: ?><span class="dish-art-ico"><i class="fa-solid <?= $sce($fallbackIcoOf[$itype] ?? 'fa-tags') ?>"></i></span><?php endif; ?>
                         <?php if (trim((string)($p['tag'] ?? '')) !== ''): ?><span class="dish-tag"><?= $sce((string)$p['tag']) ?></span><?php endif; ?>
+                        <?php if ($pClosed): ?><span class="dish-tag" style="background:#c93a3a;">Closed</span><?php endif; ?>
                     </div>
                     <div class="dish-body">
                         <div class="dish-top"><h3><?= $sce((string)$p['name']) ?></h3></div>
@@ -270,7 +286,7 @@ echo lyaideu_seo_page([
                         <div class="dish-foot">
                             <span class="price"><small class="rs-l">Rs.</small><small class="rs-s" aria-hidden="true">रु</small> <?= (int)$now ?></span>
                             <?php if ($pct > 0 && $basePrice > 0): ?><span class="deal-badge deal-badge-inline">-<?= $pct ?>%</span><?php endif; ?>
-                            <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $sce($itype) ?>" data-name="<?= $sce((string)$p['name']) ?>" data-price="<?= (int)$now ?>" data-unit="<?= $sce($unit) ?>" data-hotel="<?= $sce($hotel) ?>" data-cats="<?= $sce($catsAttr) ?>" data-slug="<?= $sce((string)$p['slug']) ?>" data-url="<?= $cardHref($p) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
+                            <button class="btn-order add-cart" data-id="<?= (int)$p['id'] ?>" data-type="<?= $sce($itype) ?>" data-name="<?= $sce((string)$p['name']) ?>" data-price="<?= (int)$now ?>" data-unit="<?= $sce($unit) ?>" data-hotel="<?= $sce($hotel) ?>" data-cats="<?= $sce($catsAttr) ?>" data-slug="<?= $sce((string)$p['slug']) ?>" data-url="<?= $cardHref($p) ?>"<?= !empty($p['has_variants']) ? ' data-has-variants="1"' : '' ?><?= ($siteGateSec || $pClosed) ? ' data-vendor-open="0" data-vendor-label="' . $sce($siteGateSec ? $siteGateLabelSec : ($pLabel !== '' ? $pLabel : 'This shop is closed now')) . '" disabled style="opacity:.5;cursor:not-allowed;"' : '' ?> type="button"><i class="fa-solid fa-cart-shopping"></i><span class="add-label">Add</span></button>
                         </div>
                     </div>
                 </article>
