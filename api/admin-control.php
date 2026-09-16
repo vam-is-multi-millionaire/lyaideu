@@ -62,7 +62,7 @@ $isVendor = $vendorId > 0;
 if ($id <= 0 && !in_array($type, $VALID_TYPES, true) && !$isKyc && !$isMaint && !$isUnavail && !$isVendor) {
     ctrl_res(['ok' => false, 'error' => 'Missing category id, type or setting.'], 422);
 }
-if ($isVendor && !in_array($vendorField, ['is_open', 'products_hidden', 'hours'], true)) {
+if ($isVendor && !in_array($vendorField, ['is_open', 'products_hidden', 'hours', 'discount'], true)) {
     ctrl_res(['ok' => false, 'error' => 'Unknown vendor field.'], 422);
 }
 
@@ -84,6 +84,14 @@ try {
             $pdo->prepare('UPDATE vendors SET is_open = :a WHERE id = :id')->execute([':a' => $active, ':id' => $vendorId]);
         } elseif ($vendorField === 'products_hidden') {
             $pdo->prepare('UPDATE vendors SET products_hidden = :a WHERE id = :id')->execute([':a' => $active, ':id' => $vendorId]);
+        } elseif ($vendorField === 'discount') {
+            /* Vendor default discount % (0–90). Products with their own
+               discount above 0 keep it; the rest inherit this default. */
+            $pct = (int)($body['discount'] ?? $body['value'] ?? -1);
+            if ($pct < 0 || $pct > 90) {
+                ctrl_res(['ok' => false, 'error' => 'Discount must be between 0 and 90.'], 422);
+            }
+            $pdo->prepare('UPDATE vendors SET discount_percent = :p WHERE id = :id')->execute([':p' => $pct, ':id' => $vendorId]);
         } else {
             $openTime = lyaideu_sanitize_vendor_time($body['open_time'] ?? null);
             $closeTime = lyaideu_sanitize_vendor_time($body['close_time'] ?? null);
@@ -120,7 +128,7 @@ try {
         $st = $pdo->prepare('UPDATE categories SET is_active = :a WHERE type = :t');
         $st->execute([':a' => $active, ':t' => $type]);
     }
-    try { if ($isVendor) lyaideu_log_activity('vendor.shop_toggle','vendor',$vendorId,['field'=>$vendorField,'active'=>$active,'open'=>($body['open_time'] ?? null),'close'=>($body['close_time'] ?? null)]); elseif ($isMaint) lyaideu_log_activity('setting.maintenance_toggle','setting',null,['active'=>$active]); elseif ($isUnavail) lyaideu_log_activity('setting.unavailable_toggle','setting',null,['active'=>$active]); elseif ($isKyc) lyaideu_log_activity('setting.kyc_toggle','setting',null,['active'=>$active]); elseif ($id>0) lyaideu_log_activity('category.toggle','category',$id,['active'=>$active]); else lyaideu_log_activity('category.bulk_toggle','category',null,['type'=>$type,'active'=>$active]); } catch (Throwable $e2) {}
+    try { if ($isVendor) lyaideu_log_activity('vendor.shop_toggle','vendor',$vendorId,['field'=>$vendorField,'active'=>$active,'discount'=>($body['discount'] ?? null),'open'=>($body['open_time'] ?? null),'close'=>($body['close_time'] ?? null)]); elseif ($isMaint) lyaideu_log_activity('setting.maintenance_toggle','setting',null,['active'=>$active]); elseif ($isUnavail) lyaideu_log_activity('setting.unavailable_toggle','setting',null,['active'=>$active]); elseif ($isKyc) lyaideu_log_activity('setting.kyc_toggle','setting',null,['active'=>$active]); elseif ($id>0) lyaideu_log_activity('category.toggle','category',$id,['active'=>$active]); else lyaideu_log_activity('category.bulk_toggle','category',null,['type'=>$type,'active'=>$active]); } catch (Throwable $e2) {}
 } catch (Throwable $e) {
     ctrl_res(['ok' => false, 'error' => 'Could not save the toggle.'], 500);
 }
@@ -179,7 +187,7 @@ try {
     /* Vendor shop state for the Control Panel vendors section. */
     $vendors = [];
     try {
-        foreach ($pdo->query('SELECT id, name, scope, is_active, is_open, products_hidden, open_time, close_time FROM vendors ORDER BY id')->fetchAll(PDO::FETCH_ASSOC) as $v) {
+        foreach ($pdo->query('SELECT id, name, scope, is_active, is_open, products_hidden, open_time, close_time, discount_percent FROM vendors ORDER BY id')->fetchAll(PDO::FETCH_ASSOC) as $v) {
             $vid = (int)$v['id'];
             $st = lyaideu_vendor_is_orderable($vid);
             $vendors[$vid] = [
@@ -189,6 +197,7 @@ try {
                 'label' => (string)($st['label'] ?? ''),
                 'open_time' => $v['open_time'] ? substr((string)$v['open_time'], 0, 5) : '',
                 'close_time' => $v['close_time'] ? substr((string)$v['close_time'], 0, 5) : '',
+                'discount' => max(0, min(90, (int)($v['discount_percent'] ?? 0))),
             ];
         }
     } catch (Throwable $e2) {

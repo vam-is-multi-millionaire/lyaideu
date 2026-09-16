@@ -1447,6 +1447,7 @@ function lyaideu_ensure_delivery_tables(): bool {
                 scope VARCHAR(20) NOT NULL DEFAULT \'hotel\',
                 hotel_id INT UNSIGNED NULL DEFAULT NULL,
                 is_active TINYINT(1) NOT NULL DEFAULT 1,
+                discount_percent SMALLINT UNSIGNED NOT NULL DEFAULT 0,
                 created_at DATETIME NOT NULL,
                 PRIMARY KEY (id),
                 UNIQUE KEY uq_vendor_phone (phone),
@@ -1493,6 +1494,8 @@ function lyaideu_ensure_delivery_tables(): bool {
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'products_hidden', 'TINYINT(1) NOT NULL DEFAULT 0') || $changed;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'open_time', 'TIME NULL DEFAULT NULL') || $changed;
         $changed = lyaideu_ensure_column($pdo, 'vendors', 'close_time', 'TIME NULL DEFAULT NULL') || $changed;
+        /* Vendor default discount % (Control Panel vendors tab). 0 = none. */
+        $changed = lyaideu_ensure_column($pdo, 'vendors', 'discount_percent', 'SMALLINT UNSIGNED NOT NULL DEFAULT 0') || $changed;
         $dishColAdded = lyaideu_ensure_column($pdo, 'dishes', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
         $martColAdded = lyaideu_ensure_column($pdo, 'mart_items', 'vendor_id', 'INT UNSIGNED NULL DEFAULT NULL');
 
@@ -2334,6 +2337,83 @@ function lyaideu_deal_price(int $price, int $pct): int {
         return max(0, $price);
     }
     return (int)round($price * (100 - $pct) / 100);
+}
+
+/**
+ * Vendor default discounts, loaded once per request:
+ * ['pct' => [vendorId => pct], 'hotel' => [hotelName => vendorId],
+ *  'norm' => [normalizedName => vendorId]].
+ * Self-sufficient: runs the delivery-tables ensure first so the
+ * vendors.discount_percent column always exists here.
+ */
+function lyaideu_vendor_discount_data(): array {
+    static $data = null;
+    if ($data !== null) {
+        return $data;
+    }
+    $data = ['pct' => [], 'hotel' => [], 'norm' => []];
+    try {
+        lyaideu_ensure_delivery_tables();
+    } catch (Throwable $e) {
+        return $data;
+    }
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return $data;
+    }
+    try {
+        foreach ($pdo->query('SELECT id, name, discount_percent FROM vendors') as $v) {
+            $vid = (int)$v['id'];
+            $data['pct'][$vid] = max(0, min(95, (int)($v['discount_percent'] ?? 0)));
+            $nm = trim((string)($v['name'] ?? ''));
+            if ($nm !== '' && !isset($data['norm'][lyaideu_normalize_name($nm)])) {
+                $data['norm'][lyaideu_normalize_name($nm)] = $vid;
+            }
+        }
+        foreach ($pdo->query("SELECT h.name AS hname, v.id AS vid FROM vendors v JOIN hotels h ON h.id = v.hotel_id WHERE v.scope = 'hotel'") as $r) {
+            $hn = trim((string)($r['hname'] ?? ''));
+            if ($hn !== '' && !isset($data['hotel'][$hn])) {
+                $data['hotel'][$hn] = (int)$r['vid'];
+            }
+        }
+    } catch (Throwable $e) {
+        // Best-effort: missing pieces simply mean "no vendor default".
+    }
+    return $data;
+}
+
+/**
+ * Effective discount % for a storefront product row.
+ * Rule: the product's own discount above 0 always wins; otherwise the owning
+ * vendor's default discount applies (0 when none). Result is clamped 0–95.
+ * $type is 'dish', 'mart', 'other' or 'beverage'; $hotel is only needed for
+ * legacy dishes that carry no vendor_id.
+ */
+function lyaideu_effective_discount_pct(string $type, int $vendorId, int $productPct, string $hotel = ''): int {
+    $productPct = (int)$productPct;
+    if ($productPct > 0) {
+        return lyaideu_deal_percent($productPct);
+    }
+    $vid = $vendorId;
+    if ($vid <= 0 && $type === 'dish') {
+        $hotel = trim($hotel);
+        if ($hotel !== '') {
+            $dd = lyaideu_vendor_discount_data();
+            if (isset($dd['hotel'][$hotel])) {
+                $vid = (int)$dd['hotel'][$hotel];
+            } else {
+                $norm = lyaideu_normalize_name($hotel);
+                if ($norm !== '' && isset($dd['norm'][$norm])) {
+                    $vid = (int)$dd['norm'][$norm];
+                }
+            }
+        }
+    }
+    if ($vid <= 0) {
+        return 0;
+    }
+    $dd = lyaideu_vendor_discount_data();
+    return lyaideu_deal_percent($dd['pct'][$vid] ?? 0);
 }
 
 /* ============================================================
@@ -3250,11 +3330,15 @@ function lyaideu_sanitize_vendor_time(?string $v): ?string {
  * Attach `_vendor_open` / `_vendor_label` to product rows and optionally drop
  * rows whose vendor hid all products. Closed shops stay in the list (Add is
  * blocked in templates/JS); hidden shops are removed.
+ * Also resolves each row's `discount_percent` to the effective value: the
+ * product's own discount above 0 wins, otherwise the owning vendor's default
+ * discount applies. Raw per-product values in the database are untouched.
  */
 function lyaideu_attach_vendor_status(array &$rows, string $type, bool $dropHidden = true): void {
     foreach ($rows as &$r) {
         $vid = $type === 'dish' ? lyaideu_product_vendor_id('dish', $r) : (int)($r['vendor_id'] ?? 0);
         $r['_vendor_id'] = $vid;
+        $r['discount_percent'] = lyaideu_effective_discount_pct($type, $vid, (int)($r['discount_percent'] ?? 0), (string)($r['hotel'] ?? ''));
         if ($vid > 0) {
             $st = lyaideu_vendor_is_orderable($vid);
             $r['_vendor_open'] = !empty($st['open']) ? 1 : 0;

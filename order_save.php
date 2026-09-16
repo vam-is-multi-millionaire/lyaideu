@@ -199,9 +199,10 @@ foreach ($cart as $row) {
         $price = $variantPrice;
     }
 
-    /* Apply the product's discount percent server-side so stored order prices
-       always match the discounted price shown in the storefront. */
-    $price = lyaideu_deal_price($price, (int)($d['discount_percent'] ?? 0));
+    /* Apply the effective discount percent server-side (own product discount
+       above 0 wins, else the vendor default) so stored order prices always
+       match the discounted price shown in the storefront. */
+    $price = lyaideu_deal_price($price, lyaideu_effective_discount_pct($type, (int)($item['vendor_id'] ?? 0), (int)($d['discount_percent'] ?? 0), (string)($d['hotel'] ?? '')));
 
     $line = $price * $qty;
     $subtotal += $line;

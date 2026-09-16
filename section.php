@@ -117,6 +117,7 @@ if ($pdo instanceof PDO && $scopeIds) {
             $rvType = ($row['itype'] ?? 'dish') === 'dish' ? 'dish' : (string)$row['itype'];
             $rvId = $rvType === 'dish' ? lyaideu_product_vendor_id('dish', $row) : (int)($row['vendor_id'] ?? 0);
             $row['_vendor_id'] = $rvId;
+            $row['discount_percent'] = lyaideu_effective_discount_pct($rvType, $rvId, (int)($row['discount_percent'] ?? 0), (string)($row['hotel'] ?? ''));
             if ($rvId > 0) {
                 $rvSt = lyaideu_vendor_is_orderable($rvId);
                 if (!empty($rvSt['hidden'])) {

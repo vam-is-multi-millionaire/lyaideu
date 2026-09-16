@@ -142,6 +142,7 @@ if ($isDetail) {
         foreach ($products as &$sp) {
             $svid = $ptype === 'dish' ? lyaideu_product_vendor_id('dish', $sp) : (int)($sp['vendor_id'] ?? $vendorId);
             $sp['_vendor_id'] = $svid > 0 ? $svid : $vendorId;
+            $sp['discount_percent'] = lyaideu_effective_discount_pct($ptype, (int)$sp['_vendor_id'], (int)($sp['discount_percent'] ?? 0), (string)($sp['hotel'] ?? ''));
             $sst = $sp['_vendor_id'] > 0 ? lyaideu_vendor_is_orderable($sp['_vendor_id']) : ['open' => true, 'label' => ''];
             $sp['_vendor_open'] = !empty($sst['open']) ? 1 : 0;
             $sp['_vendor_label'] = (string)($sst['label'] ?? '');

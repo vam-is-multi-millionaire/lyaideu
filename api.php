@@ -91,12 +91,16 @@ try {
     unset($b);
 
     /* Vendor shop flags: closed shops stay visible with Add blocked;
-       vendors with products_hidden=1 are removed everywhere. */
+       vendors with products_hidden=1 are removed everywhere.
+       discount_percent is resolved to the effective value (own product
+       discount above 0 wins, else the vendor default) so every JS surface
+       — grids, cart, search — prices correctly with no JS changes. */
     $attachVendor = function (array &$item, string $type): void {
         $vid = $type === 'dish'
             ? lyaideu_product_vendor_id('dish', $item)
             : (int)($item['vendor_id'] ?? 0);
         $item['vendor_id'] = $vid;
+        $item['discount_percent'] = lyaideu_effective_discount_pct($type, $vid, (int)($item['discount_percent'] ?? 0), (string)($item['hotel'] ?? ''));
         if ($vid > 0) {
             $st = lyaideu_vendor_is_orderable($vid);
             $item['vendor_open'] = !empty($st['open']) ? 1 : 0;

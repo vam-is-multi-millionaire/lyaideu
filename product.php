@@ -214,8 +214,10 @@ if ($hasVariants) {
     }
 }
 
-/* Discount deal math for the detail view (percent clamped 0–95). */
-$dealPct = lyaideu_deal_percent($item['discount_percent'] ?? 0);
+/* Discount deal math for the detail view (percent clamped 0–95).
+   Effective value: the product's own discount above 0 wins, otherwise the
+   owning vendor's default discount applies. */
+$dealPct = lyaideu_effective_discount_pct($type, $itemVendorId, (int)($item['discount_percent'] ?? 0), (string)($item['hotel'] ?? ''));
 $basePrice = ($hasVariants && $defaultVariant) ? (int)$defaultVariant['price'] : (int)$item['price'];
 $dealPrice = lyaideu_deal_price($basePrice, $dealPct);
 ?>

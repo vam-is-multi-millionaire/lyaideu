@@ -18,7 +18,7 @@ lyaideu_ensure_delivery_tables();
 $vendors = [];
 try {
     $vendors = $pdo->query(
-        'SELECT v.id, v.name, v.scope, v.is_active, v.is_open, v.products_hidden, v.open_time, v.close_time,
+        'SELECT v.id, v.name, v.scope, v.is_active, v.is_open, v.products_hidden, v.open_time, v.close_time, v.discount_percent,
                 h.name AS store_name
          FROM vendors v
          LEFT JOIN hotels h ON h.id = v.hotel_id
@@ -132,6 +132,8 @@ admin_page_start('Control Panel', 'control', 'Control Panel');
 .ctrl-hours{display:flex;align-items:center;gap:.3rem;flex:none;flex-wrap:wrap;}
 .ctrl-hours input[type="time"]{border:1px solid var(--orange-200);border-radius:8px;padding:.3rem .45rem;font-size:.78rem;font-weight:800;color:var(--orange-900);background:#fff;font-family:inherit;}
 .ctrl-hours input[type="time"]:focus{outline:2px solid var(--orange-400);border-color:var(--orange-500);}
+.ctrl-hours input[type="number"]{border:1px solid var(--orange-200);border-radius:8px;padding:.3rem .45rem;font-size:.78rem;font-weight:800;color:var(--orange-900);background:#fff;font-family:inherit;width:62px;}
+.ctrl-hours input[type="number"]:focus{outline:2px solid var(--orange-400);border-color:var(--orange-500);}
 .ctrl-hours-sep{font-size:.72rem;font-weight:800;color:var(--muted);}
 .ctrl-hours-save{border:1px solid var(--orange-300);background:var(--orange-50);color:var(--orange-800);border-radius:8px;padding:.32rem .6rem;font-size:.72rem;font-weight:900;cursor:pointer;white-space:nowrap;}
 .ctrl-hours-save:hover{background:var(--orange-100);}
@@ -250,7 +252,7 @@ $ctrlTabs = array_merge(
         <small><?= count($vendors) ?> vendors · <span id="ctrlVendorHeadCount"><?= $vendorOpenCount ?> open</span></small>
     </div>
     <div class="ctrl-list" id="ctrlVendorList">
-        <div class="ctrl-note" style="margin:.7rem .9rem;"><i class="fa-solid fa-circle-info"></i> Shop ON + inside opening hours = customers can add to cart. OFF or outside hours = products stay visible with a Closed badge and Add is blocked. “Hide products” removes all of that vendor’s products from the site. Times are Nepal time (e.g. 9:00 AM, blank = open all day).</div>
+        <div class="ctrl-note" style="margin:.7rem .9rem;"><i class="fa-solid fa-circle-info"></i> Shop ON + inside opening hours = customers can add to cart. OFF or outside hours = products stay visible with a Closed badge and Add is blocked. “Hide products” removes all of that vendor’s products from the site. Times are Nepal time (e.g. 9:00 AM, blank = open all day). Default discount % applies to all of a vendor's products unless a product has its own discount above 0.</div>
         <?php if ($vendors): ?>
         <div class="ctrl-search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" placeholder="Search vendors or stores…" aria-label="Search vendors" data-ctrl-search><button type="button" class="ctrl-search-clear" data-ctrl-clear hidden aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button></div>
         <p class="ctrl-row ctrl-no-match" data-ctrl-empty hidden>No vendors match your search.</p>
@@ -269,6 +271,7 @@ $ctrlTabs = array_merge(
             $closeT = $v['close_time'] ? substr((string)$v['close_time'], 0, 5) : '';
             $open12 = $openT !== '' ? lyaideu_vendor_time_12h($openT) : '';
             $close12 = $closeT !== '' ? lyaideu_vendor_time_12h($closeT) : '';
+            $disc = max(0, min(90, (int)($v['discount_percent'] ?? 0)));
             if ($prodHidden) { $vPillCls = 'ctrl-pill-off'; $vPillTxt = 'Products hidden'; }
             elseif ($orderable) { $vPillCls = 'ctrl-pill-live'; $vPillTxt = 'Open'; }
             else { $vPillCls = 'ctrl-pill-off'; $vPillTxt = trim((string)($v['_label'] ?? '')) !== '' ? (string)$v['_label'] : 'Closed'; }
@@ -285,6 +288,7 @@ $ctrlTabs = array_merge(
                     <span class="ctrl-switch-wrap"><span class="ctrl-switch-label">Shop</span><button type="button" class="ctrl-toggle ctrl-vendor-toggle<?= $openSwitch ? ' on' : '' ?>" data-vendor="<?= $vid ?>" data-field="is_open" data-active="<?= $openSwitch ? '1' : '0' ?>" aria-pressed="<?= $openSwitch ? 'true' : 'false' ?>" aria-label="Turn <?= $openSwitch ? 'off' : 'on' ?> <?= $ce($storeName) ?>" title="Turn shop <?= $openSwitch ? 'off' : 'on' ?>"><span class="ctrl-knob"></span></button></span>
                     <span class="ctrl-switch-wrap"><span class="ctrl-switch-label">Products</span><button type="button" class="ctrl-toggle ctrl-vendor-toggle<?= $prodHidden ? '' : ' on' ?>" data-vendor="<?= $vid ?>" data-field="products_hidden" data-active="<?= $prodHidden ? '1' : '0' ?>" data-invert="1" aria-pressed="<?= $prodHidden ? 'false' : 'true' ?>" aria-label="<?= $prodHidden ? 'Show' : 'Hide' ?> products of <?= $ce($storeName) ?>" title="<?= $prodHidden ? 'Show' : 'Hide' ?> all products"><span class="ctrl-knob"></span></button></span>
                     <span class="ctrl-hours"><input type="time" value="<?= $ce($openT) ?>" data-vendor-open aria-label="Opening time for <?= $ce($storeName) ?>"><span class="ctrl-hours-sep">–</span><input type="time" value="<?= $ce($closeT) ?>" data-vendor-close aria-label="Closing time for <?= $ce($storeName) ?>"><button type="button" class="ctrl-hours-save" data-vendor-hours="<?= $vid ?>">Save</button></span>
+                    <span class="ctrl-hours"><span class="ctrl-switch-label">Discount %</span><input type="number" min="0" max="90" step="1" value="<?= $disc ?>" data-vendor-discount aria-label="Default discount percent for <?= $ce($storeName) ?>"><button type="button" class="ctrl-hours-save" data-vendor-discount-save="<?= $vid ?>">Save</button></span>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -467,6 +471,8 @@ $ctrlTabs = array_merge(
       var cI = row.querySelector('[data-vendor-close]');
       if (oI && document.activeElement !== oI) oI.value = info.open_time || '';
       if (cI && document.activeElement !== cI) cI.value = info.close_time || '';
+      var dI = row.querySelector('[data-vendor-discount]');
+      if (dI && document.activeElement !== dI && typeof info.discount !== 'undefined') dI.value = info.discount;
     });
     var to, tc, th;
     if ((to = document.getElementById('ctrlTileVendorsOpen'))) to.textContent = vOpen;
@@ -571,6 +577,20 @@ $ctrlTabs = array_merge(
       var cVal = hRow ? (hRow.querySelector('[data-vendor-close]') || {}).value || '' : '';
       sendToggle({ vendor_id: hId, vendor_field: 'hours', open_time: oVal, close_time: cVal }, hoursBtn,
         'Opening hours saved for vendor #' + hId + '. Live across the site within ~5 seconds.');
+      return;
+    }
+    var discBtn = e.target.closest('[data-vendor-discount-save]');
+    if (discBtn) {
+      var dRow = discBtn.closest('[data-vendor-row]');
+      var dId = parseInt(discBtn.getAttribute('data-vendor-discount-save'), 10);
+      var dInp = dRow ? dRow.querySelector('[data-vendor-discount]') : null;
+      var dVal = dInp ? parseInt(dInp.value, 10) : NaN;
+      if (isNaN(dVal) || dVal < 0 || dVal > 90) {
+        banner('Discount must be a number between 0 and 90.', false);
+        return;
+      }
+      sendToggle({ vendor_id: dId, vendor_field: 'discount', discount: dVal }, discBtn,
+        'Default discount saved for vendor #' + dId + ' (' + dVal + '%). Live across the site within ~5 seconds.');
       return;
     }
     var vendorBtn = e.target.closest('.ctrl-vendor-toggle');
