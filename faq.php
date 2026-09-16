@@ -22,6 +22,7 @@ $lyaideuFaqs = [
     ['q' => 'Can I cancel or change my order?', 'a' => "Before the hotel confirms your order you can cancel it in the Orders page. Once confirmed, please call the hotel or our order hotline directly to make changes."],
     ['q' => 'What if my order is late or wrong?', 'a' => "Call our Delivery Support line immediately and we'll fix it fast — re-delivery, replacement or a refund, whichever fits best."],
     ['q' => 'How do I keep my account secure?', 'a' => "Never share your password. Your phone number and email are used only for delivery and order updates."],
+    ['q' => 'Do the product photos match the real food exactly?', 'a' => 'Product images on the website are for representation only — the real dish or item you receive may look a little different in presentation, portion or garnish, but the taste and quality stay the same.'],
 ];
 ?>
 <!DOCTYPE html>
@@ -132,6 +133,10 @@ $lyaideuFaqs = [
                     <summary>How do I keep my account secure?</summary>
                     <p>Never share your password. Your phone number and email are used only for delivery and order updates. You'll find full details in our Privacy Policy below.</p>
                 </details>
+                <details class="faq-item">
+                    <summary>Do the product photos match the real food exactly?</summary>
+                    <p>Product images on the website are for representation only — the real dish or item you receive may look a little different in presentation, portion or garnish, but the taste and quality stay the same.</p>
+                </details>
             </div>
         </div>
     </section>
@@ -163,7 +168,7 @@ $lyaideuFaqs = [
                 <p>You can review your account details at any time, request a copy of your data, ask us to correct it, or ask us to delete your account. Contact our support team and we'll take care of it promptly.</p>
 
                 <h3>7. Contact</h3>
-                <p>Questions about privacy? Reach our support team at <strong>hello@lyaideu.com.np</strong> or call <strong>9800000001</strong>.</p>
+                <p>Questions about privacy? Reach our support team at <strong>contact@lyaideu.com</strong> or call <strong>9769955973</strong>.</p>
             </div>
         </div>
     </section>

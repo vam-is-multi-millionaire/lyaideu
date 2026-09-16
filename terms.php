@@ -91,7 +91,7 @@ require_once __DIR__ . '/seo.php';
                 <p>By creating an account, browsing the website or placing an order on LyaiDeu, you agree to these Terms of Service and our Privacy Policy. If you do not agree, please do not use our service.</p>
 
                 <h3>2. Our service</h3>
-                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen — restaurants prepare and package your food.</p>
+                <p>LyaiDeu is a food delivery platform that connects you with partner hotels across the Surkhet Valley. We help you discover dishes, place orders and arrange fast delivery to your address. We are not the kitchen — restaurants prepare and package your food. Photos of dishes and products shown on the website are representative images only; the actual item you receive may differ slightly in appearance.</p>
 
                 <h3>3. Accounts &amp; eligibility</h3>
                 <p>You must be at least 10 years old to create an account. You agree to provide accurate information (name, phone number, email, date of birth) and to keep your login details secure. You are responsible for all activity under your account.</p>
@@ -121,7 +121,7 @@ require_once __DIR__ . '/seo.php';
                 <p>We may update these Terms from time to time. The latest version is always available on this page, and continued use of the service after changes means you accept the new terms.</p>
 
                 <h3>12. Contact</h3>
-                <p>Questions about these Terms? Reach us at <strong>hello@lyaideu.com.np</strong> or call <strong>9800000001</strong>.</p>
+                <p>Questions about these Terms? Reach us at <strong>contact@lyaideu.com</strong> or call <strong>9769955973</strong>.</p>
             </div>
         </div>
     </section>
