@@ -59,6 +59,8 @@ section{scroll-margin-top:96px;}
             box-shadow:var(--shadow-sm);transition:.25s;}
 .nav-search:focus-within{border-color:var(--orange-500);box-shadow:0 0 0 4px rgba(231,102,8,.14);}
 .nav-search .search-ico{color:var(--orange-500);font-size:.9rem;display:inline-flex;}
+.nav-search .search-logo-link{display:inline-flex;align-items:center;flex:none;line-height:0;border-radius:0;text-decoration:none;}
+.nav-search .search-logo{height:24px;width:auto;max-width:72px;object-fit:contain;display:block;flex:none;border-radius:0;}
 .nav-search input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;
                   font-weight:700;font-size:.9rem;padding:.4rem .1rem;color:var(--ink);}
 .nav-search input::placeholder{color:var(--muted);opacity:.85;}

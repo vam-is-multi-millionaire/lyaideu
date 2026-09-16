@@ -251,7 +251,10 @@ echo lyaideu_seo_page([
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=68">
 <link rel="stylesheet" href="css/cards-mobile.css?v=15">
-<style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}}
+<style>@media (max-width:960px){body.product-pg #bottomNav{display:none !important;visibility:hidden !important;pointer-events:none !important;}
+/* Bottom nav is hidden on this page, so bring back the floating cart button
+   (same look/behaviour as other pages; drawer + count already in markup). */
+body.product-pg .cart-fab{display:grid !important;}}
 /* Narrow phones: long gate text (e.g. "LyaiDeu is Currently Unavailable") must
    never push .product-main off the right edge — shrink + wrap the button. */
 @media (max-width:640px){

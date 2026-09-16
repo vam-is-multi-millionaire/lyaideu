@@ -193,8 +193,31 @@ function initSearchTyping(){
   timer=setTimeout(tick,450);
 }
 
+/* Mobile topbar: show the site logo inside the search bar instead of the
+   magnifying-glass icon (desktop keeps the magnifier). Logo URL is read from
+   the page's own brand mark, so admin logo changes are picked up with no
+   edits. Decorative only — search behaviour is untouched. */
+function initSearchLogo(){
+  const ico=document.querySelector('.topbar .nav-search .search-ico');
+  if(!ico||ico.dataset.logoReady)return;
+  const brand=document.querySelector('.topbar .brand-logo');
+  const src=brand&&brand.getAttribute('src');
+  if(!src)return;
+  ico.dataset.logoReady='1';
+  const orig=ico.innerHTML;
+  let mq=null;
+  try{mq=window.matchMedia('(max-width:960px)');}catch(e){}
+  const apply=(mobile)=>{
+    if(mobile){ico.innerHTML='<a class="search-logo-link" href="index" aria-label="Go to homepage"><img class="search-logo" src="'+src.replace(/"/g,"&quot;")+'" alt=""></a>';}
+    else{ico.innerHTML=orig;}
+  };
+  const sync=()=>apply(mq?mq.matches:(window.innerWidth||0)<=960);
+  sync();
+  try{if(mq&&mq.addEventListener)mq.addEventListener('change',sync);else window.addEventListener('resize',sync);}catch(e){}
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
-  initMobileNav();initBottomNavAutoHide();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();initSearchTyping();
+  initMobileNav();initBottomNavAutoHide();initNav();initProfileMenu();initScrollSpy();initOrderToasts();initAuthTabs();initPasswordPeek();initAuthValidation();footerYear();initCart();initAddCart();initFeaturedGrid();initHeroSlider();initSearchTyping();initSearchLogo();
   try{decorateClosedCards();decorateMaintenance();}catch(_){}
   setTimeout(function(){try{decorateClosedCards();decorateMaintenance();}catch(_){}},800);
   if($('#menu-grid')||$('#mart-grid')||$('#others-grid')||$('#beverages-grid')||$('#hotels-grid')||$('#contact-grid')||$('#checkoutForm')||$('#featuredDishes')||$('#featuredMart')||$('#featuredBeverages')||document.body.hasAttribute('data-needs-catalog'))fetch('api').then(r=>r.json()).then(d=>{
