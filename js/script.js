@@ -427,6 +427,11 @@ function findItem(id,type){type=type||'dish';const pool=type==='mart'?allMart:(t
 /* Vendor shop status: closed shops stay visible but Add is blocked. */
 function vendorBlockOf(id,type,btn){
   if(btn&&btn.dataset&&btn.dataset.vendorOpen==='0')return btn.dataset.vendorLabel||'This shop is closed now';
+  return vendorBlockOfLive(id,type);
+}
+/* Live vendor state only — ignores button attributes, so site-gate stamps
+   (maintenance / unavailable) never masquerade as a closed vendor. */
+function vendorBlockOfLive(id,type){
   const d=findItem(id,type);
   if(d&&Number(d.vendor_open)===0)return d.vendor_label||'This shop is closed now';
   try{
@@ -434,6 +439,11 @@ function vendorBlockOf(id,type,btn){
     if(m&&m[type||'dish']&&m[type||'dish'][String(Number(id))])return m[type||'dish'][String(Number(id))];
   }catch(_){}
   return '';
+}
+/* True when a button carries a site-gate stamp rather than a vendor block. */
+function gateStamped(b){
+  var l=b.getAttribute&&b.getAttribute('data-vendor-label');
+  return l===MAINT_MSG||l===UNAVAIL_MSG;
 }
 function vendorClosedBadge(d){
   if(!d||Number(d.vendor_open)!==0)return '';
@@ -478,10 +488,14 @@ function decorateMaintenance(){
 function decorateClosedCards(){
   document.querySelectorAll('.add-cart[data-id]').forEach(function(b){
     const type=b.dataset.type||'dish',id=Number(b.dataset.id);
-    const msg=vendorBlockOf(id,type,b);
+    /* Gate-stamped buttons (maintenance / unavailable) must never earn a
+       "Closed" badge — judge them by live vendor state only. A genuinely
+       closed vendor still gets its badge even while a gate is ON. */
+    var stamped=gateStamped(b);
+    const msg=stamped?vendorBlockOfLive(id,type):vendorBlockOf(id,type,b);
     if(msg){
       b.setAttribute('data-vendor-open','0');
-      if(!b.getAttribute('data-vendor-label'))b.setAttribute('data-vendor-label',msg);
+      if(stamped||!b.getAttribute('data-vendor-label'))b.setAttribute('data-vendor-label',msg);
       b.disabled=true;b.style.opacity='.5';b.style.cursor='not-allowed';
       const card=b.closest('.dish-card')||b.closest('.related-card');
       if(card&&!card.querySelector('.vendor-closed-tag')){
