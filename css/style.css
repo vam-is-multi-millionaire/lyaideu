@@ -2075,3 +2075,106 @@ body.settings-js .settings-pane.active{display:block;animation:fadeUp .35s ease}
 /* ---------- Complete-profile banner for Google signups ---------- */
 .complete-banner{max-width:1200px;margin:1rem auto 0;display:flex;align-items:flex-start;gap:.6rem;background:#fff7e6;border:1px solid #f5d9a8;border-left:5px solid #e7a100;color:#7a5200;border-radius:14px;box-shadow:var(--shadow-sm,0 2px 10px rgba(90,40,10,.06));padding:.85rem 1.1rem;font-weight:800;font-size:.9rem;}
 .complete-banner i{margin-top:.15rem;color:#e7a100;}
+
+/* ==========================================================
+   DELIVERY TOPBAR — hamburger mobile menu (rider & vendor)
+   Desktop (>=901px) unchanged. Mobile gets a clean off-canvas
+   drawer toggled by the hamburger in .delivery-topbar.
+   ========================================================== */
+.delivery-nav-toggle{
+  display:none;flex-direction:column;justify-content:center;gap:5px;
+  width:44px;height:44px;padding:9px;flex:none;
+  border:2px solid var(--orange-200);border-radius:10px;
+  background:#fff;cursor:pointer;transition:background .2s,border-color .2s;
+}
+.delivery-nav-toggle span{display:block;height:3px;border-radius:3px;background:var(--orange-900);transition:transform .25s,opacity .25s;}
+.delivery-nav-toggle:hover{background:var(--orange-50);border-color:var(--orange-300);}
+.delivery-nav-toggle.open span:nth-child(1){transform:translateY(8px) rotate(45deg);}
+.delivery-nav-toggle.open span:nth-child(2){opacity:0;}
+.delivery-nav-toggle.open span:nth-child(3){transform:translateY(-8px) rotate(-45deg);}
+.delivery-nav-close{
+  display:none;position:absolute;top:.75rem;right:.75rem;
+  width:36px;height:36px;border-radius:50%;
+  border:1.5px solid var(--orange-200);background:#fff;color:var(--orange-800);
+  font-size:1rem;place-items:center;cursor:pointer;transition:.18s;
+}
+.delivery-nav-close:hover{background:var(--orange-50);border-color:var(--orange-300);}
+.delivery-user-meta{display:flex;align-items:center;gap:.7rem;}
+.delivery-user-actions{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;}
+.delivery-user-actions form{margin:0;}
+.delivery-nav-backdrop[hidden]{display:none !important;}
+.delivery-nav-backdrop{
+  display:block;position:fixed;inset:0;z-index:80;
+  background:rgba(18,18,32,.46);opacity:0;visibility:hidden;
+  transition:opacity .28s ease,visibility .28s;
+}
+.delivery-nav-backdrop.show{opacity:1;visibility:visible;}
+/* keep topbar above backdrop so hamburger never looks faded */
+.delivery-topbar{position:sticky;z-index:70;}
+
+@media (max-width:900px){
+  .delivery-topbar{gap:.6rem;padding:.6rem .9rem;flex-wrap:nowrap;align-items:center;z-index:92;}
+  .delivery-topbar .brand{font-size:1.12rem;gap:.32rem;flex:0 0 auto;}
+  .delivery-topbar .brand-logo{height:32px;}
+  .delivery-role-badge{font-size:.68rem;padding:.3rem .58rem;gap:.3rem;flex:0 1 auto;white-space:nowrap;}
+  .delivery-nav-toggle{display:flex;margin-left:.55rem;}
+  /* when bell is parked inside header, both sit at the far right as a group */
+  .delivery-topbar #notifyBell{margin-left:auto !important;flex:0 0 auto;position:relative !important;top:auto !important;right:auto !important;bottom:auto !important;z-index:3 !important;}
+  .delivery-topbar #notifyBell button{width:40px !important;height:40px !important;font-size:.95rem !important;}
+  /* delivery dropdown: referenced from index.php (#notifyList 330px/92vw) but fixed centered on mobile so never cut off — scoped to rider/vendor only */
+  .delivery-topbar #notifyBell #notifyList{
+    position:fixed !important;left:50% !important;right:auto !important;
+    transform:translateX(-50%) !important;
+    top:58px !important;
+    width:min(92vw,360px) !important;max-width:92vw !important;
+    margin:0 !important;z-index:97 !important;
+  }
+  .delivery-user{
+    position:fixed;top:0;right:0;bottom:0;
+    width:300px;max-width:85vw;margin-left:0;
+    background:#fff;flex-direction:column;align-items:stretch;gap:0;
+    padding:1rem 1rem calc(env(safe-area-inset-bottom,0px) + 1rem);
+    box-shadow:-12px 0 32px rgba(0,0,0,.18);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform .28s ease,visibility .28s;
+    z-index:96;overflow-y:auto;overscroll-behavior:contain;
+  }
+  .delivery-user.open{transform:none;visibility:visible;}
+  .delivery-nav-close{display:grid;}
+  .delivery-user-meta{
+    padding:2.15rem 0 .9rem;border-bottom:1.5px dashed var(--orange-100);
+    margin-bottom:.95rem;gap:.85rem;
+  }
+  .delivery-user-meta .avatar{width:46px;height:46px;font-size:1.05rem;flex:none;}
+  .delivery-user-meta div strong{font-size:.95rem;}
+  .delivery-user-meta div small{font-size:.76rem;}
+  .delivery-user-actions{flex-direction:column;align-items:stretch;gap:.6rem;}
+  .delivery-user-actions a.btn,
+  .delivery-user-actions .btn{width:100%;justify-content:flex-start;min-height:46px;}
+  .delivery-user-actions form{width:100%;}
+  .delivery-user-actions form .btn{width:100%;}
+  body.delivery-nav-lock{overflow:hidden;}
+}
+@media (max-width:360px){
+  .delivery-topbar{padding:.55rem .7rem;gap:.45rem;}
+  .delivery-topbar .brand{font-size:1rem;}
+  .delivery-topbar .brand-logo{height:28px;}
+  .delivery-role-badge{font-size:.62rem;padding:.26rem .5rem;}
+  .delivery-nav-toggle{width:40px;height:40px;padding:8px;}
+  .delivery-user{width:280px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .delivery-nav-toggle span,.delivery-user,.delivery-nav-backdrop{transition:none !important;}
+}
+/* rider/vendor only: ref index.php — compact header, scoped to delivery, index.php untouched */
+.delivery-body #notifyMarkAll{white-space:nowrap !important;flex:0 0 auto !important;word-break:keep-all !important;text-align:right !important;font-size:.78rem !important;padding-left:10px !important;padding-right:.2rem !important;overflow:visible !important;text-overflow:clip !important;max-width:none !important;}
+.delivery-body #notifyList > div:first-child{justify-content:space-between !important;gap:.4rem !important;padding:.3rem 0 .35rem !important;margin:0 0 .4rem !important;box-sizing:border-box !important;min-width:0 !important;}
+@media (max-width:900px){
+  /* mobile: Mark all read just beside Notifications, not far right */
+  .delivery-body #notifyList > div:first-child{justify-content:flex-start !important;}
+  .delivery-body #notifyMarkAll{margin-left:0 !important;text-align:left !important;}
+}
+.delivery-body #notifyList{box-sizing:border-box !important;}
+/* rider/vendor only: prevent horizontal scroll in notifyList — scoped to delivery */
+.delivery-body #notifyList{overflow-x:hidden !important;overflow-y:auto !important;overscroll-behavior:contain !important;word-wrap:break-word !important;overflow-wrap:anywhere !important;box-sizing:border-box !important;}
+.delivery-body #notifyList a{white-space:normal !important;word-break:break-word !important;overflow-wrap:anywhere !important;max-width:100% !important;box-sizing:border-box !important;}

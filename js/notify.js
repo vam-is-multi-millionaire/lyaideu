@@ -56,25 +56,45 @@
 
     function placeBell() {
         var delivery = document.body.classList.contains('delivery-body');
-        // Customer pages on mobile/tablet: park the bell inside the header
-        // nav, immediately to the right of the search bar, so it sits
-        // perfectly aligned with it (the nav flex row centers it vertically).
-        // Desktop keeps the bell floating in the top-right corner.
-        if (!delivery && mq.matches) {
-            var host = document.querySelector('header.topbar .nav');
-            if (host) {
-                bell.style.position = 'relative';
-                bell.style.top = 'auto';
-                bell.style.right = 'auto';
-                bell.style.bottom = 'auto';
-                bell.style.margin = '0';
-                var search = host.querySelector('.nav-search');
-                if (search) {
-                    host.insertBefore(bell, search.nextSibling || null);
-                } else {
-                    host.appendChild(bell);
+        // Mobile/tablet: park the bell inside the header so it never
+        // overlays the hamburger or floats detached. Desktop keeps it fixed.
+        if (mq.matches) {
+            if (!delivery) {
+                var host = document.querySelector('header.topbar .nav');
+                if (host) {
+                    bell.style.position = 'relative';
+                    bell.style.top = 'auto';
+                    bell.style.right = 'auto';
+                    bell.style.bottom = 'auto';
+                    bell.style.margin = '0';
+                    bell.style.zIndex = '5';
+                    var search = host.querySelector('.nav-search');
+                    if (search) {
+                        host.insertBefore(bell, search.nextSibling || null);
+                    } else {
+                        host.appendChild(bell);
+                    }
+                    return;
                 }
-                return;
+            } else {
+                var dHost = document.querySelector('.delivery-topbar');
+                var dToggle = document.querySelector('.delivery-nav-toggle');
+                if (dHost) {
+                    bell.style.position = 'relative';
+                    bell.style.top = 'auto';
+                    bell.style.right = 'auto';
+                    bell.style.bottom = 'auto';
+                    bell.style.margin = '0';
+                    bell.style.zIndex = '3';
+                    // keep dropdown anchored below the header
+                    if (list) { list.style.right = '-6px'; list.style.top = '46px'; }
+                    if (dToggle && dToggle.parentNode === dHost) {
+                        dHost.insertBefore(bell, dToggle);
+                    } else {
+                        dHost.appendChild(bell);
+                    }
+                    return;
+                }
             }
         }
         if (bell.parentNode !== document.body) document.body.appendChild(bell);
@@ -82,6 +102,8 @@
         bell.style.right = '14px';
         bell.style.bottom = 'auto';
         bell.style.margin = '0';
+        bell.style.zIndex = '99998';
+        if (list) { list.style.right = '0'; list.style.top = '52px'; }
         if (delivery) {
             var tb = document.querySelector('.delivery-topbar');
             bell.style.top = (tb ? tb.getBoundingClientRect().height + 6 : 74) + 'px';
@@ -122,7 +144,10 @@
             list.innerHTML = '<p style="margin:.4rem;color:#777;">No notifications yet.</p>';
             return;
         }
-        var html = '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--orange-100);padding:.35rem 0 .4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
+        var isDeliveryPage = document.body.classList.contains('delivery-body');
+        var html = isDeliveryPage
+            ? '<div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--orange-100);padding:.3rem 0 .35rem;margin-bottom:.4rem;box-sizing:border-box;min-width:0;"><b style="white-space:nowrap;flex:0 0 auto;font-size:.88rem;"><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;white-space:nowrap;flex:0 0 auto;text-align:right;padding-left:10px;padding-right:.2rem;font-size:.78rem;">Mark all read</button></div>'
+            : '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--orange-100);padding:.35rem 0 .4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
         lastItems.forEach(function (it) {
             var link = it.link || 'orders';
             html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (it.is_read ? '' : 'background:var(--orange-50);font-weight:700;') + '">' + it.message +

@@ -251,12 +251,33 @@ function delivery_header(string $title, string $heading, string $icon, string $r
 <link rel="stylesheet" href="css/style.css?v=68">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="delivery-body">
 <header class="delivery-topbar"><a class="brand" href="index"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu">Lyai<span>Deu</span></a><a class="delivery-role-badge" href="' . ($role === 'vendor' ? 'vendor' : 'rider') . '" title="' . ($role === 'vendor' ? 'Go to Your Kitchen Queue' : 'Go to Delivery Queue') . '"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Vendor' : 'Rider') . '</a>
-<div class="delivery-user">
-  <span class="avatar"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . delivery_esc($avatarUrl) . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc(substr($user['name'] ?? '', 0, 1)) : '') . '</span>
-  <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
-  ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '<a class="btn btn-outline btn-sm" href="rider?tab=profile"><i class="fa-solid fa-user-pen"></i> My Profile</a>') . '
-  <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
+<button class="delivery-nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="deliveryNav"><span></span><span></span><span></span></button>
+<div class="delivery-user" id="deliveryNav">
+  <button class="delivery-nav-close" type="button" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
+  <div class="delivery-user-meta">
+    <span class="avatar"' . ($avatarUrl !== '' ? ' style="background-image:url(\'' . delivery_esc($avatarUrl) . '\')"' : '') . '>' . ($avatarUrl === '' ? delivery_esc(substr($user['name'] ?? '', 0, 1)) : '') . '</span>
+    <div><strong>' . $name . '</strong><small>' . delivery_esc($user['phone'] ?? '') . '</small></div>
+  </div>
+  <nav class="delivery-user-actions">
+    ' . ($role === 'vendor' ? '<a class="btn btn-outline btn-sm" href="vendor_store"><i class="fa-solid fa-store"></i> My Store</a><a class="btn btn-outline btn-sm" href="vendor_products"><i class="fa-solid fa-box-open"></i> My Products</a>' : '<a class="btn btn-outline btn-sm" href="rider?tab=profile"><i class="fa-solid fa-user-pen"></i> My Profile</a>') . '
+    <form method="POST"><input type="hidden" name="csrf_token" value="' . delivery_esc(delivery_csrf_token()) . '"><button type="submit" name="delivery_logout" class="btn btn-outline btn-sm">Log out</button></form>
+  </nav>
 </div></header>
+<div class="delivery-nav-backdrop" id="deliveryNavBackdrop" hidden></div>
+<script>
+(function(){
+  var btn=document.querySelector(".delivery-nav-toggle");
+  var nav=document.getElementById("deliveryNav");
+  var backdrop=document.getElementById("deliveryNavBackdrop");
+  var closeBtn=nav?nav.querySelector(".delivery-nav-close"):null;
+  function openNav(){if(!nav)return;nav.classList.add("open");if(btn){btn.classList.add("open");btn.setAttribute("aria-expanded","true");}if(backdrop){backdrop.hidden=false;requestAnimationFrame(function(){backdrop.classList.add("show");});}document.body.classList.add("delivery-nav-lock");}
+  function closeNav(){if(!nav)return;nav.classList.remove("open");if(btn){btn.classList.remove("open");btn.setAttribute("aria-expanded","false");}if(backdrop){backdrop.classList.remove("show");setTimeout(function(){if(!nav.classList.contains("open"))backdrop.hidden=true;},280);}document.body.classList.remove("delivery-nav-lock");}
+  if(btn&&nav){btn.addEventListener("click",function(){nav.classList.contains("open")?closeNav():openNav();});}
+  if(closeBtn)closeBtn.addEventListener("click",closeNav);
+  if(backdrop)backdrop.addEventListener("click",closeNav);
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNav();});
+})();
+</script>
 <main class="delivery-main container"><div class="section-head"><p class="kicker"><i class="fa-solid ' . $icon . '"></i> ' . ($role === 'vendor' ? 'Kitchen orders' : 'Delivery queue') . '</p><h1 class="display">' . delivery_esc($heading) . '</h1><p class="section-sub"><span class="live-indicator" data-live-indicator>? Live updates</span> New orders appear here automatically.</p></div>';
 }
 
