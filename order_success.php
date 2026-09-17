@@ -34,13 +34,32 @@ if (!$order) {
     exit;
 }
 $orderId = (int)$order['id'];
+$successHomeLat = '';
+$successHomeLng = '';
+try {
+    $shStmt = $pdo->prepare('SELECT home_lat, home_lng FROM users WHERE id = ? LIMIT 1');
+    $shStmt->execute([$uid]);
+    $shRow = $shStmt->fetch();
+    if ($shRow) {
+        $successHomeLat = (string)($shRow['home_lat'] ?? '');
+        $successHomeLng = (string)($shRow['home_lng'] ?? '');
+    }
+} catch (Throwable $e) {}
+$successLat = (string)($order['delivery_lat'] ?? '');
+$successLng = (string)($order['delivery_lng'] ?? '');
+$successApprox = false;
+if (($successLat === '' || $successLng === '') && $successHomeLat !== '' && $successHomeLng !== '') {
+    $successLat = $successHomeLat;
+    $successLng = $successHomeLng;
+    $successApprox = true;
+}
 ?><!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?= lyaideu_base_tag() ?><meta name="robots" content="noindex, follow"><title>Order #<?= (int)$order['id'] ?> | LyaiDeu</title><?= site_head_icons() ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=68"></head><body class="checkout-body"><header class="topbar">
+<link rel="stylesheet" href="css/style.css?v=68"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body class="checkout-body"><header class="topbar">
     <nav class="nav">
         <a class="brand" href="index"><img class="brand-logo" src="<?= htmlspecialchars(site_logo_url(), ENT_QUOTES, 'UTF-8') ?>" alt="LyaiDeu">Lyai<span>Deu</span></a>
         <form class="nav-search" action="index" method="get" role="search"><span class="search-ico"><i class="fa-solid fa-magnifying-glass"></i></span><input type="search" name="q" placeholder="Search in LyaiDeu" aria-label="Search the menu"></form>
@@ -92,6 +111,22 @@ $orderId = (int)$order['id'];
     <div class="summary-row"><span>Delivery</span><strong>Rs. <?= max(0, (int)$order['delivery_fee'] - (int)$order['discount']) ?></strong></div>
     <div class="summary-row"><span>Estimated delivery</span><strong><i class="fa-solid fa-clock"></i> about <?= (int)$order['eta_minutes'] ?> min</strong></div>
     <div class="summary-row total"><span>Total</span><strong>Rs. <?= (int)$order['total'] ?></strong></div>
-    <p class="small-note"><i class="fa-solid fa-location-dot"></i> Delivering to: <?= htmlspecialchars($order['address']) ?><?php if (!empty($order['delivery_lat']) && !empty($order['delivery_lng'])): ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars((string)$order['delivery_lat']) ?>,<?= htmlspecialchars((string)$order['delivery_lng']) ?>">Open in Maps</a><?php endif; ?></p>
+    <?php if ($successLat !== '' && $successLng !== ''): ?>
+    <div class="rider-map" data-lat="<?= htmlspecialchars($successLat, ENT_QUOTES, 'UTF-8') ?>" data-lng="<?= htmlspecialchars($successLng, ENT_QUOTES, 'UTF-8') ?>"></div>
+    <?php endif; ?>
+    <p class="small-note"><i class="fa-solid fa-location-dot"></i> Delivering to: <?= htmlspecialchars($order['address']) ?><?php if ($successLat !== '' && $successLng !== ''): ?><?php if ($successApprox): ?> · <i class="fa-solid fa-circle-info"></i> Saved home (approximate)<?php endif; ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars($successLat, ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars($successLng, ENT_QUOTES, 'UTF-8') ?>">Open in Maps</a><?php else: ?> · <i class="fa-solid fa-triangle-exclamation"></i> No location pin — set your home pin in profile.<?php endif; ?></p>
     <div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>
-</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=47"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script></body></html>
+</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  if(typeof L==='undefined')return;
+  var el=document.querySelector('.success-card .rider-map');
+  if(!el)return;
+  var lat=parseFloat(el.getAttribute('data-lat')),lng=parseFloat(el.getAttribute('data-lng'));
+  if(isNaN(lat)||isNaN(lng))return;
+  var map=L.map(el,{scrollWheelZoom:false,attributionControl:false}).setView([lat,lng],15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  L.marker([lat,lng]).addTo(map);
+  setTimeout(function(){map.invalidateSize();},60);
+})();
+</script></body></html>

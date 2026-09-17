@@ -735,6 +735,8 @@ function initCheckout(){
   $('#promoBtn')?.addEventListener('click',applyPromo);
   $('#promoInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPromo()}});
   form.addEventListener('submit',e=>{if(form.dataset.kycOk!=='1'){e.preventDefault();window.location.href='profile';return}if(!getCart().length){e.preventDefault();toast('Your cart is empty.');return}
+    const dLat=($('#deliveryLat')?.value||'').trim(),dLng=($('#deliveryLng')?.value||'').trim();
+    if(!dLat||!dLng){e.preventDefault();const m=$('#deliveryLocMsg');if(m)m.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Please set your delivery spot on the map — drag the pin or tap "Use my current location".';document.getElementById('deliveryMap')?.scrollIntoView({behavior:'smooth',block:'center'});toast('<i class="fa-solid fa-location-dot"></i> Set your delivery spot on the map first.');return;}
     if(siteBlocked()){e.preventDefault();toast('<i class="fa-solid '+siteBlockIcon()+'"></i> '+siteBlockMsg()+' — ordering is paused right now.');return;}
     const blocked=getCart().map(function(r){return vendorBlockOf(r.id,r.type||'dish',null);}).filter(Boolean);
     if(blocked.length){e.preventDefault();toast('<i class="fa-solid fa-circle-pause"></i> '+esc(blocked[0])+' — please remove closed-shop items before ordering.');update();return;}
@@ -942,11 +944,39 @@ function cardHeadHtml(o,vendorCount){
   return '<div class="order-card-head"><div><h2>Order #'+(o.id||0)+'</h2><p>'+esc(fmtNP12(o.created_at||o.created||''))+'</p></div>'
     +'<span class="order-status-pill status-'+pillClass(o.status)+'">'+esc(o.status)+'</span></div>';
 }
+function orderMapCoords(o){
+  var lat=o.delivery_lat||'',lng=o.delivery_lng||'',approx=false;
+  if((!lat||!lng)&&o.home_lat&&o.home_lng){lat=o.home_lat;lng=o.home_lng;approx=true;}
+  if(!lat||!lng)return null;
+  return {lat:lat,lng:lng,approx:approx};
+}
+function orderMapHtml(o){
+  var c=orderMapCoords(o);
+  if(!c)return '<p class="small-note"><i class="fa-solid fa-triangle-exclamation"></i> No location pin for this order.</p>';
+  return '<div class="rider-map" data-lat="'+esc(String(c.lat))+'" data-lng="'+esc(String(c.lng))+'"></div>'
+    +'<p class="small-note">'+(c.approx?'<i class="fa-solid fa-circle-info"></i> Saved home (approximate) · ':'')+'<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.lat)+','+encodeURIComponent(c.lng)+'">Open in Maps</a></p>';
+}
+function initLiveOrderMaps(root){
+  if(typeof L==='undefined')return;
+  (root||document).querySelectorAll('.rider-map').forEach(function(el){
+    if(el.getAttribute('data-map-ready')==='1')return;
+    var lat=parseFloat(el.getAttribute('data-lat')),lng=parseFloat(el.getAttribute('data-lng'));
+    if(isNaN(lat)||isNaN(lng))return;
+    try{
+      var map=L.map(el,{scrollWheelZoom:false,attributionControl:false}).setView([lat,lng],15);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+      L.marker([lat,lng]).addTo(map);
+      el.setAttribute('data-map-ready','1');
+      setTimeout(function(){map.invalidateSize();},60);
+    }catch(e){}
+  });
+}
 function bodyHtml(o,vendorCount){
   var h=trackHtml(o.status);
   (o.vendors||[]).forEach(function(v){h+=vendorHtml(v);});
   if(o.other_items&&o.other_items.length)h+=otherHtml(o.other_items);
   h+=deliveryHtml(o);
+  h+=orderMapHtml(o);
   h+='<div class="summary-row"><span>Subtotal</span><strong>Rs. '+(o.subtotal||0)+'</strong></div>';
   h+='<div class="summary-row"><span>Delivery</span><strong>Rs. '+Math.max(0,(o.delivery_fee||0)-(o.discount||0))+'</strong></div>';
   if(o.eta_minutes)h+='<div class="summary-row"><span>Estimated delivery</span><strong>about '+(o.eta_minutes||0)+' min'+(vendorCount>1?' · '+vendorCount+' vendors':'')+'</strong></div>';
@@ -961,9 +991,6 @@ function cardHtml(o){
 function singleCardHtml(o){
   var vc=(o.vendors||[]).length+(o.other_items&&o.other_items.length?1:0);
   var h=cardHeadHtml(o,vc)+bodyHtml(o,vc);
-  if(o.delivery_lat&&o.delivery_lng){
-    h=h.replace('</p>',' · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(o.delivery_lat)+','+encodeURIComponent(o.delivery_lng)+'">Open in Maps</a></p>');
-  }
   h+='<div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>';
   return h;
 }
@@ -1037,6 +1064,8 @@ function init(){
               orders.forEach(function(o){
                 if(prev[o.id]&&prev[o.id]!==o.status)flashCard(document.querySelector('.order-card[data-order-id="'+o.id+'"]'));
               });
+              try{initLiveOrderMaps(listWrap);}catch(e){}
+              try{if(window.LYAIDEU_ORDER_MAPS)window.LYAIDEU_ORDER_MAPS();}catch(e){}
             }
           }
         }
@@ -1052,6 +1081,7 @@ function init(){
             }else if(s!==lastSingle||(now-singleRender)>FULL_MS){
               single.innerHTML=singleCardHtml(o);
               if(prevStatus&&prevStatus!==o.status)flashCard(single);
+              try{initLiveOrderMaps(single);}catch(e){}
               lastSingle=s;singleRender=now;
             }
           }
@@ -1064,6 +1094,8 @@ function init(){
   refresh();
   setInterval(refresh,POLL_MS);
   highlightFromUrl();
+  try{initLiveOrderMaps(document);}catch(e){}
+  setInterval(function(){try{initLiveOrderMaps(document);}catch(e){}},3000);
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

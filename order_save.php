@@ -284,13 +284,22 @@ $deliveryLat = null;
 $deliveryLng = null;
 $rawLat = trim((string)($_POST['delivery_lat'] ?? ''));
 $rawLng = trim((string)($_POST['delivery_lng'] ?? ''));
-if ($rawLat !== '' || $rawLng !== '') {
-    if (!lyaideu_valid_coord($rawLat, true) || !lyaideu_valid_coord($rawLng, false)) {
-        flash_checkout('The delivery location on the map is invalid. Please set it again on the checkout map.');
+if ($rawLat === '' && $rawLng === '' && $kycUser) {
+    $homeLat = trim((string)($kycUser['home_lat'] ?? ''));
+    $homeLng = trim((string)($kycUser['home_lng'] ?? ''));
+    if ($homeLat !== '' && $homeLng !== '') {
+        $rawLat = $homeLat;
+        $rawLng = $homeLng;
     }
-    $deliveryLat = (float)$rawLat;
-    $deliveryLng = (float)$rawLng;
 }
+if ($rawLat === '' || $rawLng === '') {
+    flash_checkout('Please set your delivery spot on the map — drag the pin or tap "Use my current location".');
+}
+if (!lyaideu_valid_coord($rawLat, true) || !lyaideu_valid_coord($rawLng, false)) {
+    flash_checkout('The delivery location on the map is invalid. Please set it again on the checkout map.');
+}
+$deliveryLat = (float)$rawLat;
+$deliveryLng = (float)$rawLng;
 
 try {
     $pdo->beginTransaction();

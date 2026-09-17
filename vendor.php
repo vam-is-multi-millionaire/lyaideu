@@ -92,7 +92,7 @@ if ($user) {
     try {
         $rows = $pdo->prepare(
             'SELECT DISTINCT o.id, o.customer_name, o.phone, o.address, o.note, o.payment, o.status, o.total,
-                    o.created_at, o.vendor_id, o.rider_id, ovs.status AS vendor_status,
+                    o.created_at, o.vendor_id, o.rider_id, o.delivery_lat, o.delivery_lng, ovs.status AS vendor_status,
                     r.name AS rider_name, r.phone AS rider_phone
              FROM orders o
              JOIN order_vendor_status ovs ON ovs.order_id = o.id AND ovs.vendor_id = :vid
@@ -231,6 +231,10 @@ if ($flash) {
                 </div>
                 <?php if ($o['rider_id']): ?>
                 <p class="delivery-rider"><i class="fa-solid fa-motorcycle"></i> <?= delivery_esc($o['rider_name'] ?? 'Rider') ?> · <a href="tel:+977<?= delivery_esc($o['rider_phone'] ?? '') ?>">+977 <?= delivery_esc($o['rider_phone'] ?? '') ?></a></p>
+                <?php endif; ?>
+                <?php if (($o['delivery_lat'] ?? null) !== null && ($o['delivery_lat'] ?? '') !== '' && ($o['delivery_lng'] ?? null) !== null && ($o['delivery_lng'] ?? '') !== ''): ?>
+                <div class="rider-map" data-lat="<?= delivery_esc($o['delivery_lat']) ?>" data-lng="<?= delivery_esc($o['delivery_lng']) ?>"></div>
+                <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= delivery_esc($o['delivery_lat']) ?>,<?= delivery_esc($o['delivery_lng']) ?>" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>
                 <?php endif; ?>
                 <div class="delivery-actions">
                     <form method="POST">

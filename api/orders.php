@@ -23,6 +23,17 @@ if (empty($_SESSION['user']['id'])) {
 $pdo = lyaideu_load_pdo();
 try {
     $uid = (int)$_SESSION['user']['id'];
+    $homeLat = '';
+    $homeLng = '';
+    try {
+        $homeStmt = $pdo->prepare('SELECT home_lat, home_lng FROM users WHERE id = ? LIMIT 1');
+        $homeStmt->execute([$uid]);
+        $homeRow = $homeStmt->fetch();
+        if ($homeRow) {
+            $homeLat = (string)($homeRow['home_lat'] ?? '');
+            $homeLng = (string)($homeRow['home_lng'] ?? '');
+        }
+    } catch (Throwable $e) {}
     $st = $pdo->prepare('SELECT id FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 30');
     $st->execute([$uid]);
     $ids = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
@@ -33,6 +44,8 @@ try {
             if (isset($track['created_at'])) {
                 $track['created_at'] = lyaideu_np_time($track['created_at']);
             }
+            $track['home_lat'] = $homeLat;
+            $track['home_lng'] = $homeLng;
             $orders[] = $track;
         }
     }

@@ -20,6 +20,17 @@ require_once __DIR__ . '/site_config.php';
 
 $uid = (int)$_SESSION['user']['id'];
 $orders = [];
+$homeLat = '';
+$homeLng = '';
+try {
+    $homeStmt = $pdo->prepare('SELECT home_lat, home_lng FROM users WHERE id = ? LIMIT 1');
+    $homeStmt->execute([$uid]);
+    $homeRow = $homeStmt->fetch();
+    if ($homeRow) {
+        $homeLat = (string)($homeRow['home_lat'] ?? '');
+        $homeLng = (string)($homeRow['home_lng'] ?? '');
+    }
+} catch (Throwable $e) {}
 
 $orderStmt = $pdo->prepare(
     'SELECT id, created_at
@@ -54,6 +65,7 @@ foreach ($rows as $row) {
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="css/style.css?v=68">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
@@ -123,6 +135,22 @@ foreach ($rows as $row) {
     <?php foreach ($o['vendors'] as $v): ?><?= lyaideu_order_vendor_html($v) ?><?php endforeach; ?>
     <?php if (!empty($o['other_items'])): ?><?= lyaideu_order_other_html($o['other_items']) ?><?php endif; ?>
     <?= lyaideu_order_delivery_html($o) ?>
+    <?php
+    $mapLat = (string)($o['delivery_lat'] ?? '');
+    $mapLng = (string)($o['delivery_lng'] ?? '');
+    $mapApprox = false;
+    if (($mapLat === '' || $mapLng === '') && $homeLat !== '' && $homeLng !== '') {
+        $mapLat = $homeLat;
+        $mapLng = $homeLng;
+        $mapApprox = true;
+    }
+    ?>
+    <?php if ($mapLat !== '' && $mapLng !== ''): ?>
+    <div class="rider-map" data-lat="<?= htmlspecialchars($mapLat, ENT_QUOTES, 'UTF-8') ?>" data-lng="<?= htmlspecialchars($mapLng, ENT_QUOTES, 'UTF-8') ?>"></div>
+    <p class="small-note"><?php if ($mapApprox): ?><i class="fa-solid fa-circle-info"></i> Customer's saved home (approximate) · <?php endif; ?><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars($mapLat, ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars($mapLng, ENT_QUOTES, 'UTF-8') ?>">Open in Maps</a></p>
+    <?php else: ?>
+    <p class="small-note"><i class="fa-solid fa-triangle-exclamation"></i> No location pin for this order — set your home pin in profile so future orders show a map.</p>
+    <?php endif; ?>
     <div class="summary-row"><span>Subtotal</span><strong>Rs. <?= (int)$o['subtotal'] ?></strong></div>
     <div class="summary-row"><span>Delivery</span><strong>Rs. <?= max(0, (int)$o['delivery_fee'] - (int)$o['discount']) ?></strong></div>
     <?php if (!empty($o['eta_minutes'])): ?>
@@ -134,7 +162,27 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=47"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script>
+<script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  if(typeof L==='undefined')return;
+  function initOrderMaps(){
+    document.querySelectorAll('.orders-list .rider-map').forEach(function(el){
+      if(el.getAttribute('data-map-ready')==='1')return;
+      var lat=parseFloat(el.getAttribute('data-lat')),lng=parseFloat(el.getAttribute('data-lng'));
+      if(isNaN(lat)||isNaN(lng))return;
+      var map=L.map(el,{scrollWheelZoom:false,attributionControl:false}).setView([lat,lng],15);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+      L.marker([lat,lng]).addTo(map);
+      el.setAttribute('data-map-ready','1');
+      setTimeout(function(){map.invalidateSize();},60);
+    });
+  }
+  window.LYAIDEU_ORDER_MAPS=initOrderMaps;
+  initOrderMaps();setInterval(initOrderMaps,2000);
+})();
+</script>
 <script>
 (function(){
   /* Back button: use browser history when the user came from this site so

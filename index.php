@@ -891,7 +891,7 @@ echo lyaideu_seo_page([
 <?= lyaideu_footer_html() ?>
 
 <script>window.LYAIDEU_VENDOR_CLOSED = <?= json_encode($vendorClosedMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
-<script src="js/script.js?v=47"></script>
+<script src="js/script.js?v=48"></script>
 <script src="js/scroll-memory.js?v=6"></script>
 <script src="js/notify.js?v=9"></script>
 </body>
