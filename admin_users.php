@@ -8,6 +8,66 @@ require_once __DIR__ . '/db.php';
 lyaideu_ensure_kyc_tables();
 try { if (function_exists('lyaideu_ensure_users_block_column')) lyaideu_ensure_users_block_column(); } catch (Throwable $e) {}
 
+function admin_user_password_errors(string $pass, string $confirm, string $name, string $phone): array {
+    $errors = [];
+    if (strlen($pass) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Z]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 capital letter.';
+    } elseif (!preg_match('/[0-9]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 number.';
+    } elseif (!preg_match('/[^A-Za-z0-9]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 symbol (e.g. @, #, $).';
+    } else {
+        $nameParts = array_filter(explode(' ', strtolower($name)), fn($p) => strlen($p) >= 3);
+        $passLow = strtolower($pass);
+        foreach ($nameParts as $part) {
+            if (strpos($passLow, $part) !== false) {
+                $errors[] = 'Password must NOT contain the user\'s name.';
+                break;
+            }
+        }
+        if ($phone !== '' && strpos($pass, $phone) !== false) {
+            $errors[] = 'Password must NOT contain the user\'s contact number.';
+        }
+    }
+    if ($pass !== $confirm) {
+        $errors[] = 'New password and confirm password do not match.';
+    }
+    return $errors;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
+    if (!hash_equals($_SESSION['csrf_admin'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid token'); }
+    if (!admin_can('users') && !admin_is_superadmin()) { http_response_code(403); exit('No permission'); }
+    $uid = (int)($_POST['user_id'] ?? 0);
+    $newPass = (string)($_POST['new_password'] ?? '');
+    $confirmPass = (string)($_POST['confirm_password'] ?? '');
+    if ($uid > 0) {
+        try {
+            $tStmt = $pdo->prepare('SELECT name, phone FROM users WHERE id = ? LIMIT 1');
+            $tStmt->execute([$uid]);
+            $target = $tStmt->fetch();
+            if ($target) {
+                $tName = (string)($target['name'] ?? '');
+                $tPhone = preg_replace('/[^0-9]/', '', (string)($target['phone'] ?? ''));
+                $pwErrors = admin_user_password_errors($newPass, $confirmPass, $tName, (string)$tPhone);
+                if (empty($pwErrors)) {
+                    $pdo->prepare('UPDATE users SET pass = ? WHERE id = ?')->execute([password_hash($newPass, PASSWORD_DEFAULT), $uid]);
+                    try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.password_reset','user',$uid,['by'=>admin_display_name()]); } catch (Throwable $e) {}
+                    header('Location: admin_users?saved=1');
+                    exit;
+                } else {
+                    header('Location: admin_users?error=' . urlencode(implode(' ', $pwErrors)));
+                    exit;
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+    header('Location: admin_users?error=' . urlencode('Could not reset password.'));
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_block'])) {
     if (!hash_equals($_SESSION['csrf_admin'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid token'); }
     if (!admin_can('users') && !admin_is_superadmin()) { http_response_code(403); exit('No permission'); }
@@ -89,6 +149,23 @@ admin_page_start('Users', 'users', 'Registered Users');
                         <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
                         <button type="submit" name="toggle_block" value="1" class="btn <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'btn-outline' : 'btn-primary' ?> btn-sm" style="<?= (int)($u['is_blocked'] ?? 0) === 1 ? '' : 'background:#c93a3a;border-color:#c93a3a;box-shadow:0 3px 0 #a02a2a' ?>" onclick="return confirm('<?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Unblock' : 'Block' ?> <?= $ce($u['name']) ?>?')"><i class="fa-solid <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'fa-unlock' : 'fa-ban' ?>"></i> <?= (int)($u['is_blocked'] ?? 0) === 1 ? 'Unblock' : 'Block' ?></button>
                     </form>
+                    <details style="width:100%;max-width:230px">
+                        <summary class="btn btn-outline btn-sm" style="cursor:pointer;list-style:none;text-align:center"><i class="fa-solid fa-key"></i> Reset password</summary>
+                        <form method="POST" style="margin:.45rem 0 0;display:flex;flex-direction:column;gap:.35rem" autocomplete="off">
+                            <input type="hidden" name="csrf_token" value="<?= $ce(admin_csrf_token()) ?>">
+                            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                            <span class="password-wrap" style="display:block">
+                                <input type="password" name="new_password" id="apw_new_<?= (int)$u['id'] ?>" placeholder="New password" required minlength="8" autocomplete="new-password" style="width:100%;padding:.5rem 2.6rem .5rem .6rem;border:2px solid var(--orange-200);border-radius:8px;font:inherit;font-size:.85rem;box-sizing:border-box">
+                                <button type="button" class="password-toggle" data-target="apw_new_<?= (int)$u['id'] ?>" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </span>
+                            <span class="password-wrap" style="display:block">
+                                <input type="password" name="confirm_password" id="apw_confirm_<?= (int)$u['id'] ?>" placeholder="Confirm new password" required minlength="8" autocomplete="new-password" style="width:100%;padding:.5rem 2.6rem .5rem .6rem;border:2px solid var(--orange-200);border-radius:8px;font:inherit;font-size:.85rem;box-sizing:border-box">
+                                <button type="button" class="password-toggle" data-target="apw_confirm_<?= (int)$u['id'] ?>" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </span>
+                            <button type="submit" name="reset_password" value="1" class="btn btn-primary btn-sm" onclick="return confirm('Set a new password for <?= $ce($u['name']) ?>? Tell them the new password securely.')"><i class="fa-solid fa-floppy-disk"></i> Save password</button>
+                            <span class="password-strength" style="font-size:.7rem">Min 8 chars, 1 capital, 1 number, 1 symbol. Works even for Google accounts.</span>
+                        </form>
+                    </details>
                 </span>
             </div>
         </div>
@@ -115,6 +192,15 @@ admin_page_start('Users', 'users', 'Registered Users');
       if(empty)empty.style.display=any?'none':'block';
     });
   }
+  document.querySelectorAll('.password-toggle').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var input=document.getElementById(btn.getAttribute('data-target'));
+      if(!input)return;
+      var show=input.type==='password';
+      input.type=show?'text':'password';
+      btn.innerHTML=show?'<i class="fa-solid fa-eye-slash"></i>':'<i class="fa-solid fa-eye"></i>';
+    });
+  });
 })();
 </script>
 <script src="js/lightbox.js?v=2"></script>

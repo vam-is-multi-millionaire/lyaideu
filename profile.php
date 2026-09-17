@@ -65,6 +65,34 @@ function profile_valid_dob(string $dob): bool {
     $age = $today->diff($birth)->y;
     return $age >= 10 && $age <= 80;
 }
+function profile_password_errors(string $pass, string $confirm, string $name, string $phone): array {
+    $errors = [];
+    if (strlen($pass) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Z]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 capital letter.';
+    } elseif (!preg_match('/[0-9]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 number.';
+    } elseif (!preg_match('/[^A-Za-z0-9]/', $pass)) {
+        $errors[] = 'Password must contain at least 1 symbol (e.g. @, #, $).';
+    } else {
+        $nameParts = array_filter(explode(' ', strtolower($name)), fn($p) => strlen($p) >= 3);
+        $passLow = strtolower($pass);
+        foreach ($nameParts as $part) {
+            if (strpos($passLow, $part) !== false) {
+                $errors[] = 'Password must NOT contain your name.';
+                break;
+            }
+        }
+        if ($phone !== '' && strpos($pass, $phone) !== false) {
+            $errors[] = 'Password must NOT contain your contact number.';
+        }
+    }
+    if ($pass !== $confirm) {
+        $errors[] = 'New password and confirm password do not match.';
+    }
+    return $errors;
+}
 
 $kycDocs = [];
 try {
@@ -191,6 +219,45 @@ if ($post && isset($_POST['save_home'])) {
     }
 }
 
+if ($post && isset($_POST['change_password'])) {
+    $current = (string)($_POST['current_password'] ?? '');
+    $newPass = (string)($_POST['new_password'] ?? '');
+    $confirmPass = (string)($_POST['confirm_password'] ?? '');
+    $errors = [];
+    try {
+        $pwStmt = $pdo->prepare('SELECT pass, name, phone FROM users WHERE id = ? LIMIT 1');
+        $pwStmt->execute([$uid]);
+        $pwRow = $pwStmt->fetch();
+        if (!$pwRow) {
+            profile_flash('error', 'Could not verify your account. Please try again.');
+        }
+        $storedHash = (string)($pwRow['pass'] ?? '');
+        $hasPass = ($storedHash !== '');
+        $accName = (string)($pwRow['name'] ?? $profile['name'] ?? '');
+        $accPhone = preg_replace('/[^0-9]/', '', (string)($pwRow['phone'] ?? ''));
+        if ($hasPass) {
+            if ($current === '' || !password_verify($current, $storedHash)) {
+                $errors[] = 'Your current password is incorrect.';
+            } elseif (password_verify($newPass, $storedHash)) {
+                $errors[] = 'New password must be different from your current password.';
+            }
+        }
+        if (empty($errors)) {
+            $errors = array_merge($errors, profile_password_errors($newPass, $confirmPass, $accName, (string)$accPhone));
+        }
+        if (empty($errors)) {
+            $pdo->prepare('UPDATE users SET pass = ? WHERE id = ?')
+                ->execute([password_hash($newPass, PASSWORD_DEFAULT), $uid]);
+            try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.password_change', 'user', $uid, []); } catch (Throwable $e) {}
+            profile_flash('success', 'Your password has been updated. Use it next time you log in.');
+        } else {
+            profile_flash('error', implode('<br>', $errors));
+        }
+    } catch (Throwable $e) {
+        profile_flash('error', 'Could not update your password. Please try again.');
+    }
+}
+
 if ($post && isset($_POST['kyc_remove_doc'])) {
     $docId = (int)($_POST['kyc_remove_doc'] ?? 0);
     $locked = ($profile['kyc_status'] === 'approved' || $profile['kyc_status'] === 'pending');
@@ -295,6 +362,15 @@ try {
     $kycDocs = $docStmt->fetchAll();
 } catch (Throwable $e) {
     $kycDocs = [];
+}
+$hasPassword = true;
+try {
+    $hasStmt = $pdo->prepare('SELECT pass FROM users WHERE id = ? LIMIT 1');
+    $hasStmt->execute([$uid]);
+    $hasVal = $hasStmt->fetchColumn();
+    $hasPassword = ($hasVal !== false && (string)$hasVal !== '');
+} catch (Throwable $e) {
+    $hasPassword = true;
 }
 $profile = array_merge($user, $profile);
 
@@ -477,6 +553,38 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
                 <p class="small-note" id="homeLocMsg"></p>
                 <button type="submit" name="save_home" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-location-dot"></i> Save home location</button>
             </form>
+
+            <form class="profile-card" method="POST" action="profile" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                <h2><i class="fa-solid fa-key"></i> <?= $hasPassword ? 'Change password' : 'Set password' ?></h2>
+                <?php if (!$hasPassword): ?>
+                <p class="small-note"><i class="fa-solid fa-circle-info"></i> Your account was created with Google, so no password is set yet. Create one below to also log in with email + password.</p>
+                <?php else: ?>
+                <p class="small-note">Use your new password next time you log in.</p>
+                <?php endif; ?>
+                <?php if ($hasPassword): ?>
+                <label>Current password
+                    <span class="password-wrap" style="display:block">
+                        <input type="password" name="current_password" id="pwCurrent" autocomplete="current-password" placeholder="Your current password" required>
+                        <button type="button" class="password-toggle" data-target="pwCurrent" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                    </span>
+                </label>
+                <?php endif; ?>
+                <label>New password
+                    <span class="password-wrap" style="display:block">
+                        <input type="password" name="new_password" id="pwNew" autocomplete="new-password" required minlength="8">
+                        <button type="button" class="password-toggle" data-target="pwNew" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                    </span>
+                </label>
+                <label>Confirm new password
+                    <span class="password-wrap" style="display:block">
+                        <input type="password" name="confirm_password" id="pwConfirm" autocomplete="new-password" placeholder="Repeat the new password" required minlength="8">
+                        <button type="button" class="password-toggle" data-target="pwConfirm" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                    </span>
+                </label>
+                <p class="small-note">Min 8 characters with 1 capital letter, 1 number and 1 symbol. Must not contain your name or phone number.</p>
+                <button type="submit" name="change_password" value="1" class="btn btn-primary btn-block"><i class="fa-solid fa-key"></i> <?= $hasPassword ? 'Update password' : 'Set password' ?></button>
+            </form>
         </div>
 
         <?php if ($kycOn): ?>
@@ -621,6 +729,15 @@ $kycLocked = ($kycStatus === 'approved' || $kycStatus === 'pending');
             row.querySelector('.kyc-row-remove').addEventListener('click', function () { row.remove(); });
         });
     }
+    document.querySelectorAll('.password-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = document.getElementById(btn.getAttribute('data-target'));
+            if (!input) return;
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = show ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+        });
+    });
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
