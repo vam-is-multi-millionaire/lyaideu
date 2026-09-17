@@ -1,11 +1,19 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
+// Stay-logged-in restore already ran inside site_config.php; guard AFTER it.
 if (!isset($_SESSION['user'])) { header('Location: login'); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: checkout'); exit; }
 if (!hash_equals($_SESSION['csrf_order'] ?? '', $_POST['csrf_token'] ?? '')) { http_response_code(403); exit('Invalid checkout token.'); }
-
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_delivery_tables();
 lyaideu_ensure_kyc_tables();

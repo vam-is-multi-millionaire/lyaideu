@@ -1,9 +1,13 @@
 <?php
 session_set_cookie_params([
+    'lifetime' => 30 * 24 * 60 * 60,
+    'path' => '/',
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 session_start();
+require_once __DIR__ . '/site_config.php';
+// Stay-logged-in restore already ran inside site_config.php; redirect AFTER it.
 if (isset($_SESSION['user'])) { header('Location: index'); exit; }
 
 $flash = $_SESSION['flash'] ?? null;
@@ -15,7 +19,6 @@ $next = trim((string)($_GET['next'] ?? ''));
 if ($next !== '' && (!preg_match('#^[A-Za-z0-9_\-.?&=]+$#', $next) || str_starts_with($next, '//') || strpos($next, ':') !== false || strpos($next, '..') !== false)) {
     $next = '';
 }
-require_once __DIR__ . '/site_config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

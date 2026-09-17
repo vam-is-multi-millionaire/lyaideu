@@ -1,12 +1,20 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
+// Stay-logged-in restore already ran inside site_config.php; guard AFTER it.
 if (!isset($_SESSION['user'])) {
     header('Location: login');
     exit;
 }
-
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/site_config.php';
 
 $parts = preg_split('/\s+/', trim($_SESSION['user']['name']));
 $firstName = $parts[0] ?? '';

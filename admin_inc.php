@@ -2,6 +2,8 @@
 
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -9,6 +11,11 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/site_config.php';
+// remember.php is already loaded via site_config.php, but keep direct guard
+// for entry points that include admin_inc without site_config first.
+if (!function_exists('lyaideu_remember_issue')) {
+    try { require_once __DIR__ . '/remember.php'; } catch (Throwable $e) {}
+}
 
 function admin_csrf_token(): string {
     if (!isset($_SESSION['csrf_admin'])) {
@@ -277,6 +284,7 @@ function admin_handle_auth(): ?string {
         $_SESSION['admin_role'] = (string)$row['role'];
         $_SESSION['admin_name'] = (string)$row['name'];
         $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
+        try { if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('admin', (int)$row['id']); } catch (Throwable $e4) {}
         try {
             $pdo->prepare('UPDATE admin_users SET last_login = :t WHERE id = :id')
                 ->execute([':t' => date('Y-m-d H:i:s'), ':id' => (int)$row['id']]);
@@ -293,12 +301,12 @@ function admin_handle_auth(): ?string {
             http_response_code(403);
             exit('Invalid security token.');
         }
-        $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
-        }
-        session_destroy();
+        // Perfect logout: clear persistent token + only admin keys.
+        // Keep storefront user session (same PHPSESSID) intact.
+        try { if (function_exists('lyaideu_remember_forget')) lyaideu_remember_forget('admin'); } catch (Throwable $e) {}
+        unset($_SESSION['is_admin'], $_SESSION['admin_id'], $_SESSION['admin_role'], $_SESSION['admin_name']);
+        try { $_SESSION['csrf_admin'] = bin2hex(random_bytes(32)); } catch (Throwable $e) {}
+        try { session_regenerate_id(true); } catch (Throwable $e) {}
         header('Location: admin');
         exit;
     }
@@ -338,12 +346,15 @@ function admin_require_login(): void {
     lyaideu_ensure_admin_users_tables();
     try { if (function_exists('lyaideu_ensure_activity_log_table')) lyaideu_ensure_activity_log_table(); } catch (Throwable $e) {}
     try { if (function_exists('lyaideu_activity_purge')) lyaideu_activity_purge(); } catch (Throwable $e) {}
+    // Stay-logged-in: restore admin session from remember cookie before auth check.
+    try { if (function_exists('lyaideu_remember_try_admin')) lyaideu_remember_try_admin(); } catch (Throwable $e) {}
     $error = admin_handle_auth();
     if (!admin_is_logged_in()) {
         admin_show_login($error);
     }
     /* The signed-in staff member must still exist and stay active. */
     if (!admin_current_user()) {
+        try { if (function_exists('lyaideu_remember_forget')) lyaideu_remember_forget('admin'); } catch (Throwable $e) {}
         unset($_SESSION['is_admin'], $_SESSION['admin_id'], $_SESSION['admin_role'], $_SESSION['admin_name']);
         admin_show_login('Your account is no longer active. Please sign in again.');
     }

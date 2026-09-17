@@ -1,6 +1,8 @@
 <?php
 
 session_set_cookie_params([
+    'lifetime' => 30 * 24 * 60 * 60,
+    'path' => '/',
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
@@ -8,6 +10,7 @@ session_start();
 
 require_once __DIR__ . '/google_config.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/remember.php';
 
 function google_flash(string $type, string $msg, string $to = 'login'): void {
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
@@ -162,6 +165,7 @@ try {
         'address'    => (string)($u['address'] ?? ''),
         'kyc_status' => (string)($u['kyc_status'] ?? 'none'),
     ];
+    try { if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('user', (int)$u['id']); } catch (Throwable $e) {}
 
     /* Missing phone or DOB (Google never provides them) -> complete profile first. */
     $incomplete = trim($_SESSION['user']['phone']) === '' || trim($_SESSION['user']['dob']) === '';

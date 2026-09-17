@@ -1,5 +1,15 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start();
+}
+require_once __DIR__ . '/site_config.php';
+// Stay-logged-in restore already ran inside site_config.php; guard AFTER it.
 if (!isset($_SESSION['user'])) { header('Location: login?next=' . urlencode('checkout')); exit; }
 if (!isset($_SESSION['csrf_order'])) $_SESSION['csrf_order'] = bin2hex(random_bytes(32));
 $user = $_SESSION['user'];
@@ -7,7 +17,6 @@ $parts = preg_split('/\s+/', trim($user['name']));
 $firstName = $parts[0] ?? '';
 $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
-require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_kyc_tables();
 lyaideu_ensure_location_columns();

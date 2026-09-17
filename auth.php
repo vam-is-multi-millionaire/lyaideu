@@ -1,12 +1,15 @@
 <?php
 
 session_set_cookie_params([
+    'lifetime' => 30 * 24 * 60 * 60,
+    'path' => '/',
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 session_start();
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/remember.php';
 
 function flash(string $type, string $msg): void {
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
@@ -135,6 +138,7 @@ if ($action === 'signup') {
     unset($_SESSION['old']);
     session_regenerate_id(true);
     $_SESSION['user'] = ['id' => $userId, 'name' => $name, 'email' => $email, 'phone' => $phone, 'dob' => $dob, 'avatar' => '', 'address' => '', 'kyc_status' => 'none'];
+    try { if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('user', (int)$userId); } catch (Throwable $e) {}
     flash('success', 'Welcome to LyaiDeu, ' . htmlspecialchars($name) . '!');
     redirect(safe_next($_POST['next'] ?? ''));
 }
@@ -180,6 +184,7 @@ if ($action === 'login') {
                 'address' => (string)$u['address'],
                 'kyc_status' => (string)$u['kyc_status'],
             ];
+            try { if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('user', (int)$u['id']); } catch (Throwable $e) {}
             redirect(safe_next($_POST['next'] ?? ''));
         }
     } catch (Throwable $e) {

@@ -77,6 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $upd->execute([':p' => password_hash($new, PASSWORD_DEFAULT), ':id' => (int)$_SESSION['admin_id']]);
             session_regenerate_id(true);
             $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
+            try {
+                if (function_exists('lyaideu_remember_forget_all')) lyaideu_remember_forget_all('admin', (int)$_SESSION['admin_id']);
+                if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('admin', (int)$_SESSION['admin_id']);
+            } catch (Throwable $e) {}
             acct_redirect(true);
         }
     } catch (Throwable $e) {

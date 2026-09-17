@@ -1,9 +1,14 @@
 <?php
 session_set_cookie_params([
+    'lifetime' => 30 * 24 * 60 * 60,
+    'path' => '/',
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 session_start();
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/site_config.php';
+// Stay-logged-in restore already ran inside site_config.php; guard AFTER it.
 if (!isset($_SESSION['user'])) {
     header('Location: login?next=' . urlencode('profile'));
     exit;
@@ -11,9 +16,6 @@ if (!isset($_SESSION['user'])) {
 $user = $_SESSION['user'];
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
-
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/site_config.php';
 
 lyaideu_ensure_kyc_tables();
 lyaideu_ensure_location_columns();
@@ -249,6 +251,11 @@ if ($post && isset($_POST['change_password'])) {
             $pdo->prepare('UPDATE users SET pass = ? WHERE id = ?')
                 ->execute([password_hash($newPass, PASSWORD_DEFAULT), $uid]);
             try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.password_change', 'user', $uid, []); } catch (Throwable $e) {}
+            // Password changed: log out other devices, keep this one logged in.
+            try {
+                if (function_exists('lyaideu_remember_forget_all')) lyaideu_remember_forget_all('user', (int)$uid);
+                if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('user', (int)$uid);
+            } catch (Throwable $e) {}
             profile_flash('success', 'Your password has been updated. Use it next time you log in.');
         } else {
             profile_flash('error', implode('<br>', $errors));

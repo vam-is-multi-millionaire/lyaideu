@@ -205,6 +205,10 @@ if ($user) {
                 try {
                     $pdo->prepare('UPDATE riders SET pass = ? WHERE id = ?')
                         ->execute([password_hash($newPass, PASSWORD_DEFAULT), $riderId]);
+                    try {
+                        if (function_exists('lyaideu_remember_forget_all')) lyaideu_remember_forget_all('rider', (int)$riderId);
+                        if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue('rider', (int)$riderId);
+                    } catch (Throwable $e2) {}
                     $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Your password has been updated.'];
                 } catch (Throwable $e) {
                     $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Could not update your password. Please try again.'];

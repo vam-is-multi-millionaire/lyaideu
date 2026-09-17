@@ -1,5 +1,7 @@
 <?php
 session_set_cookie_params([
+    'lifetime' => 30 * 24 * 60 * 60,
+    'path' => '/',
     'httponly' => true,
     'samesite' => 'Lax'
 ]);

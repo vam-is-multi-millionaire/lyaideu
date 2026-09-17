@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
                 if (empty($pwErrors)) {
                     $pdo->prepare('UPDATE users SET pass = ? WHERE id = ?')->execute([password_hash($newPass, PASSWORD_DEFAULT), $uid]);
                     try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('user.password_reset','user',$uid,['by'=>admin_display_name()]); } catch (Throwable $e) {}
+                    try { if (function_exists('lyaideu_remember_forget_all')) lyaideu_remember_forget_all('user', (int)$uid); } catch (Throwable $e) {}
                     header('Location: admin_users?saved=1');
                     exit;
                 } else {
@@ -81,6 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_block'])) {
                 $new = ((int)$cur === 1) ? 0 : 1;
                 $pdo->prepare('UPDATE users SET is_blocked = ? WHERE id = ?')->execute([$new, $uid]);
                 try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity($new ? 'user.block' : 'user.unblock','user',$uid,['by'=>admin_display_name()]); } catch (Throwable $e) {}
+                if ($new === 1) {
+                    try { if (function_exists('lyaideu_remember_forget_all')) lyaideu_remember_forget_all('user', (int)$uid); } catch (Throwable $e) {}
+                }
                 header('Location: admin_users?' . ($new ? 'saved=1' : 'saved=1'));
                 exit;
             }

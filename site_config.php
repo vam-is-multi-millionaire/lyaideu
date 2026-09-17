@@ -12,6 +12,10 @@ if (function_exists('date_default_timezone_set')) {
     @date_default_timezone_set('UTC');
 }
 
+/* Persistent login ("stay logged in") — remember.php holds all token logic.
+   Loaded here so every page that includes site_config gets auto-restore. */
+require_once __DIR__ . '/remember.php';
+
 function lyaideu_load_pdo(): ?PDO {
     static $pdo = null;
     static $tried = false;
@@ -3994,4 +3998,11 @@ function lyaideu_ensure_admin_users_tables(): bool {
     } catch (Throwable $e) {
         return false;
     }
+}
+
+/* Auto-restore persistent logins (user/admin) when a session expired but a
+   valid remember cookie exists. Runs on include — after session_start() in
+   the calling page — and never breaks the page if DB is down. */
+if (session_status() === PHP_SESSION_ACTIVE && function_exists('lyaideu_remember_auto_restore')) {
+    try { lyaideu_remember_auto_restore(); } catch (Throwable $e) {}
 }

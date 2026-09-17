@@ -10,6 +10,8 @@ if (session_status() === PHP_SESSION_NONE) {
     $deliveryPage = basename((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
     session_name($deliveryPage === 'rider.php' ? 'LYAIDEU_RIDER' : 'LYAIDEU_VENDOR');
     session_set_cookie_params([
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -18,6 +20,22 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/site_config.php';
+// remember.php already comes via site_config.php; keep fallback.
+if (!function_exists('lyaideu_remember_issue')) {
+    try { require_once __DIR__ . '/remember.php'; } catch (Throwable $e) {}
+}
+// Stay-logged-in: restore vendor/rider session from remember cookie.
+// site_config's auto-restore already handles this via session_name(), but
+// keep an explicit attempt here for direct includes.
+try {
+    $___dn = session_name();
+    if ($___dn === 'LYAIDEU_RIDER' && function_exists('lyaideu_remember_try_delivery')) {
+        lyaideu_remember_try_delivery('rider');
+    } elseif ($___dn === 'LYAIDEU_VENDOR' && function_exists('lyaideu_remember_try_delivery')) {
+        lyaideu_remember_try_delivery('vendor');
+    }
+    unset($___dn);
+} catch (Throwable $e) {}
 
 lyaideu_ensure_delivery_tables();
 
@@ -74,9 +92,29 @@ function delivery_vendor_avatar_url(int $vendorId): string {
 }
 
 function delivery_require_login(string $role): void {
+    // Stay-logged-in: try remember cookie before forcing login screen.
+    try { if (function_exists('lyaideu_remember_try_delivery')) lyaideu_remember_try_delivery($role); } catch (Throwable $e) {}
     if (delivery_role() !== $role) {
         delivery_show_login($role);
     }
+    // Session exists but account may have been deactivated since login.
+    try {
+        $u = delivery_user();
+        if ($u) {
+            $pdo = function_exists('lyaideu_load_pdo') ? lyaideu_load_pdo() : null;
+            if ($pdo instanceof PDO) {
+                $tbl = $role === 'vendor' ? 'vendors' : 'riders';
+                $chk = $pdo->prepare("SELECT is_active FROM `$tbl` WHERE id = ? LIMIT 1");
+                $chk->execute([(int)$u['id']]);
+                $active = $chk->fetchColumn();
+                if ($active === false || !(int)$active) {
+                    try { if (function_exists('lyaideu_remember_forget')) lyaideu_remember_forget($role); } catch (Throwable $e) {}
+                    unset($_SESSION['delivery_role'], $_SESSION['delivery_user']);
+                    delivery_show_login($role);
+                }
+            }
+        }
+    } catch (Throwable $e) {}
 }
 
 function delivery_login_attempt(string $role): void {
@@ -163,6 +201,7 @@ function delivery_login_attempt(string $role): void {
         'avatar' => (string)($u['avatar'] ?? ''),
     ];
     $_SESSION['csrf_delivery'] = bin2hex(random_bytes(32));
+    try { if (function_exists('lyaideu_remember_issue')) lyaideu_remember_issue($role, (int)$u['id']); } catch (Throwable $e) {}
     header('Location: ' . $role);
     exit;
 }
@@ -178,7 +217,17 @@ function delivery_logout(): void {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delivery_logout'])) {
         if (hash_equals($_SESSION['csrf_delivery'] ?? '', $_POST['csrf_token'] ?? '')) {
             $role = delivery_role();
+            if ($role !== 'rider' && $role !== 'vendor') {
+                // Fall back to session cookie name when role key is missing
+                // (e.g. session expired but remember cookie still present).
+                $sn = session_name();
+                $role = ($sn === 'LYAIDEU_RIDER') ? 'rider' : 'vendor';
+            }
+            // Perfect logout: delete persistent token + cookie + session keys.
+            try { if (function_exists('lyaideu_remember_forget')) lyaideu_remember_forget($role); } catch (Throwable $e) {}
             unset($_SESSION['delivery_role'], $_SESSION['delivery_user']);
+            try { $_SESSION['csrf_delivery'] = bin2hex(random_bytes(32)); } catch (Throwable $e) {}
+            try { session_regenerate_id(true); } catch (Throwable $e) {}
             header('Location: ' . ($role === 'rider' ? 'rider' : 'vendor'));
             exit;
         }
