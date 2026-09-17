@@ -175,6 +175,73 @@ function admin_visible_nav_items(): array {
     return $out;
 }
 
+/**
+ * Live sidebar counts for fast-growing pages. Returned ints are safe to echo.
+ * Keys: orders (pending only), users (total), kyc (pending), messages (unread),
+ * activity (today). A failed query yields 0 so the page never breaks.
+ * Results are cached per request and respect admin_can() permissions.
+ */
+function admin_nav_badges(): array {
+    static $counts = null;
+    if ($counts !== null) {
+        return $counts;
+    }
+    $counts = ['orders' => 0, 'users' => 0, 'kyc' => 0, 'messages' => 0, 'activity' => 0];
+    if (!admin_is_logged_in()) {
+        return $counts;
+    }
+    $pdo = function_exists('lyaideu_load_pdo') ? lyaideu_load_pdo() : null;
+    if (!$pdo instanceof PDO) {
+        return $counts;
+    }
+    if (admin_can('orders')) {
+        try {
+            $counts['orders'] = (int)$pdo->query(
+                "SELECT COUNT(*) FROM orders WHERE status = 'Pending'"
+            )->fetchColumn();
+        } catch (Throwable $e) {}
+    }
+    if (admin_can('users')) {
+        try {
+            $counts['users'] = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        } catch (Throwable $e) {}
+    }
+    if (admin_can('kyc')) {
+        try {
+            if (function_exists('lyaideu_ensure_kyc_tables')) {
+                lyaideu_ensure_kyc_tables();
+            }
+            $counts['kyc'] = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE kyc_status = 'pending'")->fetchColumn();
+        } catch (Throwable $e) {}
+    }
+    if (admin_can('messages')) {
+        try {
+            if (function_exists('lyaideu_ensure_messages_table')) {
+                lyaideu_ensure_messages_table();
+            }
+            $counts['messages'] = (int)$pdo->query("SELECT COUNT(*) FROM messages WHERE status = 'unread'")->fetchColumn();
+        } catch (Throwable $e) {}
+    }
+    if (admin_can('activity')) {
+        try {
+            if (function_exists('lyaideu_ensure_activity_log_table')) {
+                lyaideu_ensure_activity_log_table();
+            }
+            $counts['activity'] = (int)$pdo->query('SELECT COUNT(*) FROM activity_log WHERE created_at >= CURDATE()')->fetchColumn();
+        } catch (Throwable $e) {}
+    }
+    foreach ($counts as $k => $v) {
+        if ($v < 0) {
+            $counts[$k] = 0;
+        }
+    }
+    return $counts;
+}
+
+function admin_nav_badge_label(int $n): string {
+    return $n > 99 ? '99+' : (string)$n;
+}
+
 function admin_handle_auth(): ?string {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         $username = trim((string)($_POST['username'] ?? ''));
@@ -342,7 +409,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=68"></head><body class="admin-body">';
+<link rel="stylesheet" href="css/style.css?v=68"><style>.admin-nav-badge{margin-left:auto;flex:0 0 auto;min-width:1.4rem;height:1.4rem;padding:0 .45rem;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#c93a3a;color:#fff;font-size:.72rem;font-weight:900;line-height:1;white-space:nowrap}.admin-nav-badge[hidden]{display:none}</style></head><body class="admin-body">';
     echo '<header class="admin-header"><div class="admin-header-brand"><button type="button" class="admin-nav-toggle" id="adminNavToggle" aria-label="Toggle admin menu" aria-expanded="false"><span></span><span></span><span></span></button><a href="admin" class="admin-brand-link"><img class="brand-logo" src="' . $logo . '" alt="LyaiDeu"><h1 class="display">LyaiDeu Admin</h1></a></div>';
     $roleLabels = ['superadmin' => 'Super Admin', 'admin' => 'Admin', 'manager' => 'Manager'];
     echo '<div class="admin-actions"><span style="display:inline-flex;align-items:center;gap:.45rem;background:var(--orange-100);color:var(--orange-800);font-weight:800;font-size:.8rem;padding:.42rem .8rem;border-radius:999px;white-space:nowrap;" title="Signed in as ' . htmlspecialchars(admin_display_name(), ENT_QUOTES, 'UTF-8') . '"><i class="fa-solid fa-circle-user"></i> ' . htmlspecialchars(admin_display_name(), ENT_QUOTES, 'UTF-8') . ' · ' . htmlspecialchars($roleLabels[admin_role()] ?? ucfirst(admin_role()), ENT_QUOTES, 'UTF-8') . '</span><a href="index" target="_blank" class="btn btn-outline">View Website</a>';
@@ -350,10 +417,17 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
     echo '</div></header>';
     echo '<div class="admin-nav-backdrop" id="adminNavBackdrop"></div>';
     echo '<div class="admin-shell"><aside class="admin-sidebar" id="adminSidebar"><nav class="admin-nav" aria-label="Admin sections">';
+    $navBadges = admin_nav_badges();
     foreach ($navItems as $key => $item) {
         $active = $key === $activeNav ? ' active' : '';
         echo '<a class="admin-nav-link' . $active . '" href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">';
-        echo '<span class="admin-nav-icon">' . $item['icon'] . '</span><span>' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . '</span></a>';
+        echo '<span class="admin-nav-icon">' . $item['icon'] . '</span><span>' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . '</span>';
+        if (isset($navBadges[$key])) {
+            $n = (int)$navBadges[$key];
+            $hide = ($key !== 'users' && $n <= 0) ? ' hidden' : '';
+            echo '<span class="admin-nav-badge" data-nav-badge="' . htmlspecialchars($key, ENT_QUOTES, 'UTF-8') . '"' . $hide . '>' . htmlspecialchars(admin_nav_badge_label($n), ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        echo '</a>';
     }
     echo '</nav></aside><main class="admin-main"><div class="admin-container">';
     $activeIcon = $navItems[$activeNav]['icon'] ?? '';
@@ -364,6 +438,7 @@ function admin_page_start(string $pageTitle, string $activeNav, ?string $heading
 function admin_page_end(): void {
     echo '</div></main></div>';
     echo '<script>(function(){var t=document.getElementById("adminNavToggle"),s=document.getElementById("adminSidebar"),b=document.getElementById("adminNavBackdrop");if(!t||!s)return;var h=document.querySelector(".admin-header"),SKEY="lyaideu_admin_sidebar_scroll:1";function isMobile(){return window.innerWidth<=900}function pos(){var ht=h?h.offsetHeight:64;s.style.top=ht+"px";if(b)b.style.top=ht+"px"}function setOpen(o){s.classList.toggle("open",o);t.classList.toggle("open",o);t.setAttribute("aria-expanded",o?"true":"false");if(b)b.classList.toggle("show",o)}function saveScroll(){try{sessionStorage.setItem(SKEY,String(s.scrollTop))}catch(e){}}function restoreScroll(){try{var n=parseInt(sessionStorage.getItem(SKEY),10);if(isFinite(n)&&n>0)s.scrollTop=n}catch(e){}}pos();restoreScroll();window.addEventListener("resize",function(){pos();if(!isMobile()&&s.classList.contains("open"))setOpen(false)});window.addEventListener("beforeunload",saveScroll);t.addEventListener("click",function(){if(isMobile())setOpen(!s.classList.contains("open"))});if(b)b.addEventListener("click",function(){setOpen(false)});s.addEventListener("click",function(e){if(e.target.closest("a")){saveScroll();setOpen(false)}})})();</script>';
+    echo '<script>(function(){function lbl(n){n=parseInt(n,10);if(!isFinite(n)||n<0)n=0;return n>99?"99+":String(n);}function tick(){if(document.hidden)return;var u;try{u=new URL("api/nav-counts.php",location.href).toString();}catch(e){return;}fetch(u,{headers:{"X-Requested-With":"fetch"},cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var c=(d&&d.counts)||{};document.querySelectorAll("[data-nav-badge]").forEach(function(el){var k=el.getAttribute("data-nav-badge");if(!(k in c))return;var n=parseInt(c[k],10);if(!isFinite(n)||n<0)n=0;el.textContent=lbl(n);if(k==="users"){el.hidden=false;}else{el.hidden=n<=0;}});}).catch(function(){})}tick();setInterval(tick,20000);document.addEventListener("visibilitychange",function(){if(!document.hidden)tick();});})();</script>';
     echo '<script src="js/scroll-memory.js?v=6"></script>';
     echo '</body></html>';
 }
