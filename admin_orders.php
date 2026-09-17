@@ -9,6 +9,8 @@ lyaideu_ensure_delivery_tables();
 lyaideu_ensure_location_columns();
 
 $allowed = ['Pending', 'Confirmed', 'Preparing', 'Ready for pickup', 'Out for delivery', 'Delivered', 'Cancelled'];
+$allowedVendor = ['Pending', 'Accepted', 'Preparing', 'Ready for pickup', 'Rejected'];
+$vendorLockedAggregates = ['Out for delivery', 'Delivered', 'Cancelled'];
 
 $statusIcon = [
     'Pending' => 'fa-clock',
@@ -19,6 +21,87 @@ $statusIcon = [
     'Delivered' => 'fa-circle-check',
     'Cancelled' => 'fa-ban',
 ];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['vendor_status'])) {
+    if (!hash_equals(admin_csrf_token(), $_POST['csrf_token'] ?? '')) {
+        http_response_code(403);
+        exit('Invalid security token.');
+    }
+
+    $id = (int)($_POST['order_id'] ?? 0);
+    $vendorId = (int)($_POST['vendor_id'] ?? 0);
+    $vendorStatus = trim((string)($_POST['vendor_status'] ?? ''));
+
+    if ($id > 0 && $vendorId > 0 && in_array($vendorStatus, $allowedVendor, true)) {
+        try {
+            $aggStmt = $pdo->prepare('SELECT status, user_id FROM orders WHERE id = ? LIMIT 1');
+            $aggStmt->execute([$id]);
+            $aggRow = $aggStmt->fetch();
+            $aggStatus = $aggRow ? (string)$aggRow['status'] : '';
+            if ($aggRow && !in_array($aggStatus, $vendorLockedAggregates, true)) {
+                $vsStmt = $pdo->prepare('SELECT status FROM order_vendor_status WHERE order_id = ? AND vendor_id = ? LIMIT 1');
+                $vsStmt->execute([$id, $vendorId]);
+                $prevVendor = $vsStmt->fetchColumn();
+                if ($prevVendor !== false) {
+                    $prevVendor = (string)$prevVendor;
+                    if ($prevVendor !== $vendorStatus) {
+                        $now = date('Y-m-d H:i:s');
+                        $pdo->prepare(
+                            'UPDATE order_vendor_status SET status = ?, updated_at = ? WHERE order_id = ? AND vendor_id = ?'
+                        )->execute([$vendorStatus, $now, $id, $vendorId]);
+                        if ($vendorStatus === 'Rejected') {
+                            $pdo->prepare('UPDATE order_items SET vendor_id = NULL WHERE order_id = ? AND vendor_id = ?')
+                                ->execute([$id, $vendorId]);
+                            $pdo->prepare('UPDATE orders SET vendor_id = NULL WHERE id = ? AND vendor_id = ?')
+                                ->execute([$id, $vendorId]);
+                        }
+                        if ($aggStatus === 'Confirmed') {
+                            $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?')
+                                ->execute(['Accepted', $now, $id]);
+                        }
+                        $aggregate = lyaideu_recompute_order_status($id);
+                        try { if (function_exists('lyaideu_log_activity')) lyaideu_log_activity('order.status.vendor_admin', 'order', $id, ['vendor_id' => $vendorId, 'prev' => $prevVendor, 'new' => $vendorStatus, 'aggregate' => $aggregate, 'by' => admin_display_name()]); } catch (Throwable $e) {}
+                        try {
+                            $orderUserId = (int)($aggRow['user_id'] ?? 0);
+                            $vNameStmt = $pdo->prepare('SELECT name FROM vendors WHERE id = ? LIMIT 1');
+                            $vNameStmt->execute([$vendorId]);
+                            $vendorName = (string)$vNameStmt->fetchColumn();
+                            if ($vendorName === '') {
+                                $vendorName = 'Vendor';
+                            }
+                            $link = 'orders?id=' . $id;
+                            if ($orderUserId > 0) {
+                                if ($vendorStatus === 'Accepted') {
+                                    lyaideu_notify($id, 'user', $orderUserId, $vendorName . ' accepted your order #' . $id . '.', $link);
+                                } elseif ($vendorStatus === 'Preparing') {
+                                    lyaideu_notify($id, 'user', $orderUserId, $vendorName . ' started preparing your order #' . $id . '.', $link);
+                                } elseif ($vendorStatus === 'Ready for pickup' && $aggregate === 'Ready for pickup') {
+                                    lyaideu_notify($id, 'user', $orderUserId, 'Your order #' . $id . ' is ready for pickup.', $link);
+                                } elseif ($vendorStatus === 'Rejected') {
+                                    lyaideu_notify($id, 'user', $orderUserId, $vendorName . ' declined part of your order #' . $id . '.', $link);
+                                    if ($aggregate === 'Cancelled') {
+                                        lyaideu_notify($id, 'user', $orderUserId, 'Your order #' . $id . ' was cancelled because all vendors declined it.', $link);
+                                    }
+                                }
+                            }
+                            lyaideu_notify($id, 'vendor', $vendorId, 'Admin set your part of order #' . $id . ' to ' . $vendorStatus . '.', 'vendor');
+                            if (in_array($vendorStatus, ['Accepted', 'Preparing'], true)) {
+                                lyaideu_notify_riders($id, 'Order #' . $id . ' is being prepared.', 'rider');
+                            } elseif ($vendorStatus === 'Ready for pickup' && $aggregate === 'Ready for pickup') {
+                                lyaideu_notify_riders($id, 'Order #' . $id . ' is ready — be the first to accept!', 'rider');
+                            }
+                        } catch (Throwable $e) {}
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            // Fall through to redirect without saved flag on failure.
+        }
+    }
+
+    header('Location: admin_orders?saved=1');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals(admin_csrf_token(), $_POST['csrf_token'] ?? '')) {
@@ -159,6 +242,21 @@ admin_page_start('Orders', 'orders', 'Order Management');
 
                 <?php foreach ($track['vendors'] as $v): ?>
                 <?= lyaideu_order_vendor_html($v) ?>
+                <?php $vendorLocked = in_array((string)$o['status'], $vendorLockedAggregates, true); ?>
+                <?php if (!$vendorLocked): ?>
+                <form method="POST" class="status-form admin-vendor-ctl" style="margin:-.2rem 0 .7rem;flex-wrap:wrap">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(admin_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+                    <input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>">
+                    <input type="hidden" name="vendor_id" value="<?= (int)$v['vendor_id'] ?>">
+                    <span class="small-note" style="font-weight:800"><i class="fa-solid fa-store"></i> <?= htmlspecialchars((string)$v['name'], ENT_QUOTES, 'UTF-8') ?>:</span>
+                    <select name="vendor_status" aria-label="Set <?= htmlspecialchars((string)$v['name'], ENT_QUOTES, 'UTF-8') ?> status for order #<?= (int)$o['id'] ?>">
+                        <?php foreach ($allowedVendor as $vst): ?>
+                        <option value="<?= htmlspecialchars($vst, ENT_QUOTES, 'UTF-8') ?>" <?= (string)$v['status'] === $vst ? 'selected' : '' ?>><?= htmlspecialchars($vst, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="btn btn-outline btn-sm" type="submit" title="Update this vendor's status" onclick="if(this.form.vendor_status.value==='Rejected'){return confirm('Reject this vendor from order #<?= (int)$o['id'] ?>? Their items will be removed.');}return true;"><i class="fa-solid fa-check"></i> Set vendor status</button>
+                </form>
+                <?php endif; ?>
                 <?php endforeach; ?>
                 <?php if (!empty($track['other_items'])): ?>
                 <?= lyaideu_order_other_html($track['other_items']) ?>
