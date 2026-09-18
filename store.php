@@ -412,7 +412,7 @@ if ($isDetail) {
 <script src="js/script.js?v=48"></script>
 <script src="js/catalog-order.js?v=2"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=9"></script>
+<script src="js/notify.js?v=10"></script>
 <script>
 (function(){
   /* Back link: use the browser's own history so the previous page is

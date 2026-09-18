@@ -124,7 +124,7 @@ if (($successLat === '' || $successLng === '') && $successHomeLat !== '' && $suc
     <?php endif; ?>
     <p class="small-note"><i class="fa-solid fa-location-dot"></i> Delivering to: <?= htmlspecialchars($order['address']) ?><?php if ($successLat !== '' && $successLng !== ''): ?><?php if ($successApprox): ?> · <i class="fa-solid fa-circle-info"></i> Saved home (approximate)<?php endif; ?> · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=<?= htmlspecialchars($successLat, ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars($successLng, ENT_QUOTES, 'UTF-8') ?>">Open in Maps</a><?php else: ?> · <i class="fa-solid fa-triangle-exclamation"></i> No location pin — set your home pin in profile.<?php endif; ?></p>
     <div class="success-actions"><a class="btn btn-primary" href="orders">Track My Order</a><a class="btn btn-outline" href="menu">Order More</a></div>
-</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</div></main><script>localStorage.removeItem('fe_cart');</script><script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=10"></script><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
   if(typeof L==='undefined')return;

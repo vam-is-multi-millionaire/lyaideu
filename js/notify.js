@@ -1,12 +1,15 @@
 /* LyaiDeu live notification feed: bell + beep + toast + browser notifications. */
 (function () {
     var POLL_MS = 5000;
+    var FIRST_LOAD_ALERT_SECS = 90;
     var mq = window.matchMedia('(max-width: 960px)');
     var endpoint = 'api/notifications.php?role=' + encodeURIComponent(window.LYAIDEU_NOTIFY_ROLE || '');
     var seen = {};
     var first = true;
     var bell = null, badge = null, list = null, open = false;
     var lastItems = [], lastSig = '';
+    var audioCtx = null;
+    var audioUnlocked = false;
 
     /* Server already sends NPT 12h strings; raw UTC datetimes fall back here. */
     function fmtNP12(dt) {
@@ -20,17 +23,57 @@
         } catch (e) { return s; }
     }
 
-    function beep() {
+    function isUnread(it) {
+        // PDO/MySQL returns "0"/"1" strings — !"0" is false in JS, so cast.
+        var v = it && it.is_read;
+        return v === 0 || v === '0' || v === false || v === null || v === undefined;
+    }
+
+    function itemTs(it) {
+        var t = parseInt((it && (it.created_ts || it.ts)) || '0', 10);
+        if (t > 0 && t < 10000000000) return t;
+        if (t >= 10000000000) return Math.floor(t / 1000);
+        return 0;
+    }
+
+    function isFreshRecent(it) {
+        var t = itemTs(it);
+        if (!t) return false;
+        var now = Math.floor(Date.now() / 1000);
+        return (now - t) >= 0 && (now - t) <= FIRST_LOAD_ALERT_SECS;
+    }
+
+    function unlockAudio() {
+        if (audioUnlocked) {
+            try { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+            return;
+        }
         try {
             var Ctx = window.AudioContext || window.webkitAudioContext;
             if (!Ctx) return;
-            var ctx = new Ctx();
-            var o = ctx.createOscillator(), g = ctx.createGain();
-            o.type = 'sine'; o.connect(g); g.connect(ctx.destination);
+            if (!audioCtx) audioCtx = new Ctx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            audioUnlocked = true;
+        } catch (e) {}
+    }
+
+    function beep(retry) {
+        try {
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            if (!audioCtx) audioCtx = new Ctx();
+            if (audioCtx.state === 'suspended') {
+                try { audioCtx.resume(); } catch (e) {}
+                // Single retry only — avoids infinite loop on blocked tabs.
+                if (!retry) setTimeout(function () { try { beep(true); } catch (e) {} }, 350);
+                return;
+            }
+            var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = 'sine'; o.connect(g); g.connect(audioCtx.destination);
             o.frequency.value = 880;
-            g.gain.setValueAtTime(0.15, ctx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            o.start(); o.stop(ctx.currentTime + 0.5);
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            o.start(); o.stop(audioCtx.currentTime + 0.5);
         } catch (e) {}
     }
 
@@ -54,12 +97,42 @@
         }
     }
 
+    function askPermission() {
+        if (!window.Notification) return;
+        try {
+            if (Notification.permission === 'default') Notification.requestPermission();
+        } catch (e) {}
+    }
+
+    function permHint() {
+        if (!window.Notification) return '';
+        if (Notification.permission === 'granted') return '';
+        if (Notification.permission === 'denied')
+            return '<p style="margin:.4rem;color:#a02a2a;font-weight:700;">Browser popups blocked — click the lock icon > Site settings > Allow Notifications, then click the bell again.</p>';
+        return '<p style="margin:.4rem;color:#777;">Tip: click the bell > Allow when asked to enable browser popups + sound.</p>';
+    }
+
     function placeBell() {
         var delivery = document.body.classList.contains('delivery-body');
+        var isAdmin = document.body.classList.contains('admin-body');
         // Mobile/tablet: park the bell inside the header so it never
         // overlays the hamburger or floats detached. Desktop keeps it fixed.
         if (mq.matches) {
-            if (!delivery) {
+            if (isAdmin) {
+                var aHost = document.querySelector('.admin-header .admin-actions');
+                if (aHost) {
+                    bell.style.position = 'relative';
+                    bell.style.top = 'auto';
+                    bell.style.right = 'auto';
+                    bell.style.bottom = 'auto';
+                    bell.style.margin = '0';
+                    bell.style.zIndex = '5';
+                    if (bell.parentNode !== aHost) aHost.insertBefore(bell, aHost.firstChild || null);
+                    if (list) { list.style.right = '0'; list.style.top = '52px'; }
+                    return;
+                }
+            }
+            if (!delivery && !isAdmin) {
                 var host = document.querySelector('header.topbar .nav');
                 if (host) {
                     bell.style.position = 'relative';
@@ -76,7 +149,7 @@
                     }
                     return;
                 }
-            } else {
+            } else if (delivery) {
                 var dHost = document.querySelector('.delivery-topbar');
                 var dToggle = document.querySelector('.delivery-nav-toggle');
                 if (dHost) {
@@ -107,6 +180,9 @@
         if (delivery) {
             var tb = document.querySelector('.delivery-topbar');
             bell.style.top = (tb ? tb.getBoundingClientRect().height + 6 : 74) + 'px';
+        } else if (isAdmin) {
+            var ah = document.querySelector('.admin-header');
+            bell.style.top = (ah ? ah.getBoundingClientRect().height + 6 : 74) + 'px';
         } else {
             bell.style.top = '12px';
         }
@@ -131,7 +207,7 @@
         if (mq.addEventListener) mq.addEventListener('change', placeBell);
         else if (mq.addListener) mq.addListener(placeBell);
         var btn = bell.querySelector('button');
-        btn.addEventListener('click', function () { open ? hideList() : showList(); });
+        btn.addEventListener('click', function () { unlockAudio(); askPermission(); open ? hideList() : showList(); });
         document.addEventListener('click', function (e) { if (open && !bell.contains(e.target)) hideList(); });
     }
 
@@ -139,9 +215,10 @@
 
     function renderItems(items) {
         lastItems = items || [];
-        lastSig = lastItems.map(function (x) { return x.id + ':' + (x.is_read ? 1 : 0); }).join(',');
+        lastSig = lastItems.map(function (x) { return x.id + ':' + (isUnread(x) ? 0 : 1); }).join(',');
+        var hint = permHint();
         if (!lastItems.length) {
-            list.innerHTML = '<p style="margin:.4rem;color:#777;">No notifications yet.</p>';
+            list.innerHTML = '<p style="margin:.4rem;color:#777;">No notifications yet.</p>' + hint;
             return;
         }
         var isDeliveryPage = document.body.classList.contains('delivery-body');
@@ -150,20 +227,32 @@
             : '<div style="display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--orange-100);padding:.35rem 0 .4rem;margin-bottom:.4rem;"><b><i class="fa-solid fa-bell"></i> Notifications</b><button type="button" id="notifyMarkAll" style="background:none;border:none;color:var(--orange-700);font-weight:700;cursor:pointer;">Mark all read</button></div>';
         lastItems.forEach(function (it) {
             var link = it.link || 'orders';
-            html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (it.is_read ? '' : 'background:var(--orange-50);font-weight:700;') + '">' + it.message +
+            html += '<a href="' + link + '" style="display:block;text-decoration:none;color:inherit;padding:.45rem .35rem;border-radius:8px;' + (isUnread(it) ? 'background:var(--orange-50);font-weight:700;' : '') + '">' + it.message +
                 '<small style="display:block;color:#888;font-weight:400;">' + (fmtNP12(it.created_at) || '') + '</small></a>';
         });
-        list.innerHTML = html;
+        list.innerHTML = html + hint;
         var ma = list.querySelector('#notifyMarkAll');
         if (ma) ma.addEventListener('click', markAllRead);
+    }
+
+    function defaultLink() {
+        var r = window.LYAIDEU_NOTIFY_ROLE || '';
+        if (r === 'vendor') return 'vendor';
+        if (r === 'rider') return 'rider';
+        if (r === 'admin') return 'admin_orders';
+        return 'orders';
     }
 
     function showList() {
         open = true;
         list.style.display = 'block';
-        fetch(endpoint, { cache: 'no-store' })
+        fetch(endpoint, { cache: 'no-store', credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
-            .then(function (d) { renderItems((d && d.items) || []); })
+            .then(function (d) {
+                var items = (d && d.items) || [];
+                items.forEach(function (it) { if (!it.link) it.link = defaultLink(); });
+                renderItems(items);
+            })
             .catch(function () {});
     }
 
@@ -176,11 +265,11 @@
         lastItems.forEach(function (x) { x.is_read = 1; });
         renderItems(lastItems);
         updateBadge(0);
-        fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+        fetch(endpoint, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
             .then(function (r) { return r.json(); })
             .then(function (d) {
                 return (d && d.ok)
-                    ? fetch(endpoint, { cache: 'no-store' }).then(function (r) { return r.json(); })
+                    ? fetch(endpoint, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.json(); })
                     : null;
             })
             .then(function (d) {
@@ -193,7 +282,7 @@
 
     function markRead(ids) {
         if (!ids || !ids.length) return;
-        fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) })
+        fetch(endpoint, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ids) })
             .catch(function () {});
     }
 
@@ -203,38 +292,57 @@
         else { badge.style.display = 'none'; }
     }
 
+    function alertItems(fresh) {
+        if (!fresh.length) return;
+        unlockAudio();
+        beep();
+        fresh.forEach(function (it) {
+            var link = it.link || defaultLink();
+            toast(it.message, link);
+            browserNotify(it.message, link);
+        });
+        markRead(fresh.map(function (x) { return x.id; }));
+        var lb = document.querySelector('[data-live-indicator]');
+        if (lb) lb.classList.add('live-on');
+    }
+
     function scan() {
-        fetch(endpoint, { cache: 'no-store' })
+        fetch(endpoint, { cache: 'no-store', credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (d) {
                 if (!d || !d.items) return;
+                d.items.forEach(function (it) { if (!it.link) it.link = defaultLink(); });
                 updateBadge(d.unread || 0);
                 /* Keep an OPEN dropdown live — but only repaint when something
                    actually changed, so the list never jumps while scrolling. */
                 if (open) {
-                    var sig = d.items.map(function (x) { return x.id + ':' + (x.is_read ? 1 : 0); }).join(',');
+                    var sig = d.items.map(function (x) { return x.id + ':' + (isUnread(x) ? 0 : 1); }).join(',');
                     if (sig !== lastSig) renderItems(d.items);
                 }
-                // First poll of this page load only seeds the "seen" list so we
-                // never blast the whole feed as new (prevents notification spam).
+                // First poll seeds seen, but still alerts very recent unread
+                // rows so a tab opened just before/after the order still pops.
                 if (first) {
                     first = false;
-                    d.items.forEach(function (it) { seen[String(it.id)] = true; });
+                    var recent = [];
+                    d.items.forEach(function (it) {
+                        seen[String(it.id)] = true;
+                        if (isUnread(it) && isFreshRecent(it)) recent.push(it);
+                    });
+                    if (recent.length) {
+                        alertItems(recent);
+                        updateBadge(Math.max(0, (d.unread || 0) - recent.length));
+                    }
                     return;
                 }
                 var fresh = [];
                 d.items.forEach(function (it) {
                     var key = String(it.id);
-                    if (!seen[key] && !it.is_read) { seen[key] = true; fresh.push(it); }
+                    if (!seen[key] && isUnread(it)) { seen[key] = true; fresh.push(it); }
                     else { seen[key] = true; }
                 });
                 if (fresh.length) {
-                    beep();
-                    fresh.forEach(function (it) { toast(it.message, it.link); browserNotify(it.message, it.link); });
-                    markRead(fresh.map(function (x) { return x.id; }));
+                    alertItems(fresh);
                     updateBadge(Math.max(0, (d.unread || 0) - fresh.length));
-                    var lb = document.querySelector('[data-live-indicator]');
-                    if (lb) lb.classList.add('live-on');
                 }
             })
             .catch(function () {});
@@ -244,9 +352,17 @@
         buildBell();
         scan();
         setInterval(scan, POLL_MS);
+        // Unlock audio + ask popup permission on first real interaction
+        // (required by Chrome; background tabs stay silent otherwise).
+        var onInteract = function () {
+            unlockAudio();
+            askPermission();
+        };
+        document.addEventListener('click', onInteract);
+        document.addEventListener('keydown', onInteract);
         if (window.Notification && Notification.permission === 'default') {
-            var onInteract = function () { try { Notification.requestPermission(); } catch (e) {} document.removeEventListener('click', onInteract); };
-            document.addEventListener('click', onInteract);
+            var once = function () { try { Notification.requestPermission(); } catch (e) {} document.removeEventListener('click', once); };
+            document.addEventListener('click', once);
         }
     }
 

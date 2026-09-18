@@ -1729,7 +1729,7 @@ function lyaideu_ensure_delivery_tables(): bool {
  */
 function lyaideu_notify(int $orderId, string $recipientType, int $recipientId, string $message, string $link = ''): void {
     $pdo = lyaideu_load_pdo();
-    if (!$pdo instanceof PDO || !in_array($recipientType, ['user', 'vendor', 'rider'], true) || $recipientId <= 0) {
+    if (!$pdo instanceof PDO || !in_array($recipientType, ['user', 'vendor', 'rider', 'admin'], true) || $recipientId <= 0) {
         return;
     }
     try {
@@ -1760,6 +1760,27 @@ function lyaideu_notify_riders(int $orderId, string $message, string $link = '')
     try {
         foreach ($pdo->query('SELECT id FROM riders WHERE is_active = 1') as $r) {
             lyaideu_notify($orderId, 'rider', (int)$r['id'], $message, $link);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+/**
+ * Notifies every active admin staff member. Used for new orders and key
+ * status changes so admin_orders.php pops like vendor/rider queues.
+ */
+function lyaideu_notify_admins(int $orderId, string $message, string $link = 'admin_orders'): void {
+    $pdo = lyaideu_load_pdo();
+    if (!$pdo instanceof PDO) {
+        return;
+    }
+    try {
+        if (function_exists('lyaideu_ensure_admin_users_tables')) {
+            try { lyaideu_ensure_admin_users_tables(); } catch (Throwable $e) {}
+        }
+        foreach ($pdo->query('SELECT id FROM admin_users WHERE is_active = 1') as $r) {
+            lyaideu_notify($orderId, 'admin', (int)$r['id'], $message, $link);
         }
     } catch (Throwable $e) {
         // ignore

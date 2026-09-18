@@ -205,7 +205,7 @@ if ($next !== '' && (!preg_match('#^[A-Za-z0-9_\-.?&=]+$#', $next) || str_starts
 
 <script src="js/script.js?v=48"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=9"></script>
+<script src="js/notify.js?v=10"></script>
 <script>
 // Emergency tab switcher (always fresh, never cached)
 document.addEventListener('click', function (e) {

@@ -456,7 +456,7 @@ body.product-pg .cart-fab{display:grid !important;}}
 
 <script src="js/script.js?v=48"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=9"></script>
+<script src="js/notify.js?v=10"></script>
 <script>
 (function(){
   /* Back link: use the browser's own history so the previous page is

@@ -231,7 +231,7 @@ $ce = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
 <script src="js/script.js?v=48"></script>
 <script src="js/scroll-memory.js?v=6"></script>
-<script src="js/notify.js?v=9"></script>
+<script src="js/notify.js?v=10"></script>
 <script>
 window.LY_CATS = <?= json_encode($catTreesJson, $jsonFlags) ?>;
 window.LY_GROUPS = <?= json_encode($catGroupsJson, $jsonFlags) ?>;

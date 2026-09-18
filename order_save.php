@@ -382,6 +382,7 @@ foreach (lyaideu_order_vendor_ids($orderId) as $vid) {
     lyaideu_notify($orderId, 'vendor', $vid, 'New order #' . $orderId . ' — ' . lyaideu_order_vendor_summary($orderId, (int)$vid) . ' · Rs. ' . $total, 'vendor');
 }
 lyaideu_notify_riders($orderId, 'New order #' . $orderId . ' — ' . $vendorSummary . ' · Rs. ' . $total . '. Check your queue.', 'rider');
+try { if (function_exists('lyaideu_notify_admins')) lyaideu_notify_admins($orderId, 'New order #' . $orderId . ' — ' . $vendorSummary . ' · Rs. ' . $total . '.', 'admin_orders'); } catch (Throwable $e) {}
 
 $_SESSION['last_order_id'] = $orderId;
 header('Location: order_success?id=' . $orderId);

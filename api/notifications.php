@@ -4,26 +4,52 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../site_config.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 
 $recipientType = '';
 $recipientId = 0;
 
-// The page passes its role (?role=vendor|rider) so we always read the right
-// session cookie even when several delivery cookies coexist in the browser.
+// The page passes its role (?role=vendor|rider|admin) so we always read the
+// right session cookie even when several cookies coexist in the browser.
 $roleParam = (string)($_GET['role'] ?? '');
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    if ($roleParam === 'vendor' && isset($_COOKIE['LYAIDEU_VENDOR'])) {
+    $params = [
+        'lifetime' => 30 * 24 * 60 * 60,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ];
+    if ($roleParam === 'vendor' && (isset($_COOKIE['LYAIDEU_VENDOR']) || isset($_COOKIE['lyaideu_rem_vendor']))) {
         session_name('LYAIDEU_VENDOR');
+        session_set_cookie_params($params);
         session_start();
-    } elseif ($roleParam === 'rider' && isset($_COOKIE['LYAIDEU_RIDER'])) {
+    } elseif ($roleParam === 'rider' && (isset($_COOKIE['LYAIDEU_RIDER']) || isset($_COOKIE['lyaideu_rem_rider']))) {
         session_name('LYAIDEU_RIDER');
+        session_set_cookie_params($params);
         session_start();
     } else {
         session_name('PHPSESSID');
+        session_set_cookie_params($params);
         session_start();
     }
 }
+
+// Stay-logged-in: session file may be gone on hosting while the persistent
+// remember cookie is still valid. Restore BEFORE reading identity.
+try {
+    if (function_exists('lyaideu_remember_try_delivery') && ($roleParam === 'vendor' || $roleParam === 'rider')) {
+        lyaideu_remember_try_delivery($roleParam);
+    }
+    if (function_exists('lyaideu_remember_try_user')) {
+        lyaideu_remember_try_user();
+    }
+    if (function_exists('lyaideu_remember_try_admin')) {
+        lyaideu_remember_try_admin();
+    }
+    if (function_exists('lyaideu_remember_validate_active_user')) {
+        lyaideu_remember_validate_active_user();
+    }
+} catch (Throwable $e) {}
 
 if (!empty($_SESSION['delivery_role']) && $_SESSION['delivery_role'] === 'rider' && !empty($_SESSION['delivery_user']['id'])) {
     $recipientType = 'rider';
@@ -31,6 +57,9 @@ if (!empty($_SESSION['delivery_role']) && $_SESSION['delivery_role'] === 'rider'
 } elseif (!empty($_SESSION['delivery_role']) && $_SESSION['delivery_role'] === 'vendor' && !empty($_SESSION['delivery_user']['id'])) {
     $recipientType = 'vendor';
     $recipientId = (int)$_SESSION['delivery_user']['id'];
+} elseif (!empty($_SESSION['is_admin']) && !empty($_SESSION['admin_id'])) {
+    $recipientType = 'admin';
+    $recipientId = (int)$_SESSION['admin_id'];
 } elseif (!empty($_SESSION['user']['id'])) {
     $recipientType = 'user';
     $recipientId = (int)$_SESSION['user']['id'];
@@ -107,7 +136,14 @@ $loadFeed = function () use ($pdo, $recipientType, $recipientId) {
     );
     $items->execute([$recipientType, $recipientId]);
     $rows = $items->fetchAll();
-    foreach ($rows as &$nr) { $nr['created_at'] = lyaideu_np_time($nr['created_at'] ?? null); }
+    foreach ($rows as &$nr) {
+        $raw = (string)($nr['created_at'] ?? '');
+        $nr['id'] = (int)$nr['id'];
+        $nr['order_id'] = $nr['order_id'] === null ? null : (int)$nr['order_id'];
+        $nr['is_read'] = (int)$nr['is_read'];
+        $nr['created_ts'] = function_exists('lyaideu_np_ts') ? (int)lyaideu_np_ts($raw) : (int)strtotime($raw);
+        $nr['created_at'] = function_exists('lyaideu_np_time') ? lyaideu_np_time($raw) : $raw;
+    }
     unset($nr);
 
     $unread = $pdo->prepare(

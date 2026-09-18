@@ -164,7 +164,7 @@ foreach ($rows as $row) {
 <?php endforeach; ?>
 </div>
 </main>
-<script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=9"></script>
+<script src="js/script.js?v=48"></script><script src="js/scroll-memory.js?v=6"></script><script src="js/notify.js?v=10"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){

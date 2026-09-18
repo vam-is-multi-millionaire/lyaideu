@@ -42,6 +42,7 @@ if ($user) {
                     if ($orderVendorId > 0) {
                         lyaideu_notify($claimId, 'vendor', $orderVendorId, 'Rider ' . $riderName . ' accepted order #' . $claimId . '.', 'vendor');
                     }
+                    try { if (function_exists('lyaideu_notify_admins')) lyaideu_notify_admins($claimId, 'Rider ' . $riderName . ' accepted order #' . $claimId . '.', 'admin_orders'); } catch (Throwable $e) {}
                     foreach ($pdo->query('SELECT id FROM riders WHERE is_active = 1 AND id <> ' . (int)$riderId) as $r) {
                         lyaideu_notify($claimId, 'rider', (int)$r['id'], 'Order #' . $claimId . ' was taken by another rider.', 'rider');
                     }
@@ -73,6 +74,7 @@ if ($user) {
                         if ((int)$order['vendor_id'] > 0) {
                             lyaideu_notify($orderId, 'vendor', (int)$order['vendor_id'], 'Order #' . $orderId . ' is out for delivery.', 'vendor');
                         }
+                        try { if (function_exists('lyaideu_notify_admins')) lyaideu_notify_admins($orderId, 'Order #' . $orderId . ' is out for delivery.', 'admin_orders'); } catch (Throwable $e) {}
                     }
                 } elseif ($valid && $newStatus === 'Delivered' && $order['status'] === 'Out for delivery') {
                     $upd = $pdo->prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?');
@@ -84,6 +86,7 @@ if ($user) {
                         if ((int)$order['vendor_id'] > 0) {
                             lyaideu_notify($orderId, 'vendor', (int)$order['vendor_id'], 'Order #' . $orderId . ' was delivered.', 'vendor');
                         }
+                        try { if (function_exists('lyaideu_notify_admins')) lyaideu_notify_admins($orderId, 'Order #' . $orderId . ' was delivered.', 'admin_orders'); } catch (Throwable $e) {}
                     }
                 }
             } catch (Throwable $e) {

@@ -71,6 +71,7 @@ if ($user) {
                             lyaideu_notify($orderId, 'user', $orderUserId, 'Your order #' . $orderId . ' was cancelled because all vendors declined it.', $link);
                         }
                     }
+                    try { if (function_exists('lyaideu_notify_admins')) lyaideu_notify_admins($orderId, $vendorName . ' set order #' . $orderId . ' to ' . $newStatus . '.', 'admin_orders'); } catch (Throwable $e) {}
                 }
             } catch (Throwable $e) {
                 // Ignore transition errors.
