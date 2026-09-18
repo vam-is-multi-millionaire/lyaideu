@@ -40,6 +40,7 @@ function admin_nav_items(): array {
         'sections' => ['label' => 'Sections', 'href' => 'admin_sections', 'icon' => '<i class="fa-solid fa-layer-group"></i>'],
         'promos' => ['label' => 'Promo Codes', 'href' => 'admin_promocodes', 'icon' => '<i class="fa-solid fa-ticket"></i>'],
         'orders' => ['label' => 'Orders', 'href' => 'admin_orders', 'icon' => '<i class="fa-solid fa-box"></i>'],
+        'accountant' => ['label' => 'Accountant', 'href' => 'admin_accountant', 'icon' => '<i class="fa-solid fa-calculator"></i>'],
         'dishes' => ['label' => 'Menu Items', 'href' => 'admin_dishes', 'icon' => '<i class="fa-solid fa-utensils"></i>'],
         'mart' => ['label' => 'Mart', 'href' => 'admin_mart', 'icon' => '<i class="fa-solid fa-basket-shopping"></i>'],
         'beverages' => ['label' => 'Beverages', 'href' => 'admin_beverages', 'icon' => '<i class="fa-solid fa-glass-water"></i>'],
@@ -64,7 +65,7 @@ function admin_nav_items(): array {
  */
 function admin_grantable_page_keys(): array {
     return [
-        'control', 'categories', 'sections', 'promos', 'orders', 'dishes',
+        'control', 'categories', 'sections', 'promos', 'orders', 'accountant', 'dishes',
         'mart', 'beverages', 'others', 'hotels', 'riders', 'contacts',
         'messages', 'users', 'kyc', 'activity', 'settings',
     ];

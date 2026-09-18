@@ -13,7 +13,7 @@ function team_page_groups(): array {
     return [
         'Catalog & Content' => ['categories', 'dishes', 'mart', 'beverages', 'others', 'sections'],
         'Storefront Control' => ['control', 'promos'],
-        'Operations' => ['orders', 'hotels', 'riders', 'messages', 'contacts'],
+        'Operations' => ['orders', 'accountant', 'hotels', 'riders', 'messages', 'contacts'],
         'People' => ['users', 'kyc'],
         'System' => ['activity', 'settings'],
     ];
